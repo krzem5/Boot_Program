@@ -2,5 +2,5 @@
 
 index.exe
 *.obj
-rsrs/tmp/*.*
+rsrc/tmp
 rsrc/*.py
