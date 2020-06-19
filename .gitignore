@@ -1,7 +1,5 @@
 ### Github File Push Ignore
 
-index.exe
-*.obj
-!rsrc/*.obj
-rsrc/tmp
-rsrc/*.py
+tmp
+*.dt
+*.json
