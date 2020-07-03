@@ -4,12 +4,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-from http import HTTPStatus
-from http.server import SimpleHTTPRequestHandler,HTTPServer
+from SimpleWebSocketServer import SimpleWebSocketServer,WebSocket
 from PIL import Image
 import keyboard
+import socket
 import subprocess
 import os
+import inspect
 import ctypes
 import sys
 import json
@@ -38,24 +39,26 @@ import hashlib
 
 
 os.system("title  ")
-with open("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\secret.dt","r") as f:
+with open("D:\\boot\\secret.dt","r") as f:
 	f=f.read()
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA
+global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK
+STDOUT_LOCK=False
+CMD_L={}
 KB_PID=-1
 BLK_PID=-1
 WORKSPACE_DATA=[]
-WORKSPACE_LOCAL_IP="192.168.178.73"
-WORKSPACE_IP_WHITELIST=[WORKSPACE_LOCAL_IP,"192.168.178.64"]
+LOCAL_IP="127.0.0.1"
+WORKSPACE_IP_WHITELIST=[LOCAL_IP]
 WORKSPACE_PHP_SERVER_PORT=random.randint(9001,49151)
 WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 CODEWARS_KATA_URL_REGEX=re.compile(r"^(?:https?://)?www\.codewars\.com/kata/([0-9a-f]{24})(/.*)?$")
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
 SWAP_DATA=[]
-SWAP_FILE_NAME="C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\codewars-swapfile.dt"
+SWAP_FILE_NAME="D:\\boot\\codewars-swapfile.dt"
 CODEWARS_SIGNIN_URL="https://www.codewars.com/users/sign_in"
 CODEWARS_SIGNIN_EMAIL_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[2]/div/div/div/input"
 CODEWARS_SIGNIN_PASSWORD_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[3]/div/div/div/input"
@@ -77,7 +80,7 @@ KATA_SETUP_SELECT_CODEMIRROR_SCRIPT="document.evaluate(arguments[0],document,nul
 KATA_SETUP_FINAL_TEST_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[3]/div[2]/a[2]"
 KATA_SETUP_SUBMIT_TEST_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[3]/div[2]/a[3]"
 KATA_SETUP_SCRIPT="return JSON.stringify(App.instance.data);"
-KATA_BUILD_SYSTEM="@echo off\ncls\npython \"C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\boot.py\" 3 %1"
+KATA_BUILD_SYSTEM="@echo off\ncls\npython \"D:\\boot\\boot.py\" 3 %1"
 KATA_LANGUAGE_EXTENSIONS={
 	"python": "py",
 	"javascript": "js",
@@ -95,6 +98,122 @@ KATA_FILE="D:\\K\\Codewars\\%s\\%s\\%s.%s"
 
 
 
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+try:
+	s.connect(("10.255.255.255",1))
+	LOCAL_IP=s.getsockname()[0]
+except:
+	pass
+s.close()
+
+
+
+def _set_print(*a):
+	if (len(a)==1):
+		threading.current_thread()._b_nm=t._b_nm
+		threading.current_thread()._nm=t._nm
+	else:
+		threading.current_thread()._b_nm=a[0]
+		threading.current_thread()._nm=a[1]
+
+
+
+def _print(*a,end="\n"):
+	global CMD_L,STDOUT_LOCK
+	def _r_color_f(m):
+		if (m.group(0)[0]=="'"):
+			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
+		if (m.group(0)[0] in "-0123456789"):
+			return f"\x1b[38;2;48;109;206m{m.group(0)}\x1b[0m"
+		m=m.group(0)[1:-1]
+		o=""
+		i=0
+		while (i<len(m)):
+			while (m[i]==" "):
+				o+=" "
+				i+=1
+			o+="\x1b[38;2;214;206;42m"+m[i:].split("=")[0]+"\x1b[38;2;32;162;132m="
+			i+=len(m[i:].split("=")[0])+1
+			while (m[i]==" "):
+				o+=" "
+				i+=1
+			if (m[i]=="'"):
+				o+="\x1b[38;2;91;216;38m'"
+				i+=1
+				s=False
+				while (s==False or m[i-1]!="'"):
+					o+=m[i]
+					i+=1
+					s=True
+			elif (m[i:].startswith("False")):
+				o+="\x1b[38;2;239;128;15mFalse"
+				i+=5
+			elif (m[i:].startswith("True")):
+				o+="\x1b[38;2;239;128;15mTrue"
+				i+=4
+			else:
+				o+="\x1b[38;2;48;109;206m"
+				print(m[i:])
+				while (m[i] in "0123456789.-"):
+					o+=m[i]
+					i+=1
+			if (i>=len(m)):
+				break
+			while (m[i]==" "):
+				o+=" "
+				i+=1
+			if (m[i]==","):
+				o+="\x1b[38;2;32;162;132m,"
+				i+=1
+		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
+	a=" ".join([str(e) for e in a])
+	if (threading.current_thread()._dp==True):
+		print(a,end=end)
+		return
+	i=0
+	while (i<len(a)):
+		_im=re.match(r"\x1b\[[^m]+m",a[i:])
+		if (_im!=None):
+			i+=len(_im.group(0))
+		m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|-?[0-9]+(?:\.[0-9]+)?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?",a[i:])
+		if (m!=None):
+			o=_r_color_f(m)
+			a=a[:i]+o+a[i+len(m[0]):]
+			i+=len(o)-1
+		i+=1
+	t=datetime.datetime.now().strftime("\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")
+	if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm]["l"].keys()):
+		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]=b""
+	CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
+	t=datetime.datetime.now().strftime(f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] ")
+	while (STDOUT_LOCK==True):
+		pass
+	STDOUT_LOCK=True
+	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+"\x1b[0m"+end)
+	STDOUT_LOCK=False
+
+
+
+def _start_thr(f,b_nm,nm,*a,**kw):
+	def _wr(f,a,kw):
+		global CMD_L
+		if (nm not in CMD_L[b_nm]["l"].keys()):
+			CMD_L[b_nm]["l"][nm]=b""
+		try:
+			f(*a,**kw)
+		except Exception as e:
+			f=io.StringIO()
+			traceback.print_exception(None,e,e.__traceback__,file=f)
+			CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
+			print(f.getvalue(),file=sys.__stdout__,end="")
+	thr=threading.Thread(target=_wr,args=(f,a,kw),kwargs={},name=f"{b_nm} => {nm} Thread")
+	thr._b_nm=b_nm
+	thr._nm=nm
+	thr.start()
+	return thr
+
+
+
 def _open_app(p,file=False):
 	if (file==True):
 		os.startfile(p)
@@ -103,51 +222,81 @@ def _open_app(p,file=False):
 
 
 
+def _r_cmd(nm,e,h):
+	global CMD_L
+	def _h_s(nm,s_nm):
+		global CMD_L
+		while (True):
+			CMD_L[nm]["l"]["__main__"]+=getattr(CMD_L[nm]["h"],"std"+s_nm).read1(1024).replace(b"\r\n",b"\n")
+			time.sleep(0.05)
+	CMD_L[nm]={"_end":e,"h":h,"l":{"__main__":b""}}
+	_start_thr(_h_s,nm,"_stdout_redirect",nm,"out")
+	_start_thr(_h_s,nm,"_stderr_redirect",nm,"err")
+
+
+
 def _codewars_wr():
 	global SWAP_DATA
 	def _sawp_thr():
 		global SWAP_DATA
+		_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
 		while (SWAP_DATA!=None):
-			if (ntpath.getsize(SWAP_FILE_NAME)>0 or len(SWAP_DATA)>0):
+			if (SWAP_DATA!=None and ntpath.getsize(SWAP_FILE_NAME)>0 or len(SWAP_DATA)>0):
 				with open(SWAP_FILE_NAME,"r") as f:
 					f=f.read()
 					SWAP_DATA+=[e for e in f.split("\n") if len(e)>0]
 				with open(SWAP_FILE_NAME,"w"):
 					pass
 			time.sleep(0.1)
-	thr=threading.Thread(target=_sawp_thr,args=(),kwargs={})
-	thr.daemon=True
-	thr.start()
+		_print("\x1b[38;2;200;40;20mData Swap Loop Stopped.\x1b[0m")
+	_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
+	_start_thr(_sawp_thr,"__core__","codewars_driver_swap_loop")
+	_print("Starting ChromeDriver\x1b[38;2;100;100;100m...")
+	if (not ntpath.exists("C:\\Program Files\\ChromeDriver\\chromedriver.exe")):
+		SWAP_DATA=None
+		_print("\x1b[38;2;200;40;20mChromeDriver.exe Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+		return
 	opts=webdriver.ChromeOptions()
 	opts.headless=True
 	driver=webdriver.Chrome(executable_path="C:\\Program Files\\ChromeDriver\\chromedriver.exe",options=opts)
+	_print("Logging In\x1b[38;2;100;100;100m...")
 	driver.get(CODEWARS_SIGNIN_URL)
 	wait=WebDriverWait(driver,100)
 	try:
 		e=wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_EMAIL_XPATH))).send_keys(USER_EMAIL)
 		e=wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_PASSWORD_XPATH))).send_keys(USER_PASSWORD)
+		_print("Submiting Log In\x1b[38;2;100;100;100m...")
 		wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_LOGIN_BUTTON_XPATH))).click()
 		while (driver.current_url!=CODEWARS_DASHBOARD_URL):
 			pass
+		_print("Starting Listener\x1b[38;2;100;100;100m...")
 		while (True):
 			if (len(SWAP_DATA)>0):
 				open_,kid,SWAP_DATA=SWAP_DATA[0][0],SWAP_DATA[0][1:].replace("https://www.codewars.com/kata/","").split("/"),SWAP_DATA[1:]
+				_print(f"Request Found: (url='https://www.codewars.com/kata/{'/'.join(kid)}', id='{kid[0]}', language={(chr(39)+kid[2]+chr(39) if len(kid)>=3 else 'unknown')}, open_in_editor={open_})")
 				kid,k_o_nm=kid[0],(kid[2] if len(kid)>=3 else None)
 				while (True):
 					try:
+						_print(f"Querying URL '{KATA_METADATA_URL%(kid)}'\x1b[38;2;100;100;100m...")
 						driver.get(KATA_METADATA_URL%(kid))
 						lce=wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_LANGUAGE_LIST_CONTAINER_XPATH)))
 						k_f_nm=re.sub(r"[^a-z0-9\_\-]","",wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_NAME_XPATH))).get_attribute("innerText").replace(" ","_").lower())
+						_print(f"Creatting Output Dir '{KATA_DIR%(k_f_nm)}'\x1b[38;2;100;100;100m...")
 						if (not ntpath.exists(KATA_DIR%(k_f_nm))):
 							os.mkdir(KATA_DIR%(k_f_nm))
 						psd=None
+						_print(f"Cloning All Languages... ({', '.join([e.get_attribute('data-value') for e in lce.find_elements_by_css_selector('dd[data-value]') if e.get_attribute('data-value') in KATA_LANGUAGES])})")
 						for l in [e.get_attribute("data-value") for e in lce.find_elements_by_css_selector("dd[data-value]") if e.get_attribute("data-value") in KATA_LANGUAGES]:
+							_print(f"Querying URL '{KATA_SETUP_URL%(kid,l)}'\x1b[38;2;100;100;100m...")
 							driver.get(KATA_SETUP_URL%(kid,l))
+							_print("Waiting Until Content Loads\x1b[38;2;100;100;100m...")
 							wait.until(EC.presence_of_element_located((By.XPATH,KATA_SETUP_CODEMIRROR_CONTAINER_XPATH%(KATA_SETUP_SOLUTION_CONTAINER_ID))))
 							wait.until(EC.presence_of_element_located((By.XPATH,KATA_SETUP_CODEMIRROR_CONTAINER_XPATH%(KATA_SETUP_FIXTURE_TESTS_CONTAINER_ID))))
 							while (len(driver.find_elements_by_xpath(KATA_SETUP_CODEMIRROR_CONTAINER_LINES_XPATH%(KATA_SETUP_SOLUTION_CONTAINER_ID)))==0 or len(driver.find_elements_by_xpath(KATA_SETUP_CODEMIRROR_CONTAINER_LINES_XPATH%(KATA_SETUP_FIXTURE_TESTS_CONTAINER_ID)))==0):
 								pass
+							_print("Requesting Data\x1b[38;2;100;100;100m...")
 							kdt=json.loads(driver.execute_script(KATA_SETUP_SCRIPT))
+							_print("Cleaning-Up Previous Output\x1b[38;2;100;100;100m...")
 							if (psd==None):
 								if (kdt["previousSolutions"]==None):
 									psd={}
@@ -155,6 +304,7 @@ def _codewars_wr():
 									psd={ps["sym"]:ps for ps in kdt["previousSolutions"] if ps["sym"] in KATA_LANGUAGES}
 							if (not ntpath.exists(KATA_DIR_LANG%(k_f_nm,l))):
 								os.mkdir(KATA_DIR_LANG%(k_f_nm,l))
+							_print("Writing Files\x1b[38;2;100;100;100m...")
 							for k in os.listdir(KATA_DIR_LANG%(k_f_nm,l)):
 								if (k.split("-")[0]!="solution" or k.split(".")[0]=="solution-working"):
 									continue
@@ -178,6 +328,7 @@ def _codewars_wr():
 									f.write(kdt["languageInfo"]["workingFixture"].encode("utf-8"))
 							if (l not in psd.keys()):
 								continue
+							_print("Writing Previous Solutions\x1b[38;2;100;100;100m...")
 							for pss in psd[l]["solutions"]:
 								psl=[f.split(".")[0] for f in os.listdir(KATA_DIR_LANG%(k_f_nm,psd[l]["sym"])) if "solution-" in f]
 								s_id=0
@@ -187,22 +338,28 @@ def _codewars_wr():
 									f.write(bytes(pss,"utf-8"))
 						break
 					except:
-						print("FAIL",kid)
-						pass
+						_print(f"Failed to Process Request. Retrying... (id='{kid}')")
 				if (open_=="1"):
 					if (k_o_nm==None):
+						_print("Opening Cloned Files in File Explorer\x1b[38;2;100;100;100m...")
 						_open_app(KATA_DIR%(k_f_nm),file=True)
 					else:
+						_print("Opening Cloned Files in Editor\x1b[38;2;100;100;100m...")
 						_open_app(f"C:\\Program Files\\Sublime Text 3\\sublime_text.exe {KATA_FILE%(k_f_nm,k_o_nm,'solution-working',KATA_LANGUAGE_EXTENSIONS[k_o_nm])}")
 						_open_app(f"C:\\Program Files\\Sublime Text 3\\sublime_text.exe {KATA_FILE%(k_f_nm,k_o_nm,'challenge','md')}")
+				_print(f"Finished Processing Request (id='{kid}')")
 	except Exception as e:
-		traceback.print_exception(None,e,e.__traceback__)
+		f=io.StringIO()
+		traceback.print_exception(None,e,e.__traceback__,file=f)
+		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
+		print(f.getvalue(),file=sys.__stderr__,end="")
+	_print("Stopping ChromeDriver\x1b[38;2;100;100;100m...")
 	SWAP_DATA=None
 	driver.quit()
 
 
 
-def _render_cwr(tp):
+def _render_cwr(tp):#######################################
 	def _center_ignore(o,l):
 		while (len(re.sub(r"\x1b\[[^m]+m","",o))<l):
 			o+=" "
@@ -310,7 +467,7 @@ def _render_cwr(tp):
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
 	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(min(mx+8,dt[9]),len(o)))
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
-	print("\n".join(o)+"\x1b[0m",end="")
+	_print("\n".join(o)+"\x1b[0m",end="")
 	ex=False
 	while (True):
 		c=sys.stdin.read(1)
@@ -328,7 +485,7 @@ def _render_cwr(tp):
 
 
 
-def _update_repo(p,b_nm,r_desc,msg):
+def _update_repo(p,b_nm,r_desc,msg):#######################################
 	def _parse_gitignore(dt):
 		o=[]
 		for ln in dt.split("\n"):
@@ -386,26 +543,23 @@ def _update_repo(p,b_nm,r_desc,msg):
 		elif (m=="patch"):
 			r=requests.patch(**kwargs)
 		if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
-			print(r.headers)
+			_print(r.headers)
 			sys.exit(1)
 		time.sleep(0.72)
 		if ("message" in r.json().keys() and r.json()["message"]=="Server Error"):
 			return None
 		return r.json()
-	def _create_blob(nm,dt):
-		r=_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/blobs",data=json.dumps({"content":str(dt)[2:-1],"encoding":"utf-8"}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
-		return r["sha"]
-	def _get_tree(b_nm,sha):
-		def _rec_get(b_nm,sha,p):
-			r=_request("get",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+	def _get_tree(r_nm,sha):
+		def _rec_get(r_nm,sha,p):
+			r=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
 			o={}
 			for e in r["tree"]:
 				if (e["type"]=="tree"):
-					o.update(_rec_get(b_nm,e["sha"],p+"/"+e["path"]))
+					o.update(_rec_get(r_nm,e["sha"],p+"/"+e["path"]))
 				elif ((p+"/"+e["path"]).replace("./","")!="_"):
 					o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
 			return o
-		return _rec_get(b_nm,sha,".")
+		return _rec_get(r_nm,sha,".")
 	def _match_f(fp,dt):
 		try:
 			with open(fp,"r") as f:
@@ -418,15 +572,18 @@ def _update_repo(p,b_nm,r_desc,msg):
 				return False
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
-	_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":b_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+	r_nm=re.sub(r"[^A-Za-z0-9_\.]|\-",r"",b_nm)
+	_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
 	with open(p+"\\.gitignore","r") as f:
 		gdt=_parse_gitignore(f.read())
-	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/ref/heads/master",headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["object"]["sha"]
-	r_t=_get_tree(b_nm,bt_sha)
 	r_tf_p=False
-	if (len(list(r_t.keys()))==0):
-		_request("put",url=f"https://api.github.com/repos/Krzem5/{b_nm}/contents/_",data=json.dumps({"message":msg,"content":""}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+	try:
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/ref/heads/master",headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["object"]["sha"]
+	except:
+		_request("put",url=f"https://api.github.com/repos/Krzem5/{r_nm}/contents/_",data=json.dumps({"message":msg,"content":""}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/ref/heads/master",headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["object"]["sha"]
 		r_tf_p=True
+	r_t=_get_tree(r_nm,bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
 	for r,_,fl in os.walk(p):
@@ -434,15 +591,15 @@ def _update_repo(p,b_nm,r_desc,msg):
 			fp=ntpath.join(r,f).replace(p,"")[(1 if not p.endswith("\\") else 0):].replace("\\","/")
 			if (_gitigonre_match(gdt,fp)==False):
 				cnt[2]+=1
-				print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
+				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
 			if (fp in list(r_t.keys()) and _match_f(ntpath.join(r,f),r_t[fp])==True):
 				cnt[1]+=1
 				bl+=[[fp,None]]
-				print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+				_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 				continue
 			cnt[0]+=1
-			print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
+			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
 			dt="File too Large (size = %d b)"%(os.stat(ntpath.join(r,f)).st_size)
 			b_sha=False
 			if (os.stat(ntpath.join(r,f)).st_size<=50*1024*1024):
@@ -466,7 +623,7 @@ def _update_repo(p,b_nm,r_desc,msg):
 						b_sha=False
 						dt="File too Large (size = %d b)"%(len(dt))
 					else:
-						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
+						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
 						if (b==None):
 							b_sha=False
 							dt="Github Server Error"
@@ -480,21 +637,22 @@ def _update_repo(p,b_nm,r_desc,msg):
 				rm=False
 				break
 		if (rm==True):
-			print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m")
+			_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m")
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
-	_request("patch",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{b_nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if r_tf_p==True else [])}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"parents":[bt_sha]}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"force":True}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
-	print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
+	if (any([(True if b[1]!=None else False) for b in bl])):
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if r_tf_p==True else [])}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"parents":[bt_sha]}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"force":True}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
+	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
 
 def _rec_rm_pycache(bd):
+	_print(f"Deleting PyCache For Folder '{bd}'\x1b[38;2;100;100;100m...")
 	for sd in os.scandir(bd):
 		if (sd.is_dir()==False or "\\Python38" in sd.path or "\\Python37" in sd.path or "\\Windows" in sd.path):
 			continue
 		if ("__pycache__" in sd.path):
-			print(sd.path)
-			os.system(f"rm -rf \"{sd.path}\"")
+			shutil.rmtree(sd.path,ignore_error=True)
 		try:
 			_rec_rm_pycache(sd.path)
 		except:
@@ -503,10 +661,9 @@ def _rec_rm_pycache(bd):
 
 
 def _save_f(fn,txt):
-	sfn=fn.replace("D:\\K\\","D:\\K\\")
 	p=""
 	i=0
-	for ps in sfn.split("\\")[:-1]:
+	for ps in fn.split("\\")[:-1]:
 		p+=ps+"\\"
 		if (i<2):
 			i+=1
@@ -514,20 +671,22 @@ def _save_f(fn,txt):
 		if (not ntpath.exists(p)):
 			os.mkdir(p)
 		i+=1
-	with open(sfn,"w") as f:
+	with open(fn,"w") as f:
 		f.write(txt)
 
 
 
 def _save_w():
+	_print("Saving Workspace Data\x1b[38;2;100;100;100m...")
 	global WORKSPACE_DATA
 	WORKSPACE_DATA=sorted(WORKSPACE_DATA,key=lambda x:x["name"])
-	with open("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\workspace-data.json","w") as f:
+	with open("D:\\boot\\workspace-data.json","w") as f:
 		f.write(json.dumps(WORKSPACE_DATA,indent=4,sort_keys=True).replace("    ","\t"))
 
 
 
-def _open_prog_w(p):
+def _open_prog_w(p):###############################################
+	_print(f"Opening Program {p}\x1b[38;2;100;100;100m...")
 	def _open_prog_w_f(p,p2,e,*f):
 		op=False
 		for fn in f:
@@ -539,46 +698,47 @@ def _open_prog_w(p):
 	type_=p.split("-")[0].lower()
 	p="D:\\K\\Coding\\projects\\"+p+"\\"
 	if (type_=="cpp"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}index.cpp")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}index.cpp")
 	elif (type_=="css"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}index.html",f"{p}style.css")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}index.html",f"{p}style.css")
 	elif (type_=="fischertechnic"):
-		_open_prog_w_f(r"C:\\Program Files\\ROBOPro\\ROBOPro.exe",p,"rpp",f"{p}index.rpp")
+		_open_prog_w_f("C:\\Program Files\\ROBOPro\\ROBOPro.exe",p,"rpp",f"{p}index.rpp")
 	elif (type_=="java"):
 		c_nm=p.split("\\")[-2].split("-")[1].lower()
 		if (ntpath.exists(f"{p}com\\krzem\\{c_nm}\\")):
-			subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",f"{p}com\\krzem\\{c_nm}\\"])
+			subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",f"{p}com\\krzem\\{c_nm}\\"])
 		else:
-			subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}com\\krzem\\{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
+			subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}com\\krzem\\{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
 	elif (type_=="javascript"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
 	elif (type_=="php"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",p+"index.php")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",p+"index.php")
 	elif (type_=="processing"):
 		os.system(f"start /min cmd /c \"{p}index\\index.pde\"")
 	elif (type_=="python"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}index.py")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}index.py")
 	elif (type_=="three"):
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f(r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
 	elif (type_=="mindstorm"):
-		_open_prog_w_f(r"C:\\Program Files\\LEGO Software\\LEGO MINDSTORMS EV3 Home Edition\\MindstormsEV3.exe",p,"ev3",f"{p}index.ev3")
+		_open_prog_w_f("C:\\Program Files\\LEGO Software\\LEGO MINDSTORMS EV3 Home Edition\\MindstormsEV3.exe",p,"ev3",f"{p}index.ev3")
 	else:
-		subprocess.Popen([r"C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 	_save_w()
 
 
 
-def _create_prog(type_,name,op=True):
+def _create_prog(type_,name,op=True):##############################
+	_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
 	if (type_ not in "chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
-		print(f"UNKNOWN TYPE: {type_}")
+		_print(f"UNKNOWN TYPE: {type_}")
 		return
 	if (type_=="js"):
 		type_="javascript"
@@ -688,185 +848,199 @@ def _create_prog(type_,name,op=True):
 
 
 
-class _HTTPServer_handle(SimpleHTTPRequestHandler):
-	server_version="HTTP/1.3"
-	protocol_version="HTTP/1.0"
+class _CMDLineWebSocketServer_handle(WebSocket):##############################
+	def handleMessage(self):
+		threading.Thread(target=self._h_msg,args=(),kwargs={}).start()
 
 
 
-	def do_GET(self):
-		if (self._check_IP()==True and (self.path=="/" or len(self.path)-len(self.path.replace("/",""))>=2)):
-			if (self.path.split("?")[0].split("#")[0].endswith(".php")):
-				self._send_php(self.path)
+	def handleConnected(self):
+		pass
+
+
+
+	def handleClose(self):
+		pass
+
+
+
+	def _h_msg(self):
+		global CMD_L
+		def _h_std(self,t):
+			global CMD_L
+			l={}
+			while (self._stop==False):
+				for k in list(CMD_L[self.h_nm]["l"].keys()):
+					if (k not in l.keys()):
+						l[k]=0
+					if (l[k]!=len(CMD_L[self.h_nm]["l"][k])):
+						l[k]=self.sendMessage(bytes(t+":","utf-8")+CMD_L[self.h_nm]["l"][k][l[k]:])
+						l[k]=len(CMD_L[self.h_nm]["l"][k])
+				time.sleep(0.05)
+		msg=self.data
+		self.sendMessage("null")
+		if (msg=="cmdl"):
+			self.sendMessage("cmdl:"+"\x00".join(list(CMD_L.keys())))
+		elif (msg[:4]=="cmd:"):
+			if (msg[4:] not in list(CMD_L.keys())):
+				self.sendMessage("cmd:0")
 			else:
-				if (self.path.endswith("/")):
-					self.path+="index.html"
-				self.path="."+self.path
-				if (not ntpath.exists(self.path)):
-					self.send_response(301)
-					self.send_header("Location",f"http://{WORKSPACE_LOCAL_IP}:8020/")
-					self.end_headers()
-				else:
-					f=open(self.path,"rb")
-					self.send_response(HTTPStatus.OK)
-					self.send_header("Content-type",self.guess_type(self.path))
-					fs=os.fstat(f.fileno())
-					self.send_header("Content-Length",str(fs[6]))
-					self.send_header("Last-Modified",0)
-					self.end_headers()
-					self.copyfile(f,self.wfile)
-		else:
-			self._send_denied()
-
-
-
-	def do_CHANGE_DESC(self):
-		global WORKSPACE_DATA
-		pg=self.path[1:].split("~")[0]
-		dc=urllib.parse.unquote("~".join(self.path[1:].split("~")[1:]),errors="surrogatepass")
-		for o in WORKSPACE_DATA:
-			if (o["name"]==pg):
-				o["desc"]=dc
-		_save_w()
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",0)
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-
-
-
-	def do_START_PROG(self):
-		pg=self.path[1:]
-		_open_prog_w(pg)
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",0)
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-
-
-
-	def do_VIEW_PROG(self):
-		p=f"D:\\K\\Coding\\projects\\{self.path[1:]}\\"
-		if (ntpath.exists(f"{p}index.bat")):
-			os.system(f"start /min cmd /c \"@echo off&&cls&&cd /d {p}&&index.bat\"")
-		else:
-			subprocess.run([os.path.join(os.getenv("WINDIR"),"explorer.exe"),"/select,"+os.path.normpath(os.getcwd()+os.sep+p+"/"+os.listdir(p)[0])])
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",0)
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-
-
-
-	def do_NEW_PROG(self):
-		tp=self.path[1:].split("~")[0]
-		nm=self.path[1:].split("~")[1]
-		_create_prog(tp,nm)
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",0)
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-
-
-
-	def do_LIST_PROGS(self):
-		s=""
-		for d in WORKSPACE_DATA:
-			s+=str(d["name"])+","+str(d["year"])+","+str(d["desc"])+"|"
-		enc=s[:-1].encode(sys.getfilesystemencoding(),"surrogateescape")
-		f=io.BytesIO()
-		f.write(enc)
-		f.seek(0)
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",str(len(enc)))
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-		self.copyfile(f,self.wfile)
-
-
-
-	def do_DOWNLOAD_PROG(self):
-		fnm=f"C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\tmp\\{time.time()}.zip"
-		zipf=zipfile.ZipFile(fnm,"w",zipfile.ZIP_DEFLATED)
-		for root,_,fs in os.walk("D:\\K\\Coding\\projects\\"+self.path[1:]+"\\"):
-			for f in fs:
-				print("Zipping: "+os.path.join(root.replace("D:\\K\\Coding\\projects\\"+self.path[1:]+"\\",""),f))
-				zipf.write(os.path.join(root,f),arcname=os.path.join(root.replace("D:\\K\\Coding\\projects\\"+self.path[1:]+"\\",""),f))
-		zipf.close()
-		enc=("tmp/"+fnm.split("\\")[-1]).encode("utf-8","surrogateescape")
-		f=io.BytesIO()
-		f.write(enc)
-		f.seek(0)
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/plain")
-		self.send_header("Content-Length",str(len(enc)))
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-		self.copyfile(f,self.wfile)
-
-
-
-	def _check_IP(self):
-		if (self.client_address[0]!="127.0.0.1" and self.client_address[0]!=WORKSPACE_LOCAL_IP and self.client_address[0] not in WORKSPACE_IP_WHITELIST):
-			return False
-		return True
-
-
-
-	def _send_denied(self):
-		f=open("no_access.html","rb")
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/html")
-		fs=os.fstat(f.fileno())
-		self.send_header("Content-Length",str(fs[6]))
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-		self.copyfile(f,self.wfile)
-
-
-
-	def _send_php(self,path):
-		path=f"http://127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}"+path[path.index("/"):]
-		html=requests.get(url=path).text
-		enc=html.encode(sys.getfilesystemencoding(),"surrogateescape")
-		f=io.BytesIO()
-		f.write(enc)
-		f.seek(0)
-		self.send_response(HTTPStatus.OK)
-		self.send_header("Content-type","text/html")
-		self.send_header("Content-Length",str(len(enc)))
-		self.send_header("Last-Modified",0)
-		self.end_headers()
-		self.copyfile(f,self.wfile)
+				self._stop=True
+				self.h_nm=msg[4:]
+				self.sendMessage(f"cmd:1{self.h_nm}")
+				if (hasattr(self,"_thr_l")):
+					for k in self._thr_l:
+						k.join()
+				self._stop=False
+				self._thr_l=[threading.Thread(target=_h_std,args=(self,"out"),kwargs={}),threading.Thread(target=_h_std,args=(self,"err"),kwargs={})]
+				self._thr_l[0].start()
+				self._thr_l[1].start()
+		elif (msg[:3]=="in:"):
+			if (hasattr(self,"h_nm")==False or self.h_nm==None):
+				return
+			CMD_L[self.h_nm]["h"].stdin.write(bytes(msg[3:],"utf-8"))
+			CMD_L[self.h_nm]["h"].stdin.flush()
 
 
 
 def _start_ws(t):
+	def _h_request(cs,a,ip):
+		global WORKSPACE_DATA
+		try:
+			_dt=cs.recv(65536)
+			if (len(_dt)==0):
+				_print(f"Skipping Empty Request From '{a[0]}:{a[1]}'\x1b[38;2;100;100;100m..")
+				return
+			(t,url,v),h,dt=str(_dt.split(b"\r\n")[0],"utf-8").split(" "),{str(e.split(b":")[0],"utf-8"):e[len(e.split(b":")[0])+2:] for e in _dt.split(b"\r\n\r\n")[0].split(b"\r\n")[1:] if len(e)!=0},_dt[len(_dt.split(b"\r\n\r\n")[0])+4:]
+			rc=-1
+			_print(f"Request Recived: (type='{t}', url='{url}', http_version='{v}', ip='{a[0]}:{a[1]}')")
+			if (t=="GET"):
+				_print("Inspecting IP and URL\x1b[38;2;100;100;100m...")
+				if ((a[0]=="127.0.0.1" or a[0]==LOCAL_IP or a[0] in WORKSPACE_IP_WHITELIST) and (url=="/" or url=="/cmd" or len(url)-len(url.replace("/",""))>=2)):
+					if (url.split("?")[0].split("#")[0].endswith(".php")):
+						_print("Sending Request to PHP Server\x1b[38;2;100;100;100m...")
+						php_s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+						php_s.connect(("127.0.0.1",WORKSPACE_PHP_SERVER_PORT))
+						php_s.send(_dt)
+						_print("Redirecting Response\x1b[38;2;100;100;100m...")
+						php_s=(php_s.recv(65536),php_s.close())[0]
+						cs.send(php_s)
+						rc=int(php_s.split(b"\r\n")[0].split(b" ")[1])
+					else:
+						_print("Patching URL\x1b[38;2;100;100;100m...")
+						if (url=="/cmd"):
+							url="/server.html"
+						if (url.endswith("/")):
+							url+="index.html"
+						url="."+url
+						if (not ntpath.exists(url)):
+							_print(f"\x1b[38;2;200;40;20mFile '{url}' Doesn't Exist.\x1b[0m Sending Redirect\x1b[38;2;100;100;m100...")
+							cs.send(bytes(f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://{ip}:8020/\r\n\r\n","utf-8"))
+							rc=301
+						else:
+							_print(f"Sending Content of '{url}'\x1b[38;2;100;100;100m...")
+							f=open(url,"rb")
+							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
+							rc=200
+				else:
+					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Sending Blocking Request\x1b[38;2;100;100;100m...")
+					f=open("no_access.html","rb")
+					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
+					f.close()
+					rc=401
+			elif (t=="CHANGE_DESC"):
+				pg=url[1:].split("~")[0]
+				dc=urllib.parse.unquote("~".join(url[1:].split("~")[1:]),errors="surrogatepass")
+				_print(f"Changing Description for Project '{pg}' to '{dc}'\x1b[38;2;100;100;100m...")
+				for o in WORKSPACE_DATA:
+					if (o["name"]==pg):
+						o["desc"]=dc
+				_save_w()
+				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
+				rc=200
+			elif (t=="START_PROG"):
+				_print(f"Opening Project '{url[1:]}'\x1b[38;2;100;100;100m...")
+				_open_prog_w(url[1:])
+				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
+				rc=200
+			elif (t=="VIEW_PROG"):
+				if (ntpath.exists(f"D:\\K\\Coding\\projects\\{url[1:]}\\index.bat")):
+					_print(f"Viewing Project '{url[1:]}' in Console\x1b[38;2;100;100;100m...")
+					os.system(f"start /min cmd /c \"@echo off&&cls&&cd /d D:\\K\\Coding\\projects\\{url[1:]}\\&&index.bat\"")
+				else:
+					_print(f"Viewing Project '{url[1:]}' in File Explorer\x1b[38;2;100;100;100m...")
+					subprocess.run([os.path.join(os.getenv("WINDIR"),"explorer.exe"),"/select,"+os.path.normpath(os.getcwd()+os.sep+f"D:\\K\\Coding\\projects\\{url[1:]}"+"/"+os.listdir(p)[0])])
+				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
+				rc=200
+			elif (t=="NEW_PROG"):
+				_print(f"Creating Project (type='{url[1:].split('~')[0]}', name='{url[1:].split('~')[1]}')\x1b[38;2;100;100;100m...")
+				_create_prog(*url[1:].split("~"))
+				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
+				rc=200
+			elif (t=="LIST_PROGS"):
+				_print(f"Sending Project List\x1b[38;2;100;100;100m...")
+				s=""
+				for d in WORKSPACE_DATA:
+					s+=str(d["name"])+","+str(d["year"])+","+str(d["desc"])+"|"
+				cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(s[:-1])}\r\n\r\n{s[:-1]}","utf-8"))
+				rc=200
+			elif (t=="DOWNLOAD_PROG"):
+				_print(f"Zipping Project '{url[1:]}'\x1b[38;2;100;100;100m...")
+				fnm=f"D:\\boot\\tmp\\{time.time()}.zip"
+				zipf=zipfile.ZipFile(fnm,"w",zipfile.ZIP_DEFLATED)
+				for root,_,fs in os.walk(f"D:\\K\\Coding\\projects\\{url[1:]}\\"):
+					for f in fs:
+						_print("Zipping: "+os.path.join(root.replace(f"D:\\K\\Coding\\projects\\{url[1:]}\\",""),f))
+						zipf.write(os.path.join(root,f),arcname=os.path.join(root.replace(f"D:\\K\\Coding\\projects\\{url[1:]}\\",""),f))
+				zipf.close()
+				cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(fnm.split(chr(92))[-1])+4}\r\n\r\ntmp/{fnm.split(chr(92))[-1]}","utf-8"))
+				rc=200
+			else:
+				cs.send(b"HTTP/1.1 501 Not Implemented\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>501</h1><h3>Not Implemented</h3></body></html>")
+				rc=501
+			_print(f"Finished Processing Request with Response Code {rc}.")
+		except Exception as e:
+			_print("\x1b[38;2;200;40;20mError Occured During Procesing of Request.\x1b[0m (Finished Processing Request with Response Code 500)")
+			cs.send(b"HTTP/1.1 500 Internal Server Error\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>500</h1><h3>Internal Server Error</h3></body></html>")
+			traceback.print_exception(None,e,e.__traceback__)
+		cs.close()
 	if (t==0):
+		_print(f"Starting WebSocket Listener on IP '{LOCAL_IP}:8021'\x1b[38;2;100;100;100m...")
+		ws_s=SimpleWebSocketServer(LOCAL_IP,8021,_CMDLineWebSocketServer_handle).serveforever()
+	if (t==1):
 		global WORKSPACE_PHP_PID
-		WORKSPACE_PHP_PID=subprocess.Popen(["C:/Program Files/PHP/php.exe","-S",f"127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}"],stdout=subprocess.PIPE).pid
+		_print(f"Starting PHP Server on IP '127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}'\x1b[38;2;100;100;100m...")
+		p=subprocess.Popen(["C:/Program Files/PHP/php.exe","-S",f"127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd="D:\\K\\Coding\\")
+		WORKSPACE_PHP_PID=p.pid
+		_r_cmd("php_server",lambda:None,p)
 	else:
-		with HTTPServer((("localhost" if t==1 else WORKSPACE_LOCAL_IP),8020),_HTTPServer_handle) as httpd:
-			httpd.serve_forever()
+		_print(f"Starting Server on IP '{('localhost' if t==2 else LOCAL_IP)}:8020'\x1b[38;2;100;100;100m...")
+		s_a=socket.getaddrinfo(("localhost" if t==2 else LOCAL_IP),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
+		s=socket.socket(*s_a[0][:2])
+		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		s.bind(s_a[0][4])
+		s.listen(5)
+		while (True):
+			_h_request(*s.accept(),("localhost" if t==2 else LOCAL_IP))
+		s.close()
 
 
 
 def _sw_kb():
 	global KB_PID
+	_set_print("__core__","onscreen_keyboard")
 	try:
 		subprocess.check_output(f"taskkill /pid {KB_PID} /f")
-		KB_PID=-1;
+		KB_PID=-1
+		_print("Disabling On-Screen Keyboard\x1b[38;2;100;100;100m...")
 	except:
-		KB_PID=subprocess.Popen(["javaw","-jar",r"C:\Users\aleks\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\boot\Keyboard.jar"]).pid
+		KB_PID=subprocess.Popen(["javaw","-jar","D:\\boot\\Keyboard.jar"]).pid
+		_print("Enabling On-Screen Keyboard\x1b[38;2;100;100;100m...")
 
 
 
-def _check_admin():
+def _chk_a():
+	return True############################
 	try:
 		return ctypes.windll.shell32.IsUserAnAdmin()
 	except:
@@ -875,6 +1049,7 @@ def _check_admin():
 
 
 def _ut_k():
+	_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
 	while (True):
 		tl=subprocess.run("tasklist",stdout=subprocess.PIPE).stdout.lower().decode("utf-8")
 		for v in ["totalav.exe","nvsphelper64.exe","\"nvidia share.exe\"","\"nvidia web helper.exe\"","\"nvdisplay.container.exe\""]:
@@ -884,78 +1059,124 @@ def _ut_k():
 
 
 
+def _u_mcs(fp):
+	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
+	if (not ntpath.exists(fp)):
+		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+		return
+	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
+	json=requests.get(requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"][0]["url"]).json()
+	if (ntpath.exists(f"{fp}\\server.jar")):
+		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
+		h=hashlib.sha1()
+		with open(f"{fp}\\server.jar","rb") as f:
+			fb=f.read(2**16)
+			while (len(fb)>0):
+				h.update(fb)
+				fb=f.read(2**16)
+		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['sha1']}")
+		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
+			_print(f"Downloading Server For {json['id']}\x1b[38;2;100;100;100m...")
+			urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
+	else:
+		urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
+	_print("Starting Server\x1b[38;2;100;100;100m...")
+	p=subprocess.Popen(["java","-Xms4G","-Xmx4G","-jar","server.jar","--nogui"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=fp)
+	_r_cmd(fp[fp.replace("/","\\").rfind("\\")+1:],lambda:(p.stdin.write(b"stop\n"),p.stdin.flush(),p.wait()),p)
+
+
+
+def _end(a):
+	global CMD_L
+	print("Stopping all Server\x1b[38;2;100;100;100m...")
+	for v in list(CMD_L.values())[:]:
+		v["_end"]()
+	subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe"]+a+["/f"])
+
+
+
 os.system("cls")
 if (len(sys.argv)==1):
-	if (_check_admin()==True):
-		ho=ctypes.windll.kernel32.GetStdHandle(-10)
-		dw_m=ctypes.wintypes.DWORD()
-		ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(dw_m))
-		dw_m.value=0
-		ctypes.windll.kernel32.SetConsoleMode(ho,dw_m)
-		subprocess.Popen("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\mcserver\\update\\run.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
-		subprocess.Popen(r"C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\mcserver-survival\\update\\run.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
-		__file__=ntpath.abspath(__file__)
-		with open("./_backup_tmp.bat","w") as f:
-			f.write(f"@echo off\ncls\ncd /d \"C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\"\npython \"{__file__}\" 4\ndel _backup_tmp.bat")
-		os.system("vdesk create:3&&vdesk on:3 run:_backup_tmp.bat&&vdesk on:1 run:echo")
-		thr=threading.Thread(target=_codewars_wr,args=(),kwargs={})
-		thr.daemon=True
-		thr.start()
-		thr=threading.Thread(target=_ut_k,args=(),kwargs={})
-		thr.start()
-		for fnm in os.listdir("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\tmp\\"):
-			os.remove(f"C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\tmp\\{fnm}")
+	if (_chk_a()==True):
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+		CMD_L["__core__"]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{"__main__":b""}}
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="__main__"
+		_print("Starting Boot Sequence...\nClearing Temp Dir\x1b[38;2;100;100;100m...")
+		for fnm in os.listdir("D:\\boot\\tmp\\"):
+			os.remove(f"D:\\boot\\tmp\\{fnm}")
+		_print("Registering Keyboard Hotkeys\x1b[38;2;100;100;100m...")
+		keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app("C:\\Windows\\System32\\charmap.exe"))
+		keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
+		keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
+		keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
+		keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
+		keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["javaw","-jar","D:\\boot\\ScreenBlocker.jar"]))
+		keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_end(["/l"]))
+		keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
+		keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
+		keyboard.add_hotkey("ctrl+alt+shift+d",lambda:_open_app("C:\\Windows\\System32\\Taskmgr.exe"))
+		keyboard.add_hotkey("ctrl+alt+shift+k",_sw_kb)
+		keyboard.add_hotkey("ctrl+alt+shift+v",lambda:_open_app(["python","D:\\boot\\boot.py","2"]))
+		_print("Starting Minecraft Servers\x1b[38;2;100;100;100m...")
+		_start_thr(_u_mcs,"__core__","minecraft_redstone_server_updater","D:\\boot\\mcs")
+		_start_thr(_u_mcs,"__core__","minecraft_survival_server_updater","D:\\boot\\mcs-s")
+		_print("Starting Codewars ChromeDriver\x1b[38;2;100;100;100m...")
+		_start_thr(_codewars_wr,"__core__","codewars_driver")
+		_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
+		_start_thr(_ut_k,"__core__","useless_task_kill")
+		# _print("Starting Backup Check\x1b[38;2;100;100;100m...")
+		# with open("./_backup_tmp.bat","w") as f:
+		# 	f.write(f"@echo off\ncls\ncd /d \"D:\\boot\"\npython boot.py 4\ndel _backup_tmp.bat")
+		# os.system("vdesk create:3&&vdesk on:3 run:cmd /c \"_backup_tmp.bat\"&&vdesk on:1 run:cmd /c \"echo\"")
+		_print("Removing Old Project Registry\x1b[38;2;100;100;100m...")
 		nm=[]
-		with open("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\workspace-data.json","r") as f:
+		p_nm_l=[e.lower() for e in os.listdir("D:\\K\\Coding\\projects\\")]
+		with open("D:\\boot\\workspace-data.json","r") as f:
 			WORKSPACE_DATA=json.loads(f.read())
 			for k in [*WORKSPACE_DATA]:
-				if (not ntpath.exists(f"D:\\K\\Coding\\projects\\{k['name']}")):
+				if (k["name"].lower() not in p_nm_l):
 					WORKSPACE_DATA.remove(k)
 					continue
-				_create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
+				# _create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
 				nm+=[k["name"].lower()]
+		_print("Registering New Projects\x1b[38;2;100;100;100m...")
 		for f in os.listdir("D:\\K\\Coding\\projects\\"):
 			if (f.lower() not in nm):
 				WORKSPACE_DATA+=[{"name":f.split("-")[0]+"-"+"_".join([e.title() for e in f.split("-")[1].split("_")]),"desc":"[null]","year":datetime.datetime.now().year}]
 				_create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
+		_print("Saving Project Registry\x1b[38;2;100;100;100m...")
 		_save_w()
-		thr=threading.Thread(target=_start_ws,args=(0,),kwargs={})
-		thr.daemon=True
-		thr.start()
-		thr=threading.Thread(target=_start_ws,args=(1,),kwargs={})
-		thr.daemon=True
-		thr.start()
-		thr=threading.Thread(target=_start_ws,args=(2,),kwargs={})
-		thr.daemon=True
-		thr.start()
-		keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app(r"C:\Windows\System32\charmap.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app(r"C:\Windows\System32\control.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python",__file__,"0"]))
-		keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python",__file__,"1"]))
-		keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app(r"D:\K",file=True))
-		keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["javaw","-jar","C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\ScreenBlocker.jar"]))
-		keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_open_app([r"C:\Windows\System32\shutdown.exe","/l","/f"]))
-		keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_open_app([r"C:\Windows\System32\shutdown.exe","/s","/t","0","/f"]))
-		keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app(r"C:\Users\aleks\AppData\Roaming\Microsoft\Windows\Start Menu\Programs",file=True))
-		keyboard.add_hotkey("ctrl+alt+shift+d",lambda:_open_app(r"C:\Windows\System32\Taskmgr.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+k",_sw_kb)
-		keyboard.add_hotkey("ctrl+alt+shift+v",lambda:_open_app(["python",__file__,"2"]))
-		keyboard.wait()
+		_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
+		_start_thr(_start_ws,"__core__","cmdline_websocket_server",0)
+		_print("Starting PHP Server\x1b[38;2;100;100;100m...")
+		_start_thr(_start_ws,"__core__","php_server",1)
+		_print("Starting Localhost Server\x1b[38;2;100;100;100m...")
+		_start_thr(_start_ws,"__core__","localhost_server",2)
+		_print("Starting Local IP Server\x1b[38;2;100;100;100m...")
+		_start_thr(_start_ws,"__core__","local_ip_server",3)
+		_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
+		try:
+			while (True):
+				time.sleep(1e6)
+		except:
+			pass
+		os.system(f"taskkill /pid {os.getpid()} /f")
 	else:
-		ctypes.windll.shell32.ShellExecuteW(None,"runas",sys.executable,__file__,None,1)
+		ctypes.windll.shell32.ShellExecuteW(None,"runas",sys.executable,"D:\\boot\\boot.py",None,1)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
-		for fn in glob.iglob("D:\\K\\**\\*.json",recursive=True):
+		for fn in glob.iglob("D:\\**\\*.json",recursive=True):
 			try:
-				print(fn)
+				_print(fn)
 				data={}
 				with open(fn,"r") as f:
 					data=json.loads(f.read())
 				_save_f(fn,json.dumps(data,indent=4,sort_keys=True).replace("    ","\t"))
 			except:
-				print("SKIPPING: "+fn)
-		for fn in glob.iglob("D:\\K\\**\\*.java",recursive=True):
+				_print("SKIPPING: "+fn)
+		for fn in glob.iglob("D:\\**\\*.java",recursive=True):
 			try:
 				with open(fn,"r") as f:
 					txt=f.read().split("\n")
@@ -964,7 +1185,7 @@ else:
 				imps=[]
 				sl=-1
 				ch=False
-				print(fn)
+				_print(fn)
 				while (i<len(txt)):
 					if (txt[i]=="" or txt[i][0]=="\t" or txt[i][0]==" "  or txt[i].startswith("//") or txt[i].startswith("/*") or txt[i].startswith("*/")):
 						i+=1
@@ -997,15 +1218,15 @@ else:
 				txt=txt[:sl]+imp+imps+(["","",""] if len(imp)+len(imps)>0 else [])+txt[i:]
 				_save_f(fn,"\n".join(txt))
 			except:
-				print("SKIPPING: "+fn)
-		for fn in glob.iglob("D:\\K\\**\\*.py",recursive=True):
+				_print("SKIPPING: "+fn)
+		for fn in glob.iglob("D:\\**\\*.py",recursive=True):
 			try:
 				with open(fn,"r") as f:
 					txt=f.read().split("\n")
 				i=0
 				imp=[]
 				sl=-1
-				print(fn)
+				_print(fn)
 				while (i<len(txt)):
 					if (txt[i]==""):
 						i+=1
@@ -1034,64 +1255,64 @@ else:
 				txt=txt[:sl]+cimp+["","",""]+txt[i:]
 				_save_f(fn,"\n".join(txt))
 			except:
-				print("SKIPPING: "+fn)
+				_print("SKIPPING: "+fn)
 		_rec_rm_pycache("D:\\")
 	elif (v==1):
 		while (True):
 			p=input("> ").lower().strip()
 			if (p=="list"):
 				os.system("cls")
-				print("list, chrom, python, python37, processing, mindstorm, discher, sublime, minecraft, batexe, vm, android, github, blender, scratch, idea, print, work, cad, regedit, ev3, <kata url>, <any url>")
+				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, batexe, vm, android, github, blender, scratch, idea, print, work, cad, regedit, ev3, <kata url>, <git clone url>, <any url>")
 				continue
 			elif (p=="chrome"):
-				_open_app(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe")
+				_open_app("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
 			elif (p=="python"):
-				_open_app(r"C:\Users\aleks\AppData\Local\Programs\Python\Python38\python.exe")
+				_open_app("%appdata%\\..\\Local\\Programs\\Python\\Python38\\python.exe")
 			elif (p=="python37"):
-				_open_app(r"C:\Users\aleks\AppData\Local\Programs\Python\Python37\python.exe")
+				_open_app("%appdata%\\..\\Local\\Programs\\Python\\Python37\\python.exe")
 			elif (p=="processing"):
-				_open_app(r"C:\Program Files\Processing\processing.exe")
+				_open_app("C:\\Program Files\\Processing\\processing.exe")
 			elif (p=="mindstorm"):
-				_open_app(r"C:\Program Files\LEGO Software\LEGO MINDSTORMS EV3 Home Edition\MindstormsEV3.exe")
+				_open_app("C:\\Program Files\\LEGO Software\\LEGO MINDSTORMS EV3 Home Edition\\MindstormsEV3.exe")
 			elif (p=="fischer"):
-				_open_app(r"C:\Program Files\ROBOPro\ROBOPro.exe")
+				_open_app("C:\\Program Files\\ROBOPro\\ROBOPro.exe")
 			elif (p=="sublime"):
-				_open_app(r"C:\Program Files\Sublime Text 3\sublime_text.exe")
+				_open_app("C:\\Program Files\\Sublime Text 3\\sublime_text.exe")
 			elif (p=="minecraft"):
-				_open_app(r"C:\Program Files (x86)\Minecraft Launcher\MinecraftLauncher.exe")
+				_open_app("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe")
 			elif (p=="batexe"):
-				_open_app(r"C:\Program Files\Bat To Exe Converter\Bat_To_Exe_Converter.exe")
+				_open_app("C:\\Program Files\\Bat To Exe Converter\\Bat_To_Exe_Converter.exe")
 			elif (p=="vm"):
-				_open_app(r"C:\Program Files\Oracle\VirtualBox\VirtualBox.exe")
+				_open_app("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe")
 			elif (p=="android"):
-				_open_app(r"C:\Program Files\Android\Android Studio\bin\studio64.exe")
+				_open_app("C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe")
 			elif (p=="github"):
-				_open_app(r"C:\Users\aleks\AppData\Local\GitHubDesktop\GitHubDesktop.exe")
+				_open_app("C:\\Users\\aleks\\AppData\\Local\\GitHubDesktop\\GitHubDesktop.exe")
 			elif (p=="blender"):
-				_open_app(r"C:\Program Files\Blender Foundation\Blender\blender.exe")
+				_open_app("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe")
 			elif (p=="scratch"):
 				os.system("start \"\" \"C:\\Program Files\\Scratch Desktop\\Scratch Desktop.exe\"")
 			elif (p=="idea"):
 				_open_app(r"D:\K\.IDEA",file=True)
-				_open_app([r"C:\Program Files\Sublime Text 3\sublime_text.exe","--add",r"D:\K\.IDEA\.IDEA"])
+				_open_app(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",r"D:\K\.IDEA\.IDEA"])
 			elif (p=="print"):
-				_open_app(r"C:\Program Files\RepetierGEEEtech\RepetierHost.exe")
+				_open_app("C:\\Program Files\\RepetierGEEEtech\\RepetierHost.exe")
 			elif (p=="work"):
-				_open_app([r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe","http:/192.168.178.73:8020/"])
+				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/{LOCAL_IP}:8020/"])
 			elif (p=="cad"):
-				_open_app(r"C:\Program Files\CAD\FreeCAD 0.18\bin\FreeCAD.exe")
+				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
 			elif (p=="regedit"):
-				_open_app(r"C:\Windows\regedit.exe")
+				_open_app("C:\\Windows\\regedit.exe")
 			elif (p=="ev3"):
-				_open_app(r"C:\Program Files\PuTTY\putty.exe")
+				_open_app("C:\\Program Files\\PuTTY\\putty.exe")
 			elif (GIT_CLONE_REGEX.match(p)!=None):
 				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
 				_open_app("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1],file=True)
 			elif (CODEWARS_KATA_URL_REGEX.match(p)!=None):
-				with open("C:\\Users\\aleks\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\boot\\codewars-swapfile.dt","a") as f:
+				with open("D:\\boot\\codewars-swapfile.dt","a") as f:
 					f.write("1"+p)
 			elif (URL_REGEX.match(p)!=None):
-				_open_app([r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",p])
+				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",p])
 			elif (p=="" or p=="exit"):
 				break
 			else:
@@ -1107,9 +1328,9 @@ else:
 			if (k.startswith("Main-Class:")):
 				mc=k.split(":")[1].strip().replace("\\r","")
 		st=time.time()
-		cp=ntpath.abspath(f"C:\\Users\\aleks\\AppData\\Local\\Temp\\xml-{st}.xml")
-		op=ntpath.abspath(f"C:\\Users\\aleks\\AppData\\Local\\Temp\\{st}.exe")
-		with open(f"C:\\Users\\aleks\\AppData\\Local\\Temp\\xml-{st}.xml","w") as f:
+		cp=ntpath.abspath(f"D:\\boot\\tmp\\xml-{st}.xml")
+		op=ntpath.abspath(f"D:\\boot\\tmp\\{st}.exe")
+		with open(f"D:\\boot\\tmp\\xml-{st}.xml","w") as f:
 			f.write(f"""
 <?xml version="1.0" encoding="UTF-8"?>
 <launch4jConfig>
@@ -1148,7 +1369,7 @@ else:
 		os.remove(op)
 	elif (v==3):
 		if (sys.argv[2] not in ["--local","--final"]):
-			print(f"Unknown Switch: '{sys.argv[2]}'")
+			_print(f"Unknown Switch: '{sys.argv[2]}'")
 		else:
 			_render_cwr(sys.argv[2])
 	elif (v==4):
@@ -1175,12 +1396,18 @@ else:
 					_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,p.split("-")[0]+" - "+p.split("-")[1].replace("_"," ").title(),msg)
 					f.write(p+"\n")
 					f.flush()
+				if ("Boot_Program" in b_dt[1:]):
+					f.write(p+"\n")
+					f.flush()
+				else:
+					_update_repo("D:\\boot\\Boot_Program",p,"Boot Program",msg)
+					f.write(p+"\n")
+					f.flush()
 		else:
-			ho=ctypes.windll.kernel32.GetStdHandle(-11)
-			dw_m=ctypes.wintypes.DWORD()
-			ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(dw_m))
-			dw_m.value|=4
-			ctypes.windll.kernel32.SetConsoleMode(ho,dw_m)
-			print(sys.argv[2])
-			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2][0]=="d" else "Boot_Program"),(None if sys.argv[2][0]=="d" else "Boot Program"),datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S"))
+			ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+			try:
+				threading.current_thread()._dp=True
+				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S"))
+			except Exception as e:
+				traceback.print_exception(None,e,e.__traceback__)
 			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")

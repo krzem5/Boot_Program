@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Server View</title>
+		<script type="text/javascript">
+			var pr,socket;
+			function join(){
+				socket=new WebSocket(`ws://${window.location.hostname}:8021/`);
+				socket.onopen=function(){
+					console.clear();
+					window._t="__core__";
+					if (document.cookie.length>0){
+						this.send(`cmd:${document.cookie}`)
+					}
+					else{
+						this.send("cmd:__core__")
+					}
+					this.send("cmdl");
+				}
+				socket.onclose=function(){
+					join();
+				}
+				socket.onmessage=async function(e){
+					if (typeof e.data=="object"){
+						e=await e.data.text();
+					}
+					else{
+						e=e.data;
+					}
+					dt=e.substr(e.split(":")[0].length+1);
+					switch (e.split(":")[0]){
+						case "null":
+							return;
+						case "cmd":
+							if (dt=="0"){
+								console.warn("Switch Failure");
+							}
+							else{
+								window._t=document.cookie=dt.substr(1);
+								pr.innerHTML="";
+							}
+							return;
+						case "cmdl":
+							const b=document.querySelectorAll(".over-wr > .over > .cmd-id")[0];
+							b.innerHTML="";
+							dt.split("\0").forEach((e)=>{
+								b.innerHTML+=`<span class="elem${(window._t==e?" sel":"")}" onclick="socket.send('cmd:${e}')">${e}</span>`;
+							});
+							return;
+						case "out":
+						case "err":
+							let st=0;
+							pr.innerHTML+=`${dt.replace(/\x1b\[(0|(?:38|48);2(?:;[0-9]{1,3}){3})m/g,(_,e)=>{
+								if (e=="0"){
+									let o="</span>".repeat(st);
+									st=0;
+									return o;
+								}
+								st++;
+								return `<span style="color:#${Number.parseInt(e.split(";")[2]).toString(16).padStart(2,"0")}${Number.parseInt(e.split(";")[3]).toString(16).padStart(2,"0")}${Number.parseInt(e.split(";")[4]).toString(16).padStart(2,"0")}">`;
+							})+"</span>".repeat(st)}`;
+							pr.scroll(0,pr.scrollHeight);
+							return;
+						default:
+							console.warn("Unhandled Message: "+e);
+					}
+				}
+				socket.onerror=function(e){
+					e.stopImmediatePropagation();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			window.onload=function(){
+				pr=document.querySelectorAll(".cmd")[0];
+				window.v=false;
+				window._e=false;
+				document.body.onkeydown=function(e){
+					if (e.key=="Escape"){
+						if (window._e==false){
+							window.v=!window.v;
+							document.querySelectorAll(".over-wr")[0].style.display=(window.v==false?"none":"block");
+							if (window.v==true){
+								socket.send("cmdl");
+							}
+						}
+						window._e=true;
+					}
+				}
+				document.body.onkeyup=function(e){
+					if (e.key=="Escape"){
+						window._e=false;
+					}
+				}
+				join();
+			}
+		</script>
+		<style type="text/css">
+			body {
+				overflow: hidden;
+			}
+			body, body * {
+				padding: 0;
+				margin: 0;
+			}
+			.cmd {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: #0a0a0a;
+				color: #ffffff;
+				white-space: pre-wrap;
+				font-family: Consolas;
+				overflow-y: scroll;
+			}
+			.over-wr {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: #050505aa;
+				display: none;
+			}
+			.over-wr .over {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%,-50%);
+				width: 400px;
+				height: 400px;
+				box-shadow: 0 0 50px 14px rgba(45,45,45,1);
+				border-radius: 20px;
+				border: 5px solid #2d2d2d;
+				background: #373737;
+			}
+			.over-wr .over .cmd-id {
+				position: absolute;
+				top: 30px;
+				left: 30px;
+				right: 30px;
+				bottom: calc(50% + 10px);
+				padding: 10px;
+				user-select: none;
+				border: 3px solid #2d2d2d;
+				border-radius: 10px;
+			}
+			.over-wr .over .cmd-id .elem {
+				margin: 5px 2px 5px 2px;
+				padding: 5px 10px 5px 10px;
+				border-radius: 10px;
+				font-family: consolas;
+				font-size: 14px;
+			}
+			.over-wr .over .cmd-id .elem.sel {
+				background: #a3dca3;
+			}
+			.over-wr .over .thr-id {
+				position: absolute;
+				top: calc(50% + 10px);
+				left: 30px;
+				right: 30px;
+				bottom: 30px;
+				padding: 10px;
+				user-select: none;
+				border: 3px solid #2d2d2d;
+				border-radius: 10px;
+			}
+			.over-wr .over .thr-id .elem {
+				margin: 5px 2px 5px 2px;
+				padding: 5px 10px 5px 10px;
+				border-radius: 10px;
+				font-family: consolas;
+				font-size: 14px;
+			}
+			.over-wr .over .thr-id .elem.sel {
+				background: #a3dca3;
+			}
+		</style>
+	</head>
+	<body>
+		<pre class="cmd"></pre>
+		<div class="over-wr">
+			<div class="over">
+				<div class="cmd-id">
+				</div>
+				<div class="thr-id">
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
