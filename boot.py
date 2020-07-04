@@ -1433,7 +1433,7 @@ else:
 		else:
 			ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 			threading.current_thread()._b_nm="__core__"
-			threading.current_thread()._nm="github_single_project_push"
+			threading.current_thread()._nm="github_project_push_single"
 			threading.current_thread()._dpt=True
 			threading.current_thread()._r=2
 			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
