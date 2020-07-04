@@ -118,7 +118,7 @@ def _set_print(*a):
 
 
 
-def _print(*a,end="\n"):
+def _print(*a,end="\n",f=True):
 	global CMD_L,STDOUT_LOCK
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
@@ -167,17 +167,18 @@ def _print(*a,end="\n"):
 				i+=1
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	a=" ".join([str(e) for e in a])
-	i=0
-	while (i<len(a)):
-		_im=re.match(r"\x1b\[[^m]+m",a[i:])
-		if (_im!=None):
-			i+=len(_im.group(0))
-		m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|-?[0-9]+(?:\.[0-9]+)?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?",a[i:])
-		if (m!=None):
-			o=_r_color_f(m)
-			a=a[:i]+o+a[i+len(m[0]):]
-			i+=len(o)-1
-		i+=1
+	if (f==True):
+		i=0
+		while (i<len(a)):
+			_im=re.match(r"\x1b\[[^m]+m",a[i:])
+			if (_im!=None):
+				i+=len(_im.group(0))
+			m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|-?[0-9]+(?:\.[0-9]+)?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?",a[i:])
+			if (m!=None):
+				o=_r_color_f(m)
+				a=a[:i]+o+a[i+len(m[0]):]
+				i+=len(o)-1
+			i+=1
 	if (hasattr(threading.current_thread(),"_r") and threading.current_thread()._r>=1):
 		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.connect(("127.0.0.1",8022))
@@ -1033,7 +1034,7 @@ def _start_ws(t):
 			cs=s.accept()[0]
 			dt=cs.recv(65536)
 			threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
-			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
+			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"),f=False)
 			cs.close()
 		s.close()
 	else:
