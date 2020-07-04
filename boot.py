@@ -167,9 +167,6 @@ def _print(*a,end="\n"):
 				i+=1
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	a=" ".join([str(e) for e in a])
-	if (threading.current_thread()._dp==True):
-		print(a,end=end)
-		return
 	i=0
 	while (i<len(a)):
 		_im=re.match(r"\x1b\[[^m]+m",a[i:])
@@ -181,10 +178,17 @@ def _print(*a,end="\n"):
 			a=a[:i]+o+a[i+len(m[0]):]
 			i+=len(o)-1
 		i+=1
-	t=datetime.datetime.now().strftime("\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")
-	if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm]["l"].keys()):
-		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]=b""
-	CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
+	if (hasattr(threading.current_thread(),"_r") and threading.current_thread()._r>=1):
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(("127.0.0.1",8022))
+		s.send(bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8"))
+		if (threading.current_thread()._r>=2):
+			return
+	if (not hasattr(threading.current_thread(),"_dp") or threading.current_thread()._dp==False):
+		t=datetime.datetime.now().strftime("\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")
+		if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm]["l"].keys()):
+			CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]=b""
+		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
 	t=datetime.datetime.now().strftime(f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] ")
 	while (STDOUT_LOCK==True):
 		pass
@@ -241,12 +245,18 @@ def _codewars_wr():
 		global SWAP_DATA
 		_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
 		while (SWAP_DATA!=None):
-			if (SWAP_DATA!=None and ntpath.getsize(SWAP_FILE_NAME)>0 or len(SWAP_DATA)>0):
-				with open(SWAP_FILE_NAME,"r") as f:
-					f=f.read()
-					SWAP_DATA+=[e for e in f.split("\n") if len(e)>0]
-				with open(SWAP_FILE_NAME,"w"):
-					pass
+			try:
+				if (ntpath.getsize(SWAP_FILE_NAME)>0 or len(SWAP_DATA)>0):
+					with open(SWAP_FILE_NAME,"r") as f:
+						f=f.read()
+						SWAP_DATA+=[e for e in f.split("\n") if len(e)>0]
+					with open(SWAP_FILE_NAME,"w"):
+						pass
+			except TypeError as e:
+				if (SWAP_DATA==None):
+					break
+				else:
+					traceback.print_exception(None,e,e.__traceback__)
 			time.sleep(0.1)
 		_print("\x1b[38;2;200;40;20mData Swap Loop Stopped.\x1b[0m")
 	_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
@@ -1013,15 +1023,28 @@ def _start_ws(t):
 		p=subprocess.Popen(["C:/Program Files/PHP/php.exe","-S",f"127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd="D:\\K\\Coding\\")
 		WORKSPACE_PHP_PID=p.pid
 		_r_cmd("php_server",lambda:None,p)
+	elif (t==2):
+		_print("Starting Remote Std Listener on '127.0.0.1:8022'\x1b[38;2;100;100;100m...")
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		s.bind(("127.0.0.1",8022))
+		s.listen(5)
+		while (True):
+			cs=s.accept()[0]
+			dt=cs.recv(65536)
+			threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
+			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
+			cs.close()
+		s.close()
 	else:
-		_print(f"Starting Server on IP '{('localhost' if t==2 else LOCAL_IP)}:8020'\x1b[38;2;100;100;100m...")
-		s_a=socket.getaddrinfo(("localhost" if t==2 else LOCAL_IP),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
+		_print(f"Starting Server on IP '{('localhost' if t==3 else LOCAL_IP)}:8020'\x1b[38;2;100;100;100m...")
+		s_a=socket.getaddrinfo(("localhost" if t==3 else LOCAL_IP),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
 		s=socket.socket(*s_a[0][:2])
 		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 		s.bind(s_a[0][4])
 		s.listen(5)
 		while (True):
-			_h_request(*s.accept(),("localhost" if t==2 else LOCAL_IP))
+			_h_request(*s.accept(),("localhost" if t==3 else LOCAL_IP))
 		s.close()
 
 
@@ -1151,10 +1174,12 @@ if (len(sys.argv)==1):
 		_start_thr(_start_ws,"__core__","cmdline_websocket_server",0)
 		_print("Starting PHP Server\x1b[38;2;100;100;100m...")
 		_start_thr(_start_ws,"__core__","php_server",1)
+		_print(f"Startint Remote Std Listener\x1b[38;2;100;100;100m...")
+		_start_thr(_start_ws,"__core__","remote_std_server",2)
 		_print("Starting Localhost Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_ws,"__core__","localhost_server",2)
+		_start_thr(_start_ws,"__core__","localhost_server",3)
 		_print("Starting Local IP Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_ws,"__core__","local_ip_server",3)
+		_start_thr(_start_ws,"__core__","local_ip_server",4)
 		_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
 		try:
 			while (True):
@@ -1405,9 +1430,14 @@ else:
 					f.flush()
 		else:
 			ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-			try:
-				threading.current_thread()._dp=True
-				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S"))
-			except Exception as e:
-				traceback.print_exception(None,e,e.__traceback__)
+			threading.current_thread()._b_nm="__core__"
+			threading.current_thread()._nm="github_project_push"
+			threading.current_thread()._r=2
+			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
+			dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
+			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
+			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
+			threading.current_thread()._dp=True
+			threading.current_thread()._r=1
+			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
 			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
