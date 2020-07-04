@@ -118,7 +118,7 @@ def _set_print(*a):
 
 
 
-def _print(*a,end="\n",f=True):
+def _print(*a,end="\n"):
 	global CMD_L,STDOUT_LOCK
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
@@ -167,7 +167,7 @@ def _print(*a,end="\n",f=True):
 				i+=1
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	a=" ".join([str(e) for e in a])
-	if (f==True):
+	if (not hasattr(threading.current_thread(),"_df") or threading.current_thread()._df==False):
 		i=0
 		while (i<len(a)):
 			_im=re.match(r"\x1b\[[^m]+m",a[i:])
@@ -1026,6 +1026,7 @@ def _start_ws(t):
 		_r_cmd("php_server",lambda:None,p)
 	elif (t==2):
 		_print("Starting Remote Std Listener on '127.0.0.1:8022'\x1b[38;2;100;100;100m...")
+		threading.current_thread()._df=True
 		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 		s.bind(("127.0.0.1",8022))
@@ -1034,7 +1035,7 @@ def _start_ws(t):
 			cs=s.accept()[0]
 			dt=cs.recv(65536)
 			threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
-			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"),f=False)
+			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
 			cs.close()
 		s.close()
 	else:
@@ -1439,6 +1440,7 @@ else:
 			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
 			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
 			threading.current_thread()._dp=True
+			threading.current_thread()._df=True
 			threading.current_thread()._r=1
 			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
 			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
