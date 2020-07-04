@@ -190,7 +190,7 @@ def _print(*a,end="\n"):
 		if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm]["l"].keys()):
 			CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]=b""
 		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
-	t=datetime.datetime.now().strftime(f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] ")
+	t=datetime.datetime.now().strftime((f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m "))
 	while (STDOUT_LOCK==True):
 		pass
 	STDOUT_LOCK=True
@@ -1434,6 +1434,7 @@ else:
 			ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 			threading.current_thread()._b_nm="__core__"
 			threading.current_thread()._nm="github_project_push"
+			threading.current_thread()._dpt=True
 			threading.current_thread()._r=2
 			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
 			dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
