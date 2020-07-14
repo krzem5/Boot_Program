@@ -44,14 +44,13 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK
+global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK
+NETWORK=False
 STDOUT_LOCK=False
 CMD_L={}
 KB_PID=-1
 BLK_PID=-1
 WORKSPACE_DATA=[]
-LOCAL_IP="127.0.0.1"
-WORKSPACE_IP_WHITELIST=[LOCAL_IP]
 WORKSPACE_PHP_SERVER_PORT=random.randint(9001,49151)
 WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
@@ -98,16 +97,6 @@ KATA_FILE="D:\\K\\Codewars\\%s\\%s\\%s.%s"
 
 
 
-s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-try:
-	s.connect(("10.255.255.255",1))
-	LOCAL_IP=s.getsockname()[0]
-except:
-	pass
-s.close()
-
-
-
 def _set_print(*a):
 	if (len(a)==1):
 		threading.current_thread()._b_nm=t._b_nm
@@ -148,8 +137,8 @@ def _print(*a,end="\n"):
 			elif (m[i:].startswith("False")):
 				o+="\x1b[38;2;239;128;15mFalse"
 				i+=5
-			elif (m[i:].startswith("True")):
-				o+="\x1b[38;2;239;128;15mTrue"
+			elif (m[i:][:4] in "True,None".split(",")):
+				o+=f"\x1b[38;2;239;128;15m{m[i:][:4]}"
 				i+=4
 			else:
 				o+="\x1b[38;2;48;109;206m"
@@ -173,7 +162,7 @@ def _print(*a,end="\n"):
 			_im=re.match(r"\x1b\[[^m]+m",a[i:])
 			if (_im!=None):
 				i+=len(_im.group(0))
-			m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|-?[0-9]+(?:\.[0-9]+)?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?",a[i:])
+			m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|None|-?[0-9]+(?:\.[0-9]+)?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?",a[i:])
 			if (m!=None):
 				o=_r_color_f(m)
 				a=a[:i]+o+a[i+len(m[0]):]
@@ -292,7 +281,7 @@ def _codewars_wr():
 						driver.get(KATA_METADATA_URL%(kid))
 						lce=wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_LANGUAGE_LIST_CONTAINER_XPATH)))
 						k_f_nm=re.sub(r"[^a-z0-9\_\-]","",wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_NAME_XPATH))).get_attribute("innerText").replace(" ","_").lower())
-						_print(f"Creatting Output Dir '{KATA_DIR%(k_f_nm)}'\x1b[38;2;100;100;100m...")
+						_print(f"Creating Output Dir '{KATA_DIR%(k_f_nm)}'\x1b[38;2;100;100;100m...")
 						if (not ntpath.exists(KATA_DIR%(k_f_nm))):
 							os.mkdir(KATA_DIR%(k_f_nm))
 						psd=None
@@ -496,7 +485,7 @@ def _render_cwr(tp):#######################################
 
 
 
-def _update_repo(p,b_nm,r_desc,msg):#######################################
+def _update_repo(p,b_nm,r_desc,msg):
 	def _parse_gitignore(dt):
 		o=[]
 		for ln in dt.split("\n"):
@@ -584,8 +573,12 @@ def _update_repo(p,b_nm,r_desc,msg):#######################################
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
 	r_nm=re.sub(r"[^A-Za-z0-9_\.]|\-",r"",b_nm)
-	_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
-	with open(p+"\\.gitignore","r") as f:
+	try:
+		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+	except requests.exceptions.ConnectionError:
+		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+		return
+	with open(f"{p}\\.gitignore","r") as f:
 		gdt=_parse_gitignore(f.read())
 	r_tf_p=False
 	try:
@@ -657,6 +650,48 @@ def _update_repo(p,b_nm,r_desc,msg):#######################################
 
 
 
+def _git_project_push():
+	global NETWORK
+	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
+	_print(f"Starting Github Project Push Check with Commit Message '{msg}'\x1b[38;2;100;100;100m...")
+	if (NETWORK==False):
+		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Waiting\x1b[38;2;100;100;100m...")
+		while (NETWORK==False):
+			time.sleep(30)
+		_print("Internet Connection Found\x1b[38;2;100;100;100m...")
+	threading.current_thread()._df=True
+	tm=int(time.time()//604800)
+	t=[0,0]
+	with open("./backup.dt","r") as f:
+		b_dt=f.read().replace("\r","").split("\n")
+	with open("./backup.dt","w") as f:
+		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
+			b_dt=[None]
+		f.write(str(tm)+"\n")
+		f.flush()
+		for p in os.listdir("D:\\K\\Coding\\projects"):
+			if (p in b_dt[1:]):
+				t[0]+=1
+				f.write(p+"\n")
+				f.flush()
+				continue
+			t[1]+=1
+			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,p.split("-")[0]+" - "+p.split("-")[1].replace("_"," ").title(),msg)
+			f.write(p+"\n")
+			f.flush()
+		if ("Boot_Program" in b_dt[1:]):
+			t[0]+=1
+			f.write("Boot_Program\n")
+			f.flush()
+		else:
+			t[1]+=1
+			_update_repo("D:\\boot\\","Boot_Program","Boot Program",msg)
+			f.write(p+"\n")
+			f.flush()
+	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
+
+
+
 def _rec_rm_pycache(bd):
 	_print(f"Deleting PyCache For Folder '{bd}'\x1b[38;2;100;100;100m...")
 	for sd in os.scandir(bd):
@@ -696,8 +731,7 @@ def _save_w():
 
 
 
-def _open_prog_w(p):###############################################
-	_print(f"Opening Program {p}\x1b[38;2;100;100;100m...")
+def _open_prog_w(p):
 	def _open_prog_w_f(p,p2,e,*f):
 		op=False
 		for fn in f:
@@ -707,6 +741,7 @@ def _open_prog_w(p):###############################################
 		if (op==False):
 			subprocess.Popen([p,glob.glob(f"{p2}**\\*.{e}",recursive=True)[0]])
 	type_=p.split("-")[0].lower()
+	_print(f"Opening Project: (name='{p[len(type_)+1:]}', type_='{type_}', path='D:\\K\\Coding\\projects\\{p}\\')\x1b[38;2;100;100;100m...")
 	p="D:\\K\\Coding\\projects\\"+p+"\\"
 	if (type_=="cpp"):
 		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
@@ -740,12 +775,12 @@ def _open_prog_w(p):###############################################
 	elif (type_=="mindstorm"):
 		_open_prog_w_f("C:\\Program Files\\LEGO Software\\LEGO MINDSTORMS EV3 Home Edition\\MindstormsEV3.exe",p,"ev3",f"{p}index.ev3")
 	else:
+		_print("\x1b[38;2;200;40;20mUnknown type.\x1b[0m Defaulting to Editor\x1b[38;2;100;100;100m...")
 		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-	_save_w()
 
 
 
-def _create_prog(type_,name,op=True):##############################
+def _create_prog(type_,name,op=True):############################################################
 	_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
 	if (type_ not in "chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
@@ -772,7 +807,7 @@ def _create_prog(type_,name,op=True):##############################
 				f.write("int main(){\n\treturn 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\nset LIB=C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.25.28610\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\lib\\um\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.18362.0\\um\\x64;\nset INCLUDE=C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.25.28610\\include;C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\include\\um;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\um;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.18362.0\\cppwinrt\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
+				f.write(f"@echo off\ncls\npython \"D:\boot\boot.py\" 5 x64\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
 	elif (type_=="css"):
 		if (not ntpath.exists(f"{p}index.html")):
 			with open(f"{p}index.html","x") as f:
@@ -877,7 +912,7 @@ class _CMDLineWebSocketServer_handle(WebSocket):##############################
 
 	def _h_msg(self):
 		global CMD_L
-		def _h_std(self,t):
+		def _h_std(self):
 			global CMD_L
 			l={}
 			while (self._stop==False):
@@ -885,9 +920,9 @@ class _CMDLineWebSocketServer_handle(WebSocket):##############################
 					if (k not in l.keys()):
 						l[k]=0
 					if (l[k]!=len(CMD_L[self.h_nm]["l"][k])):
-						l[k]=self.sendMessage(bytes(t+":","utf-8")+CMD_L[self.h_nm]["l"][k][l[k]:])
+						l[k]=self.sendMessage(bytes("dt:","utf-8")+CMD_L[self.h_nm]["l"][k][l[k]:])
 						l[k]=len(CMD_L[self.h_nm]["l"][k])
-				time.sleep(0.05)
+				time.sleep(0.001)
 		msg=self.data
 		self.sendMessage("null")
 		if (msg=="cmdl"):
@@ -899,13 +934,11 @@ class _CMDLineWebSocketServer_handle(WebSocket):##############################
 				self._stop=True
 				self.h_nm=msg[4:]
 				self.sendMessage(f"cmd:1{self.h_nm}")
-				if (hasattr(self,"_thr_l")):
-					for k in self._thr_l:
-						k.join()
+				if (hasattr(self,"_thr")):
+					self._thr.join()
 				self._stop=False
-				self._thr_l=[threading.Thread(target=_h_std,args=(self,"out"),kwargs={}),threading.Thread(target=_h_std,args=(self,"err"),kwargs={})]
-				self._thr_l[0].start()
-				self._thr_l[1].start()
+				self._thr=threading.Thread(target=_h_std,args=(self,),kwargs={})
+				self._thr.start()
 		elif (msg[:3]=="in:"):
 			if (hasattr(self,"h_nm")==False or self.h_nm==None):
 				return
@@ -927,7 +960,7 @@ def _start_ws(t):
 			_print(f"Request Recived: (type='{t}', url='{url}', http_version='{v}', ip='{a[0]}:{a[1]}')")
 			if (t=="GET"):
 				_print("Inspecting IP and URL\x1b[38;2;100;100;100m...")
-				if ((a[0]=="127.0.0.1" or a[0]==LOCAL_IP or a[0] in WORKSPACE_IP_WHITELIST) and (url=="/" or url=="/cmd" or len(url)-len(url.replace("/",""))>=2)):
+				if (url=="/" or url=="/cmd" or len(url)-len(url.replace("/",""))>=2):
 					if (url.split("?")[0].split("#")[0].endswith(".php")):
 						_print("Sending Request to PHP Server\x1b[38;2;100;100;100m...")
 						php_s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -954,10 +987,8 @@ def _start_ws(t):
 							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
 							rc=200
 				else:
-					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Sending Blocking Request\x1b[38;2;100;100;100m...")
-					f=open("no_access.html","rb")
-					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
-					f.close()
+					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
+					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n","utf-8"))
 					rc=401
 			elif (t=="CHANGE_DESC"):
 				pg=url[1:].split("~")[0]
@@ -970,7 +1001,6 @@ def _start_ws(t):
 				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
 				rc=200
 			elif (t=="START_PROG"):
-				_print(f"Opening Project '{url[1:]}'\x1b[38;2;100;100;100m...")
 				_open_prog_w(url[1:])
 				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
 				rc=200
@@ -1016,8 +1046,8 @@ def _start_ws(t):
 			traceback.print_exception(None,e,e.__traceback__)
 		cs.close()
 	if (t==0):
-		_print(f"Starting WebSocket Listener on IP '{LOCAL_IP}:8021'\x1b[38;2;100;100;100m...")
-		ws_s=SimpleWebSocketServer(LOCAL_IP,8021,_CMDLineWebSocketServer_handle).serveforever()
+		_print(f"Starting WebSocket Listener on IP '127.0.0.1:8021'\x1b[38;2;100;100;100m...")
+		ws_s=SimpleWebSocketServer("127.0.0.1",8021,_CMDLineWebSocketServer_handle).serveforever()
 	if (t==1):
 		global WORKSPACE_PHP_PID
 		_print(f"Starting PHP Server on IP '127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}'\x1b[38;2;100;100;100m...")
@@ -1039,14 +1069,14 @@ def _start_ws(t):
 			cs.close()
 		s.close()
 	else:
-		_print(f"Starting Server on IP '{('localhost' if t==3 else LOCAL_IP)}:8020'\x1b[38;2;100;100;100m...")
-		s_a=socket.getaddrinfo(("localhost" if t==3 else LOCAL_IP),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
+		_print(f"Starting Server on IP '{('localhost' if t==3 else '127.0.0.1')}:8020'\x1b[38;2;100;100;100m...")
+		s_a=socket.getaddrinfo(("localhost" if t==3 else "127.0.0.1"),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
 		s=socket.socket(*s_a[0][:2])
 		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 		s.bind(s_a[0][4])
 		s.listen(5)
 		while (True):
-			_h_request(*s.accept(),("localhost" if t==3 else LOCAL_IP))
+			_h_request(*s.accept(),("localhost" if t==3 else "127.0.0.1"))
 		s.close()
 
 
@@ -1081,6 +1111,24 @@ def _ut_k():
 			if (v.replace("\"","") in tl):
 				os.system(f"taskkill /im {v} /f")
 		time.sleep(5)
+
+
+
+def _net_loop():
+	global NETWORK
+	_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
+	while (True):
+		try:
+			socket.setdefaulttimeout(3)
+			socket.socket(socket.AF_INET,socket.SOCK_STREAM).connect(("8.8.8.8",53))
+			if (NETWORK==False):
+				NETWORK=True
+				_print("Internet Connection Found\x1b[38;2;100;100;100m...")
+		except socket.error:
+			if (NETWORK==True):
+				NETWORK=False
+				_print("Internet Connection Lost\x1b[38;2;100;100;100m...")
+		time.sleep(300)
 
 
 
@@ -1130,6 +1178,8 @@ if (len(sys.argv)==1):
 		_print("Starting Boot Sequence...\nClearing Temp Dir\x1b[38;2;100;100;100m...")
 		for fnm in os.listdir("D:\\boot\\tmp\\"):
 			os.remove(f"D:\\boot\\tmp\\{fnm}")
+		_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
+		_start_thr(_net_loop,"__core__","network_status_loop")
 		_print("Registering Keyboard Hotkeys\x1b[38;2;100;100;100m...")
 		keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app("C:\\Windows\\System32\\charmap.exe"))
 		keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
@@ -1150,10 +1200,8 @@ if (len(sys.argv)==1):
 		_start_thr(_codewars_wr,"__core__","codewars_driver")
 		_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
 		_start_thr(_ut_k,"__core__","useless_task_kill")
-		# _print("Starting Backup Check\x1b[38;2;100;100;100m...")
-		# with open("./_backup_tmp.bat","w") as f:
-		# 	f.write(f"@echo off\ncls\ncd /d \"D:\\boot\"\npython boot.py 4\ndel _backup_tmp.bat")
-		# os.system("vdesk create:3&&vdesk on:3 run:cmd /c \"_backup_tmp.bat\"&&vdesk on:1 run:cmd /c \"echo\"")
+		_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
+		_start_thr(_git_project_push,"__core__","github_project_push")
 		_print("Removing Old Project Registry\x1b[38;2;100;100;100m...")
 		nm=[]
 		p_nm_l=[e.lower() for e in os.listdir("D:\\K\\Coding\\projects\\")]
@@ -1194,6 +1242,14 @@ if (len(sys.argv)==1):
 else:
 	v=int(sys.argv[1])
 	if (v==0):
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="__core__"
+		threading.current_thread()._r=2
+		threading.current_thread()._dpt=True
+		threading.current_thread()._dp=True
+		_print("Starting Prettifying in Directory 'D:\\'\x1b[38;2;100;100;100m...")
+		threading.current_thread()._df=True
+		threading.current_thread()._r=0
 		for fn in glob.iglob("D:\\**\\*.json",recursive=True):
 			try:
 				_print(fn)
@@ -1283,13 +1339,14 @@ else:
 				_save_f(fn,"\n".join(txt))
 			except:
 				_print("SKIPPING: "+fn)
+		threading.current_thread()._df=False
 		_rec_rm_pycache("D:\\")
 	elif (v==1):
 		while (True):
 			p=input("> ").lower().strip()
 			if (p=="list"):
 				os.system("cls")
-				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, batexe, vm, android, github, blender, scratch, idea, print, work, cad, regedit, ev3, <kata url>, <git clone url>, <any url>")
+				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, batexe, vm, android, github, blender, scratch, idea, print, work, cmd, cad, regedit, ev3, <kata url>, <git clone url>, <any url>")
 				continue
 			elif (p=="chrome"):
 				_open_app("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
@@ -1325,7 +1382,9 @@ else:
 			elif (p=="print"):
 				_open_app("C:\\Program Files\\RepetierGEEEtech\\RepetierHost.exe")
 			elif (p=="work"):
-				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/{LOCAL_IP}:8020/"])
+				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/"])
+			elif (p=="cmd"):
+				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/cmd"])
 			elif (p=="cad"):
 				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
 			elif (p=="regedit"):
@@ -1400,48 +1459,17 @@ else:
 		else:
 			_render_cwr(sys.argv[2])
 	elif (v==4):
-		if (len(sys.argv)==2):
-			ho=ctypes.windll.kernel32.GetStdHandle(-11)
-			dw_m=ctypes.wintypes.DWORD()
-			ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(dw_m))
-			dw_m.value|=4
-			ctypes.windll.kernel32.SetConsoleMode(ho,dw_m)
-			msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
-			tm=int(time.time()//604800)
-			with open("./backup.dt","r") as f:
-				b_dt=f.read().replace("\r","").split("\n")
-			with open("./backup.dt","w") as f:
-				if (len(b_dt[0])==0 or int(b_dt[0])<tm):
-					b_dt=[None]
-				f.write(str(tm)+"\n")
-				f.flush()
-				for p in os.listdir("D:\\K\\Coding\\projects"):
-					if (p in b_dt[1:]):
-						f.write(p+"\n")
-						f.flush()
-						continue
-					_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,p.split("-")[0]+" - "+p.split("-")[1].replace("_"," ").title(),msg)
-					f.write(p+"\n")
-					f.flush()
-				if ("Boot_Program" in b_dt[1:]):
-					f.write(p+"\n")
-					f.flush()
-				else:
-					_update_repo("D:\\boot\\Boot_Program",p,"Boot Program",msg)
-					f.write(p+"\n")
-					f.flush()
-		else:
-			ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-			threading.current_thread()._b_nm="__core__"
-			threading.current_thread()._nm="github_project_push_single"
-			threading.current_thread()._dpt=True
-			threading.current_thread()._r=2
-			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
-			dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
-			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
-			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
-			threading.current_thread()._dp=True
-			threading.current_thread()._df=True
-			threading.current_thread()._r=1
-			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
-			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="github_project_push_single"
+		threading.current_thread()._dpt=True
+		threading.current_thread()._r=2
+		nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
+		dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
+		msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
+		_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
+		threading.current_thread()._dp=True
+		threading.current_thread()._df=True
+		threading.current_thread()._r=1
+		_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
+		input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
