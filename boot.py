@@ -35,6 +35,7 @@ import datetime
 import io
 import random
 import hashlib
+import py_compile
 
 
 
@@ -191,6 +192,8 @@ def _print(*a,end="\n"):
 def _start_thr(f,b_nm,nm,*a,**kw):
 	def _wr(f,a,kw):
 		global CMD_L
+		if (b_nm not in CMD_L.keys()):
+			CMD_L[b_nm]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{nm:b""}}
 		if (nm not in CMD_L[b_nm]["l"].keys()):
 			CMD_L[b_nm]["l"][nm]=b""
 		try:
@@ -222,7 +225,7 @@ def _r_cmd(nm,e,h):
 		global CMD_L
 		while (True):
 			CMD_L[nm]["l"]["__main__"]+=getattr(CMD_L[nm]["h"],"std"+s_nm).read1(1024).replace(b"\r\n",b"\n")
-			time.sleep(0.05)
+			time.sleep(1e-6)
 	CMD_L[nm]={"_end":e,"h":h,"l":{"__main__":b""}}
 	_start_thr(_h_s,nm,"_stdout_redirect",nm,"out")
 	_start_thr(_h_s,nm,"_stderr_redirect",nm,"err")
@@ -247,7 +250,7 @@ def _codewars_wr():
 					break
 				else:
 					traceback.print_exception(None,e,e.__traceback__)
-			time.sleep(0.1)
+			time.sleep(1e-6)
 		_print("\x1b[38;2;200;40;20mData Swap Loop Stopped.\x1b[0m")
 	_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
 	_start_thr(_sawp_thr,"__core__","codewars_driver_swap_loop")
@@ -572,7 +575,7 @@ def _update_repo(p,b_nm,r_desc,msg):
 				return False
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
-	r_nm=re.sub(r"[^A-Za-z0-9_\.]|\-",r"",b_nm)
+	r_nm=re.sub(r"[^A-Za-z0-9_\.\-]|",r"",b_nm)
 	try:
 		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
 	except requests.exceptions.ConnectionError:
@@ -650,15 +653,18 @@ def _update_repo(p,b_nm,r_desc,msg):
 
 
 
-def _git_project_push():
+def _git_project_push(r=False):
 	global NETWORK
 	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	_print(f"Starting Github Project Push Check with Commit Message '{msg}'\x1b[38;2;100;100;100m...")
 	if (NETWORK==False):
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Waiting\x1b[38;2;100;100;100m...")
 		while (NETWORK==False):
-			time.sleep(30)
+			time.sleep(1e-6)
 		_print("Internet Connection Found\x1b[38;2;100;100;100m...")
+	if (r==True):
+		threading.current_thread()._dp=True
+		threading.current_thread()._r=1
 	threading.current_thread()._df=True
 	tm=int(time.time()//604800)
 	t=[0,0]
@@ -671,22 +677,22 @@ def _git_project_push():
 		f.flush()
 		for p in os.listdir("D:\\K\\Coding\\projects"):
 			if (p in b_dt[1:]):
-				t[0]+=1
+				t[1]+=1
 				f.write(p+"\n")
 				f.flush()
 				continue
-			t[1]+=1
+			t[0]+=1
 			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,p.split("-")[0]+" - "+p.split("-")[1].replace("_"," ").title(),msg)
 			f.write(p+"\n")
 			f.flush()
 		if ("Boot_Program" in b_dt[1:]):
-			t[0]+=1
+			t[1]+=1
 			f.write("Boot_Program\n")
 			f.flush()
 		else:
-			t[1]+=1
+			t[0]+=1
 			_update_repo("D:\\boot\\","Boot_Program","Boot Program",msg)
-			f.write(p+"\n")
+			f.write("Boot_Program\n")
 			f.flush()
 	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
@@ -807,7 +813,7 @@ def _create_prog(type_,name,op=True):###########################################
 				f.write("int main(){\n\treturn 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\npython \"D:\boot\boot.py\" 5 x64\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
+				f.write(f"@echo off\ncls\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
 	elif (type_=="css"):
 		if (not ntpath.exists(f"{p}index.html")):
 			with open(f"{p}index.html","x") as f:
@@ -922,7 +928,7 @@ class _CMDLineWebSocketServer_handle(WebSocket):##############################
 					if (l[k]!=len(CMD_L[self.h_nm]["l"][k])):
 						l[k]=self.sendMessage(bytes("dt:","utf-8")+CMD_L[self.h_nm]["l"][k][l[k]:])
 						l[k]=len(CMD_L[self.h_nm]["l"][k])
-				time.sleep(0.001)
+				time.sleep(1e-6)
 		msg=self.data
 		self.sendMessage("null")
 		if (msg=="cmdl"):
@@ -1070,10 +1076,9 @@ def _start_ws(t):
 		s.close()
 	else:
 		_print(f"Starting Server on IP '{('localhost' if t==3 else '127.0.0.1')}:8020'\x1b[38;2;100;100;100m...")
-		s_a=socket.getaddrinfo(("localhost" if t==3 else "127.0.0.1"),8020,0,socket.SOCK_STREAM,socket.IPPROTO_TCP,socket.AI_PASSIVE)
-		s=socket.socket(*s_a[0][:2])
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-		s.bind(s_a[0][4])
+		s.bind((("localhost" if t==3 else "127.0.0.1"),8020))
 		s.listen(5)
 		while (True):
 			_h_request(*s.accept(),("localhost" if t==3 else "127.0.0.1"))
@@ -1119,7 +1124,6 @@ def _net_loop():
 	_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
 	while (True):
 		try:
-			socket.setdefaulttimeout(3)
 			socket.socket(socket.AF_INET,socket.SOCK_STREAM).connect(("8.8.8.8",53))
 			if (NETWORK==False):
 				NETWORK=True
@@ -1128,7 +1132,7 @@ def _net_loop():
 			if (NETWORK==True):
 				NETWORK=False
 				_print("Internet Connection Lost\x1b[38;2;100;100;100m...")
-		time.sleep(300)
+		time.sleep(30)
 
 
 
@@ -1175,7 +1179,7 @@ if (len(sys.argv)==1):
 		CMD_L["__core__"]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{"__main__":b""}}
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="__main__"
-		_print("Starting Boot Sequence...\nClearing Temp Dir\x1b[38;2;100;100;100m...")
+		_print("Starting Boot Sequence\x1b[38;2;100;100;100m...\x1b[0m\nClearing Temp Dir\x1b[38;2;100;100;100m...")
 		for fnm in os.listdir("D:\\boot\\tmp\\"):
 			os.remove(f"D:\\boot\\tmp\\{fnm}")
 		_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
@@ -1233,7 +1237,7 @@ if (len(sys.argv)==1):
 		_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
 		try:
 			while (True):
-				time.sleep(1e6)
+				time.sleep(1e-6)
 		except:
 			pass
 		os.system(f"taskkill /pid {os.getpid()} /f")
@@ -1460,16 +1464,24 @@ else:
 			_render_cwr(sys.argv[2])
 	elif (v==4):
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-		threading.current_thread()._b_nm="__core__"
-		threading.current_thread()._nm="github_project_push_single"
-		threading.current_thread()._dpt=True
-		threading.current_thread()._r=2
-		nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
-		dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
-		msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
-		_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
-		threading.current_thread()._dp=True
-		threading.current_thread()._df=True
-		threading.current_thread()._r=1
-		_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
-		input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
+		if (len(sys.argv)==2):
+			threading.current_thread()._b_nm="__core__"
+			threading.current_thread()._nm="github_project_push_remote"
+			threading.current_thread()._dpt=True
+			threading.current_thread()._r=2
+			_start_thr(_net_loop,"__core__","github_project_push_remote_network_loop")
+			_git_project_push(r=True)
+		else:
+			threading.current_thread()._b_nm="__core__"
+			threading.current_thread()._nm="github_project_push_single"
+			threading.current_thread()._dpt=True
+			threading.current_thread()._r=2
+			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
+			dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
+			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
+			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
+			threading.current_thread()._dp=True
+			threading.current_thread()._df=True
+			threading.current_thread()._r=1
+			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
+			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
