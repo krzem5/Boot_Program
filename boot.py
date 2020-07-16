@@ -5,12 +5,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from SimpleWebSocketServer import SimpleWebSocketServer,WebSocket
-from PIL import Image
 import keyboard
 import socket
 import subprocess
 import os
-import inspect
 import ctypes
 import sys
 import json
@@ -35,7 +33,7 @@ import datetime
 import io
 import random
 import hashlib
-import py_compile
+import chardet
 
 
 
@@ -563,14 +561,41 @@ def _update_repo(p,b_nm,r_desc,msg):
 					o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
 			return o
 		return _rec_get(r_nm,sha,".")
+	def _is_b(fp):
+		with open(fp,"rb") as f:
+			dt=f.read(4096)
+		if (len(dt)==0):
+			return False
+		r1=len(dt.translate(None,b"\t\r\n\f\b"+bytes(range(32,127))))/len(dt)
+		r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
+		if (r1>0.90 and r2>0.9):
+			return True
+		enc=chardet.detect(dt)
+		enc_u=False
+		if (enc["confidence"]>0.9 and enc["encoding"]!="ascii"):
+			try:
+				dt.decode(encoding=enc["encoding"])
+				enc_u=True
+			except:
+				pass
+		if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
+			return (False if enc_u==True else True)
+		else:
+			return (True if enc_u==False and (b"\x00" in dt or b"\xff" in dt) else False)
 	def _match_f(fp,dt):
-		try:
-			with open(fp,"r") as f:
-				f=f.read().replace("\r\n","\n")
-				if (len(f)!=dt["sz"]):
+		if (_is_b(fp)==False):
+			try:
+				with open(fp,"r") as f:
+					f=f.read().replace("\r\n","\n")
+					if (len(f)!=dt["sz"]):
+						return False
+					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode()).hexdigest()==dt["sha"] else False)
+			except:
+				if (os.stat(fp).st_size!=dt["sz"]):
 					return False
-				return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode()).hexdigest()==dt["sha"] else False)
-		except UnicodeDecodeError:
+				with open(fp,"rb") as f:
+					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
+		else:
 			if (os.stat(fp).st_size!=dt["sz"]):
 				return False
 			with open(fp,"rb") as f:
@@ -611,17 +636,13 @@ def _update_repo(p,b_nm,r_desc,msg):
 			b_sha=False
 			if (os.stat(ntpath.join(r,f)).st_size<=50*1024*1024):
 				b64=True
-				try:
-					with open(ntpath.join(r,f),"r") as rbf:
-						dt=rbf.read().replace("\r\n","\n")
-					b64=False
-				except:
-					pass
-				try:
-					Image.open(ntpath.join(r,f)).close()
-					b64=True
-				except:
-					pass
+				if (_is_b(ntpath.join(r,f))==False):
+					try:
+						with open(ntpath.join(r,f),"r") as rbf:
+							dt=rbf.read().replace("\r\n","\n")
+						b64=False
+					except:
+						pass
 				if (b64==True):
 					b_sha=True
 					with open(ntpath.join(r,f),"rb") as rbf:
@@ -1355,9 +1376,9 @@ else:
 			elif (p=="chrome"):
 				_open_app("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
 			elif (p=="python"):
-				_open_app("%appdata%\\..\\Local\\Programs\\Python\\Python38\\python.exe")
+				_open_app(f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Programs\\Python\\Python38\\python.exe")
 			elif (p=="python37"):
-				_open_app("%appdata%\\..\\Local\\Programs\\Python\\Python37\\python.exe")
+				_open_app(f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Programs\\Python\\Python37\\python.exe")
 			elif (p=="processing"):
 				_open_app("C:\\Program Files\\Processing\\processing.exe")
 			elif (p=="mindstorm"):
