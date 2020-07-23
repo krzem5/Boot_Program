@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Serial Plotter</title>
+		<script type="text/javascript">
+			var cnv,ctx,pl,socket;
+			function join(){
+				socket=new WebSocket(`ws://${window.location.hostname}:8021/`);
+				socket.onopen=function(){
+					console.clear();
+					window._p="";
+					window._sl=[];
+					this.send("1pltl");
+				}
+				socket.onclose=function(){
+					join();
+				}
+				socket.onmessage=async function(e){
+					if (typeof e.data=="object"){
+						e=await e.data.text();
+					}
+					else{
+						e=e.data;
+					}
+					dt=e.substr(e.split(":")[0].length+1);
+					switch (e.split(":")[0]){
+						case "null":
+							return;
+						case "plt":
+							if (dt=="0"){
+								console.warn("Serial Failure");
+								this.send("1:pltl");
+							}
+							else{
+								document.querySelectorAll(".top .port .pr")[0].innerText=dt.substr(1);
+								document.querySelectorAll(".top .port")[0].style.width=`${document.querySelectorAll(".top .port .pr")[0].clientWidth}px`;
+								window._bf="";
+							}
+							return;
+						case "pltl":
+							window._sl=dt.split(";").filter((e)=>{
+								return (e.length>0?true:false);
+							});
+							return;
+						case "dt":
+							pl[1].innerText=window._bf=(window._bf+dt).substr(Math.max(0,window._bf.length+dt.length-1024));
+							pl[1].scroll(0,pl[1].scrollHeight);
+							return;
+						default:
+							console.warn("Unhandled Message: "+e);
+					}
+				}
+				socket.onerror=function(e){
+					e.stopImmediatePropagation();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			function draw(){
+				if (cnv.getClientRects().length>0&&cnv._wh!=true){
+					cnv.width=cnv.getClientRects()[0].width;
+					cnv.height=cnv.getClientRects()[0].height;
+				}
+				ctx.fillStyle="#2a2a2a";
+				ctx.fillRect(0,0,cnv.width,cnv.height);
+				let mx=0;
+				let m=[];
+				let p=(window._bf.substring(0,window._bf.lastIndexOf("\n")).match(/^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$/gm)||[]).map((e)=>{
+					mx=Math.max(mx,e.length-e.replace(/,/gm,"").length+1);
+					return e.split(",").map((e)=>{
+						e=Number.parseInt(e);
+						if (m.length==0){
+							m=[e,e];
+						}
+						else{
+							m=[Math.min(m[0],e),Math.max(m[1],e)];
+						}
+						return e;
+					});
+				});
+				console.log(m,mx)
+				ctx.lineWidth=10;
+				ctx.lineCap="round";
+				ctx.lineJoin="round";
+				for (let i=0;i<mx;i++){
+					ctx.strokeStyle=`hsl(${(i*84)%360},100%,75%)`;
+					ctx.beginPath();
+					let k=0;
+					let l=false;
+					for (let j of p){
+						if (i>=j.length){
+							k++;
+							continue;
+						}
+						console.log(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height)
+						if (l==false){
+							ctx.moveTo(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
+							l=true;
+						}
+						else{
+							ctx.lineTo(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
+						}
+						k++;
+					}
+					debugger
+					ctx.stroke();
+				}
+				// requestAnimationFrame(draw);
+			}
+			function sw_t(id){
+				document.querySelectorAll(".wr .vw").forEach((e,i)=>{
+					e.style.display=(i==id?"initial":"none");
+				});
+			}
+			window.onload=function(){
+				window._bf="";
+				cnv=document.querySelectorAll(".wr .plt")[0];
+				ctx=cnv.getContext("2d");
+				pl=[document.querySelectorAll(".wr .bin")[0],document.querySelectorAll(".wr .txt")[0]];
+				document.querySelectorAll(".top .port")[0].style.width=`${document.querySelectorAll(".top .port .pr")[0].getClientRects()[0].width}px`;
+				document.querySelectorAll(".top .port")[0].onclick=function(){
+					document.querySelectorAll(".over .box .inp")[0].value="";
+					document.querySelectorAll(".over")[0].style.display="initial";
+					document.querySelectorAll(".over .box .inp")[0].focus();
+				}
+				document.body.onkeydown=function(e){
+					if (e.keyCode==13&&document.querySelectorAll(".over")[0].style.display=="initial"){
+						socket.send(`1plt:${document.querySelectorAll(".over .box .inp")[0].value}`);
+					}
+					if (e.keyCode==13||e.keyCode==27){
+						document.querySelectorAll(".over")[0].style.display="none";
+					}
+				}
+				join();
+				// draw();
+			}
+		</script>
+		<style type="text/css">
+			body {
+				overflow: hidden;
+			}
+			body, body * {
+				padding: 0;
+				margin: 0;
+			}
+			.top {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 50px;
+				background: #2a2a2a;
+				border-bottom: solid 3px #3d3d3d;
+			}
+			.top .port {
+				position: absolute;
+				top: 5px;
+				left: 20px;
+				height: 36px;
+				border: solid 2px #3d3d3d;
+				padding: 0 4px 0 4px;
+				border-radius: 10px;
+			}
+			.top .port .pr {
+				position: absolute;
+				top: 50%;
+				transform: translate(0,-50%);
+				color: #b5b5b5;
+				font-family: Consolas;
+				font-size: 17px;
+				white-space: nowrap;
+				user-select: none;
+			}
+			.top .type {
+				position: absolute;
+				top: 5px;
+				right: 20px;
+				height: 36px;
+			}
+			.top .type .t {
+				top: 0;
+				width: 30px;
+				height: 33px;
+				float: left;
+				border: solid 2px #3d3d3d;
+				padding: 0 2px 0 4px;
+				user-select: none;
+			}
+			.top .type .t:first-child{
+				border-top-left-radius: 10px;
+				border-bottom-left-radius: 10px;
+			}
+			.top .type .t:last-child{
+				border-top-right-radius: 10px;
+				border-bottom-right-radius: 10px;
+			}
+			.top .type .t:not(:first-child){
+				border-left: none;
+			}
+			.top .type .t .txt {
+				position: absolute;
+				top: 50%;
+				transform: translate(0,-50%);
+				color: #b5b5b5;
+				font-family: Consolas;
+				font-size: 17px;
+				white-space: nowrap;
+			}
+			.wr {
+				position: absolute;
+				top: 53px;
+				left: 0;
+				width: 100%;
+				bottom: 0;
+			}
+			.wr .bin, .wr .txt {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: #2a2a2a;
+				color: #b5b5b5;
+				white-space: pre-wrap;
+				font-family: Consolas;
+				overflow-y: scroll;
+			}
+			.wr .plt {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+			}
+			.over {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0.2,0.2,0.2,0.3);
+				display: none;
+			}
+			.over .box {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 200px;
+				height: 50px;
+				transform: translate(-50%,-50%);
+				background: #2a2a2a;
+				border: solid 3px #3d3d3d;
+				border-radius: 10px;
+			}
+			.over .box .inp {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 170px;
+				transform: translate(-50%,-50%);
+				background: transparent;
+				color: #b5b5b5;
+				white-space: pre-wrap;
+				font-family: Consolas;
+				font-size: 17px;
+				text-align: center;
+				outline: none;
+				border: none;
+				text-transform: uppercase;
+				border-bottom: solid 2px #3d3d3d;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wr">
+			<div class="vw bin"></div>
+			<pre class="vw txt" style="display:none"></pre>
+			<canvas class="vw plt" style="display:none"></canvas>
+		</div>
+		<div class="top">
+			<div class="port">
+				<a class="pr">
+					None
+				</a>
+			</div>
+			<div class="type">
+				<div class="t" onclick="sw_t(0)">
+					<a class="txt">Bin</a>
+				</div>
+				<div class="t" onclick="sw_t(1)">
+					<a class="txt">Txt</a>
+				</div>
+				<div class="t" onclick="sw_t(2)">
+					<a class="txt">Plt</a>
+				</div>
+			</div>
+		</div>
+		<div class="over">
+			<div class="box">
+				<input type="text" class="inp" maxlength="18">
+			</div>
+		</div>
+	</body>
+</html>

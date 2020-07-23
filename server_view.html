@@ -9,13 +9,8 @@
 				socket.onopen=function(){
 					console.clear();
 					window._t="__core__";
-					if (document.cookie.length>0){
-						this.send(`cmd:${document.cookie}`)
-					}
-					else{
-						this.send("cmd:__core__")
-					}
-					this.send("cmdl");
+					this.send("0cmd:__core__")
+					this.send("0cmdl");
 				}
 				socket.onclose=function(){
 					join();
@@ -36,7 +31,7 @@
 								console.warn("Switch Failure");
 							}
 							else{
-								window._t=document.cookie=dt.substr(1);
+								window._t=dt.substr(1);
 								pr.innerHTML="";
 							}
 							return;
@@ -44,7 +39,7 @@
 							const b=document.querySelectorAll(".over-wr > .over > .cmd-id")[0];
 							b.innerHTML="";
 							dt.split("\0").forEach((e)=>{
-								b.innerHTML+=`<span class="elem${(window._t==e?" sel":"")}" onclick="socket.send('cmd:${e}')">${e}</span>`;
+								b.innerHTML+=`<span class="elem${(window._t==e?" sel":"")}" onclick="socket.send('0cmd:${e}')">${e}</span>`;
 							});
 							return;
 						case "dt":
@@ -80,7 +75,7 @@
 							window.v=!window.v;
 							document.querySelectorAll(".over-wr")[0].style.display=(window.v==false?"none":"block");
 							if (window.v==true){
-								socket.send("cmdl");
+								socket.send("0cmdl");
 							}
 						}
 						window._e=true;

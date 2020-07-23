@@ -1,6 +1,7 @@
 ### Github File Push Ignore
 
 tmp
+arduino
 mcs
 mcs-s
 *.dt
