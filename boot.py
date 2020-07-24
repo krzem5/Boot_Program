@@ -48,7 +48,8 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L
+global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
+R_STD_BUFFER={"_s":None,"bf":[]}
 SERIAL_L={}
 NETWORK=False
 STDOUT_LOCK=False
@@ -120,7 +121,7 @@ def _set_print(*a):
 
 
 def _print(*a,end="\n"):
-	global CMD_L,STDOUT_LOCK
+	global CMD_L,STDOUT_LOCK,R_STD_BUFFER
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
@@ -169,6 +170,11 @@ def _print(*a,end="\n"):
 				o+="\x1b[38;2;32;162;132m,"
 				i+=1
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
+	def _r_std_thr():
+		global R_STD_BUFFER
+		while (True):
+			if (len(R_STD_BUFFER["bf"])>0):
+				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
 	if (not hasattr(threading.current_thread(),"_df") or threading.current_thread()._df==False):
 		i=0
@@ -183,9 +189,12 @@ def _print(*a,end="\n"):
 				i+=len(o)-1
 			i+=1
 	if (hasattr(threading.current_thread(),"_r") and threading.current_thread()._r>=1):
-		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		s.connect(("127.0.0.1",8022))
-		s.send(bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8"))
+		if (R_STD_BUFFER["_s"]==None):
+			R_STD_BUFFER["_s"]=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			R_STD_BUFFER["_s"].connect(("127.0.0.1",8022))
+			atexit.register(lambda s:s.close(),R_STD_BUFFER["_s"])
+			threading.Thread(target=_r_std_thr,args=(),kwargs={}).start()
+		R_STD_BUFFER["bf"]+=[bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8")]
 		if (threading.current_thread()._r>=2):
 			return
 	if (not hasattr(threading.current_thread(),"_dp") or threading.current_thread()._dp==False):
@@ -1738,6 +1747,15 @@ def _start_s(t):
 			cs.send(b"HTTP/1.1 500 Internal Server Error\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>500</h1><h3>Internal Server Error</h3></body></html>")
 			traceback.print_exception(None,e,e.__traceback__)
 		cs.close()
+	def _r_std_h(cs):
+		threading.current_thread()._df=True
+		bf=b""
+		while (True):
+			bf+=cs.recv(1024)
+			if (b"\n" in bf):
+				dt,bf=base64.b64decode(bf.split(b"\n")[0]),b"\n".join(bf.split(b"\n")[1:])
+				threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
+				_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
 	if (t==0):
 		_print(f"Starting WebSocket Listener on IP '127.0.0.1:8021'\x1b[38;2;100;100;100m...")
 		ws_s=SimpleWebSocketServer("127.0.0.1",8021,_WebSocketServer_handle).serveforever()
@@ -1749,17 +1767,12 @@ def _start_s(t):
 		_r_cmd("php_server",lambda:None,p)
 	elif (t==2):
 		_print("Starting Remote Std Listener on '127.0.0.1:8022'\x1b[38;2;100;100;100m...")
-		threading.current_thread()._df=True
 		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 		s.bind(("127.0.0.1",8022))
 		s.listen(5)
 		while (True):
-			cs=s.accept()[0]
-			dt=cs.recv(65536)
-			threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
-			_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
-			cs.close()
+			threading.Thread(target=_r_std_h,args=(s.accept()[0],),kwargs={}).start()
 		s.close()
 	else:
 		_print(f"Starting Server on IP '{('localhost' if t==3 else '127.0.0.1')}:8020'\x1b[38;2;100;100;100m...")
