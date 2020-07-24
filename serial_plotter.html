@@ -43,7 +43,7 @@
 							});
 							return;
 						case "dt":
-							pl[1].innerText=window._bf=(window._bf+dt).substr(Math.max(0,window._bf.length+dt.length-1024));
+							pl[1].innerText=window._bf=(window._bf+dt).split("\n").slice(-100).join("\n");
 							pl[1].scroll(0,pl[1].scrollHeight);
 							return;
 						default:
@@ -78,8 +78,7 @@
 						return e;
 					});
 				});
-				console.log(m,mx)
-				ctx.lineWidth=10;
+				ctx.lineWidth=5;
 				ctx.lineCap="round";
 				ctx.lineJoin="round";
 				for (let i=0;i<mx;i++){
@@ -92,20 +91,18 @@
 							k++;
 							continue;
 						}
-						console.log(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height)
 						if (l==false){
-							ctx.moveTo(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
+							ctx.moveTo(Math.floor(k*cnv.width/p.length),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
 							l=true;
 						}
 						else{
-							ctx.lineTo(Number.parseInt(k*cnv.width/(p.length+1)),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
+							ctx.lineTo(Math.floor(k*cnv.width/p.length),(j[i]-m[0])/(m[1]-m[0])*(0-cnv.height)+cnv.height);
 						}
 						k++;
 					}
-					debugger
 					ctx.stroke();
 				}
-				// requestAnimationFrame(draw);
+				requestAnimationFrame(draw);
 			}
 			function sw_t(id){
 				document.querySelectorAll(".wr .vw").forEach((e,i)=>{
@@ -117,6 +114,10 @@
 				cnv=document.querySelectorAll(".wr .plt")[0];
 				ctx=cnv.getContext("2d");
 				pl=[document.querySelectorAll(".wr .bin")[0],document.querySelectorAll(".wr .txt")[0]];
+				cnv.onresize=function(){
+					this.width=this.getClientRects()[0].width;
+					this.height=this.getClientRects()[0].height;
+				}
 				document.querySelectorAll(".top .port")[0].style.width=`${document.querySelectorAll(".top .port .pr")[0].getClientRects()[0].width}px`;
 				document.querySelectorAll(".top .port")[0].onclick=function(){
 					document.querySelectorAll(".over .box .inp")[0].value="";
@@ -132,7 +133,7 @@
 					}
 				}
 				join();
-				// draw();
+				draw();
 			}
 		</script>
 		<style type="text/css">

@@ -34,6 +34,7 @@ import io
 import random
 import hashlib
 import chardet
+import serial
 import serial.tools.list_ports
 import shlex
 import tempfile
@@ -105,7 +106,6 @@ ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":     "{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags": "-w -x c++ -E -CC"}
 ARDUINO_CUSTOM_WARNING_LEVEL=""
-__dir__=ntpath.abspath(os.getcwd()).replace("\\","/")+"/"
 
 
 
@@ -256,30 +256,33 @@ def _start_ser(p):
 		s.close()
 		ss.close()
 	_print(f"Starting Serial Connection to Port '{p}'\x1b[38;2;100;100;100m...")
-	s=serial.Serial(p,9600,timeout=5)
-	while (s.is_open==False):
-		time.sleep(1e-4)
-	s.timeout=0
-	_print(f"Creating Forwarding Socket\x1b[38;2;100;100;100m...")
-	ss=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	ss.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-	ss.bind(("127.0.0.1",0))
-	ss.listen(5)
-	_start_thr(_a_cs,"__core__",threading.current_thread()._nm+"_client_listener",ss,p)
-	_print(f"Registering AtExit\x1b[38;2;100;100;100m...")
-	atexit.register(_close_s,s,ss)
-	bf=b""
-	_print(f"Starting Loop\x1b[38;2;100;100;100m...")
-	while (SERIAL_L[p]["cnt"]>0):
-		while (s.in_waiting==0 and SERIAL_L[p]["cnt"]>0):
+	try:
+		s=serial.Serial(p,9600,timeout=5)
+		while (s.is_open==False):
 			time.sleep(1e-4)
-		bf+=s.read(s.in_waiting)
-		mn_s=-1
-		for cs in SERIAL_L[p]["_cs"][:]:
-			mn_s=(cs.send(bf) if mn_s==-1 else min(mn_s,cs.send(bf)))
-		bf=bf[mn_s:]
-	del SERIAL_L[p]
+		s.timeout=0
+		_print(f"Creating Forwarding Socket\x1b[38;2;100;100;100m...")
+		ss=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		ss.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		ss.bind(("127.0.0.1",0))
+		ss.listen(5)
+		_start_thr(_a_cs,"__core__",threading.current_thread()._nm+"_client_listener",ss,p)
+		_print(f"Registering AtExit\x1b[38;2;100;100;100m...")
+		atexit.register(_close_s,s,ss)
+		bf=b""
+		_print(f"Starting Loop\x1b[38;2;100;100;100m...")
+		while (SERIAL_L[p]["cnt"]>0):
+			while (s.in_waiting==0 and SERIAL_L[p]["cnt"]>0):
+				time.sleep(1e-4)
+			bf+=s.read(s.in_waiting)
+			mn_s=-1
+			for cs in SERIAL_L[p]["_cs"][:]:
+				mn_s=(cs.send(bf) if mn_s==-1 else min(mn_s,cs.send(bf)))
+			bf=bf[mn_s:]
+	except Exception as e:
+		traceback.print_exception(None,e,e.__traceback__)
 	_print(f"Closing Serial\x1b[38;2;100;100;100m...")
+	del SERIAL_L[p]
 	s.close()
 	_print(f"Closing Socket\x1b[38;2;100;100;100m...")
 	ss.close()
@@ -811,29 +814,29 @@ def _arduino_clone_f(url,fp,sz):
 class _Arduino_Cache:
 	def init():
 		_print("Initialising Cache\x1b[38;2;100;100;100m...")
-		if (not ntpath.exists(f"{__dir__}arduino/cache")):
-			os.mkdir(f"{__dir__}arduino/cache")
-		if (not ntpath.exists(f"{__dir__}arduino/cache/index")):
-			with open(f"{__dir__}arduino/cache/index","w"):
+		if (not ntpath.exists(f"D:/boot/arduino/cache")):
+			os.mkdir(f"D:/boot/arduino/cache")
+		if (not ntpath.exists(f"D:/boot/arduino/cache/index")):
+			with open(f"D:/boot/arduino/cache/index","w"):
 				_Arduino_Cache._dt={}
 		else:
-			with open(f"{__dir__}arduino/cache/index","r") as f:
+			with open(f"D:/boot/arduino/cache/index","r") as f:
 				_Arduino_Cache._dt={k.split(":")[0]:float(k.split(":")[1]) for k in f.read().replace("\r","").split("\n") if len(k)>0}
 		u=False
 		_print("Reading Cache Index\x1b[38;2;100;100;100m...")
 		for k in list(_Arduino_Cache._dt.keys()):
-			if (_Arduino_Cache._dt[k]<time.time() or not ntpath.exists(f"{__dir__}arduino/cache/{k}")):
-				if (ntpath.exists(f"{__dir__}arduino/cache/{k}")):
-					os.remove(f"{__dir__}arduino/cache/{k}")
+			if (_Arduino_Cache._dt[k]<time.time() or not ntpath.exists(f"D:/boot/arduino/cache/{k}")):
+				if (ntpath.exists(f"D:/boot/arduino/cache/{k}")):
+					os.remove(f"D:/boot/arduino/cache/{k}")
 				del _Arduino_Cache._dt[k]
 				u=True
 		_print("Removing Old Cache\x1b[38;2;100;100;100m...")
-		for k in os.listdir(f"{__dir__}arduino/cache/"):
+		for k in os.listdir(f"D:/boot/arduino/cache/"):
 			if (k=="index" or k in list(_Arduino_Cache._dt.keys())):
 				continue
-			os.remove(f"{__dir__}arduino/cache/{k}")
+			os.remove(f"D:/boot/arduino/cache/{k}")
 		if (u==True):
-			with open(f"{__dir__}arduino/cache/index","w") as f:
+			with open(f"D:/boot/arduino/cache/index","w") as f:
 				f.write("\n".join([f"{e[0]}:{e[1]}" for e in _Arduino_Cache._dt.items()]))
 
 
@@ -843,7 +846,7 @@ class _Arduino_Cache:
 		t=_Arduino_Cache._dt.get(k,0)
 		if (t==0):
 			return None
-		with open(f"{__dir__}arduino/cache/{k}","rb") as f:
+		with open(f"D:/boot/arduino/cache/{k}","rb") as f:
 			return f.read()
 
 
@@ -851,9 +854,9 @@ class _Arduino_Cache:
 	@staticmethod
 	def set(k,v,t=86400):
 		_Arduino_Cache._dt[k]=time.time()+t
-		with open(f"{__dir__}arduino/cache/index","w") as f:
+		with open(f"D:/boot/arduino/cache/index","w") as f:
 			f.write("\n".join([f"{e[0]}:{e[1]}" for e in _Arduino_Cache._dt.items()]))
-		with open(f"{__dir__}arduino/cache/{k}","wb") as f:
+		with open(f"D:/boot/arduino/cache/{k}","wb") as f:
 			f.write(v)
 
 
@@ -877,13 +880,11 @@ def _l_ard_boards(p=True):
 
 
 def _install_ard_pkg(b,force=False):
-	if (type(b)==dict):
-		b={"pkg":b["fqbn"].split(":")[0],"ver":None,"arch":b["arch"]}
 	if (type(b)==str):
 		_print(f"Searching For Package '{b}'\x1b[38;2;100;100;100m...")
 		i_pkg=[]
-		if (ntpath.exists(f"{__dir__}arduino/packages/index")):
-			with open(f"{__dir__}arduino/packages/index","r") as f:
+		if (ntpath.exists(f"D:/boot/arduino/packages/index")):
+			with open(f"D:/boot/arduino/packages/index","r") as f:
 				i_pkg=f.read().replace("\r","").split("\n")
 		_print(f"Querying 'https://api.github.com/repos/arduino/{b}/releases/latest' for Package Metadata\x1b[38;2;100;100;100m...")
 		dt=requests.get(f"https://api.github.com/repos/arduino/{b}/releases/latest").json()
@@ -901,29 +902,29 @@ def _install_ard_pkg(b,force=False):
 					_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
 					with tarfile.open(f"{tempfile.gettempdir()}/{k['name']}","r:bz2") as tf:
-						tf.extractall(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
-						off=len(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
+						tf.extractall(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
+						off=len(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-						for fp in glob.iglob(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/**/*.*",recursive=True):
-							os.makedirs(ntpath.dirname(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
+						for fp in glob.iglob(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/**/*.*",recursive=True):
+							os.makedirs(ntpath.dirname(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
 							try:
-								with open(fp,"rb") as rf,open(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
+								with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
 									wf.write(rf.read())
 							except:
-								_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-						shutil.rmtree(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}",ignore_errors=True)
+								_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
+						shutil.rmtree(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}",ignore_errors=True)
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
 					with zipfile.ZipFile(f"{tempfile.gettempdir()}/{k['name']}","r") as zf:
-						zf.extractall(f"{__dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
+						zf.extractall(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 					raise RuntimeError(f"Unknown File Extension '{k['name'][len(k['name'].split('.')[0]):]}'.")
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
 				os.remove(f"{tempfile.gettempdir()}/{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
-		with open(f"{__dir__}arduino/packages/index","a") as f:
+		with open(f"D:/boot/arduino/packages/index","a") as f:
 			f.write(f"arduino-{b}-{dt['tag_name']}\n")
 		return
 	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver']!=None else '')}'...")
@@ -954,53 +955,53 @@ def _install_ard_pkg(b,force=False):
 			dl+=[{"pkg":k["packager"],"name":k["name"],"ver":k["version"]} for k in e[1]["toolsDependencies"]]
 		else:
 			o+=[(d["pkg"],(d["arch"] if "arch" in list(d.keys()) else d["name"]),e[1]["version"],k["url"],k["archiveFileName"],"tools",k["size"]) for k in e[1]["systems"] if k["host"]==ARDUINO_HOST_SYSTEM]
-	if (not ntpath.exists(f"{__dir__}/arduino/packages")):
-		os.mkdir(f"{__dir__}arduino/packages")
+	if (not ntpath.exists(f"D:/boot//arduino/packages")):
+		os.mkdir(f"D:/boot/arduino/packages")
 	i_pkg=[]
-	if (ntpath.exists(f"{__dir__}arduino/packages/index")):
-		with open(f"{__dir__}arduino/packages/index","r") as f:
+	if (ntpath.exists(f"D:/boot/arduino/packages/index")):
+		with open(f"D:/boot/arduino/packages/index","r") as f:
 			i_pkg=f.read().replace("\r","").split("\n")
 	else:
-		with open(f"{__dir__}arduino/packages/index","w"):
+		with open(f"D:/boot/arduino/packages/index","w"):
 			pass
 	for k in o:
 		if (force==False and f"{k[0]}-{k[1]}-{k[2]}" in i_pkg):
 			_print(f"\x1b[38;2;200;40;20mPackage '{k[0]}:{k[1]}:{k[2]}' already Installed.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 			continue
-		if (not ntpath.exists(f"{__dir__}arduino/packages/{k[0]}")):
-			os.mkdir(f"{__dir__}arduino/packages/{k[0]}")
-		if (not ntpath.exists(f"{__dir__}arduino/packages/{k[0]}/{k[5]}")):
-			os.mkdir(f"{__dir__}arduino/packages/{k[0]}/{k[5]}")
-		if (not ntpath.exists(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
-			os.mkdir(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}")
-		if (not ntpath.exists(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
-			os.mkdir(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}")):
+			os.mkdir(f"D:/boot/arduino/packages/{k[0]}")
+		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}")):
+			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}")
+		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
+			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")
+		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
+			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print(f"Cloning to File '{tempfile.gettempdir()}/{k[4]}' ...")
 		_arduino_clone_f(k[3],tempfile.gettempdir()+"/"+k[4],k[6])
 		if (k[4].endswith(".tar.bz2")):
 			_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
 			with tarfile.open(tempfile.gettempdir()+"/"+k[4],"r:bz2") as tf:
-				tf.extractall(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
-				off=len(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
+				tf.extractall(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+				off=len(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
 				_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-				for fp in glob.iglob(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/**/*.*",recursive=True):
-					os.makedirs(ntpath.dirname(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
+				for fp in glob.iglob(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/**/*.*",recursive=True):
+					os.makedirs(ntpath.dirname(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
 					try:
-						with open(fp,"rb") as rf,open(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
+						with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
 							wf.write(rf.read())
 					except:
-						_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-				shutil.rmtree(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}",ignore_errors=True)
+						_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
+				shutil.rmtree(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}",ignore_errors=True)
 		elif (k[4].endswith(".zip")):
 			_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
 			with zipfile.ZipFile(tempfile.gettempdir()+"/"+k[4],"r") as zf:
-				zf.extractall(f"{__dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+				zf.extractall(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print("Removing Archive\x1b[38;2;100;100;100m...")
 		os.remove(tempfile.gettempdir()+"/"+k[4])
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
-		with open(f"{__dir__}arduino/packages/index","a") as f:
+		with open(f"D:/boot/arduino/packages/index","a") as f:
 			f.write(f"{k[0]}-{k[1]}-{k[2]}\n")
 
 
@@ -1068,9 +1069,9 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	if (m_fp==None):
 		raise RuntimeError("Sketch doesn't Contain a Main Program.")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not ntpath.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=ntpath.abspath(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
@@ -1087,7 +1088,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
 	bp={**ARDUINO_PREPROCESSOR_BUILD_PROPERTIES,"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":re.sub(r"/$","",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
-	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",ntpath.abspath(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":re.sub(r"/$","",__dir__),"build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
+	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":"D:/boot/","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
 	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.debug"]
@@ -1095,12 +1096,12 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 		if ("compiler.optimization_flags.release" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.release"]
 	_print("Loading Tools\x1b[38;2;100;100;100m...")
-	for pkg in os.listdir(f"{__dir__}arduino/packages/"):
-		if (ntpath.exists(f"{__dir__}arduino/packages/{pkg}/tools/")):
-			for t in os.listdir(f"{__dir__}arduino/packages/{pkg}/tools/"):
-				for v in os.listdir(f"{__dir__}arduino/packages/{pkg}/tools/{t}/"):
-					bp[f"runtime.tools.{t}-{v}.path"]=f"{__dir__}arduino/packages/{pkg}/tools/{t}/{v}"
-				bp[f"runtime.tools.{t}.path"]=f"{__dir__}arduino/packages/{pkg}/tools/{t}/{v}"
+	for pkg in os.listdir(f"D:/boot/arduino/packages/"):
+		if (ntpath.exists(f"D:/boot/arduino/packages/{pkg}/tools/")):
+			for t in os.listdir(f"D:/boot/arduino/packages/{pkg}/tools/"):
+				for v in os.listdir(f"D:/boot/arduino/packages/{pkg}/tools/{t}/"):
+					bp[f"runtime.tools.{t}-{v}.path"]=f"D:/boot/arduino/packages/{pkg}/tools/{t}/{v}"
+				bp[f"runtime.tools.{t}.path"]=f"D:/boot/arduino/packages/{pkg}/tools/{t}/{v}"
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
 	if (ntpath.exists(f"{b_fp}build-properties.md5")):
 		with open(f"{b_fp}build-properties.md5","r") as f:
@@ -1265,9 +1266,9 @@ def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[
 	if (m_fp==None):
 		raise RuntimeError("Sketch doesn't Contain a Main Program.")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not ntpath.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=ntpath.abspath(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"{__dir__}arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
@@ -1291,9 +1292,9 @@ def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[
 	for k in ("upload","program"):
 		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if verify_upload==False else '')}verify","")
 	_print(f"Loading Tools\x1b[38;2;100;100;100m...")
-	for v in os.listdir(f"{__dir__}arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/"):
-		up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}-{v}.path"]=f"{__dir__}arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
-	up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}.path"]=f"{__dir__}arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
+	for v in os.listdir(f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/"):
+		up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}-{v}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
+	up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
 	if (burn_bootloader==False):
 		up.update({"build.path":f"{s_fp}build/","build.project_name":m_fp[len(s_fp):]})
 		_print("Setting Board in Bootloader Mode\x1b[38;2;100;100;100m...")
@@ -1373,7 +1374,10 @@ def _open_prog_w(p):
 	type_=p.split("-")[0].lower()
 	_print(f"Opening Project: (name='{p[len(type_)+1:]}', type_='{type_}', path='D:\\K\\Coding\\projects\\{p}\\')\x1b[38;2;100;100;100m...")
 	p="D:\\K\\Coding\\projects\\"+p+"\\"
-	if (type_=="cpp"):
+	if (type_=="arduino"):
+		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}index.ino")
+	elif (type_=="cpp"):
 		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}index.cpp")
 	elif (type_=="css"):
@@ -1410,10 +1414,10 @@ def _open_prog_w(p):
 
 
 
-def _create_prog(type_,name,op=True):############################################################
+def _create_prog(type_,name,op=True):
 	_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
-	if (type_ not in "chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
+	if (type_ not in "arduino,chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
 		_print(f"UNKNOWN TYPE: {type_}")
 		return
 	if (type_=="js"):
@@ -1428,10 +1432,21 @@ def _create_prog(type_,name,op=True):###########################################
 		with open(f"{p}.gitignore","x") as f:
 			f.write("### Github File Push Ignore\n\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
+	if (not ntpath.exists(f"{p}.gitconfig")):
+		with open(f"{p}.gitconfig","x") as f:
+			f.write("### Github File Push Config\n\n")
+		os.system(f"cd /d {p}&&attrib +h .gitconfig")
 	global WORKSPACE_DATA
 	if (type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_") not in [e["name"] for e in WORKSPACE_DATA]):
 		WORKSPACE_DATA.append({"name":type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_"),"year":datetime.datetime.now().year,"desc":"[null]"})
-	if (type_=="cpp"):
+	if (type_=="arduino"):
+		if (not ntpath.exists(f"{p}index.ino")):
+			with open(f"{p}index.ino","x") as f:
+				f.write("void setup(){\n\t\n}\n\n\n\nvoid draw(){\n\t\n}\n")
+		if (not ntpath.exists(f"{p}index.bat")):
+			with open(f"{p}index.bat","x") as f:
+				f.write(f"@echo off\ncls\nrm -rf build&&python D:\\boot\\boot.py 5 compile ./ arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./ COM3 arduino:avr:uno\n")
+	elif (type_=="cpp"):
 		if (not ntpath.exists(f"{p}index.cpp")):
 			with open(f"{p}index.cpp","x") as f:
 				f.write("int main(){\n\treturn 0;\n}")
@@ -1590,22 +1605,20 @@ class _WebSocketServer_handle(WebSocket):
 				CMD_L[self.h_nm]["h"].stdin.write(bytes(msg[3:],"utf-8"))
 				CMD_L[self.h_nm]["h"].stdin.flush()
 		elif (t[0]=="1"):
-			if (not hasattr(self,"_bl")):
-				self._bl=_l_ard_boards(p=False)
 			if (not hasattr(self,"_p")):
 				self._p=None
 			if (not hasattr(self,"_stop")):
 				self._stop=False
 			if (msg=="pltl"):
-				self._bl=_l_ard_boards(p=False)
-				self.sendMessage(f"pltl:{';'.join([e['location'] for e in self._bl]).upper()}")
+				self.sendMessage(f"pltl:{';'.join([e['location'] for e in _l_ard_boards(p=False)]).upper()}")
 			elif (msg[:4]=="plt:"):
-				if (msg[4:].upper() in [e["location"].upper() for e in self._bl]):
+				bl=_l_ard_boards(p=False)
+				if (msg[4:].upper() in [e["location"].upper() for e in bl]):
 					self._stop=True
 					if (hasattr(self,"_thr")):
 						self._thr.join()
 					self._stop=False
-					self._p=[e["location"] for e in self._bl if e["location"].upper()==msg[4:].upper()][0]
+					self._p=[e["location"] for e in bl if e["location"].upper()==msg[4:].upper()][0]
 					if (self._p not in list(SERIAL_L.keys())):
 						SERIAL_L[self._p]={"cnt":1,"port":None,"_cs":[]}
 						_start_thr(_start_ser,"__core__",f"serial_reader_{self._p.lower()}",self._p)
@@ -1632,7 +1645,7 @@ def _start_s(t):
 			_print(f"Request Recived: (type='{t}', url='{url}', http_version='{v}', ip='{a[0]}:{a[1]}')")
 			if (t=="GET"):
 				_print("Inspecting IP and URL\x1b[38;2;100;100;100m...")
-				if (url=="/" or url=="/cmd" or url=="/serial" or len(url)-len(url.replace("/",""))>=2):
+				if (url in "/;/cmd;/serial;/serial_ports".split(";") or len(url)-len(url.replace("/",""))>=2):
 					if (url.split("?")[0].split("#")[0].endswith(".php")):
 						_print("Sending Request to PHP Server\x1b[38;2;100;100;100m...")
 						php_s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1646,20 +1659,26 @@ def _start_s(t):
 						_print("Patching URL\x1b[38;2;100;100;100m...")
 						if (url.endswith("/")):
 							url+="index.html"
-						if (url=="/cmd"):
+						elif (url=="/cmd"):
 							url="/server_view.html"
-						if (url=="/serial"):
+						elif (url=="/serial"):
 							url="/serial_plotter.html"
-						url="."+url
-						if (not ntpath.exists(url)):
-							_print(f"\x1b[38;2;200;40;20mFile '{url}' Doesn't Exist.\x1b[0m Sending Redirect\x1b[38;2;100;100;100m...")
-							cs.send(bytes(f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://{ip}:8020/\r\n\r\n","utf-8"))
-							rc=301
-						else:
-							_print(f"Sending Content of '{url}'\x1b[38;2;100;100;100m...")
-							f=open(url,"rb")
-							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
+						if (url=="/serial_ports"):
+							_print(f"Sending Serial Port List\x1b[38;2;100;100;100m...")
+							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:{sk:sv for sk,sv in v.items() if sk!='_cs'} for k,v in SERIAL_L.items()}))}\r\n\r\n{json.dumps({k:{sk:sv for sk,sv in v.items() if sk!='_cs'} for k,v in SERIAL_L.items()})}","utf-8"))
 							rc=200
+						else:
+							url="."+url
+							if (not ntpath.exists(url)):
+								_print(f"\x1b[38;2;200;40;20mFile '{ntpath.abspath(url)}' Doesn't Exist.\x1b[0m Sending Redirect\x1b[38;2;100;100;100m...")
+								cs.send(bytes(f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://{ip}:8020/\r\n\r\n","utf-8"))
+								rc=301
+							else:
+								_print(f"Sending Content of '{ntpath.abspath(url)}'\x1b[38;2;100;100;100m...")
+								f=open(ntpath.abspath(url),"rb")
+								cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
+								f.close()
+								rc=200
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
 					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n","utf-8"))
@@ -2150,7 +2169,7 @@ else:
 			threading.current_thread()._dpt=True
 			threading.current_thread()._r=2
 			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
-			dc=("None (auto)" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
+			dc=("None" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
 			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
 			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
 			threading.current_thread()._dp=True
@@ -2164,8 +2183,8 @@ else:
 		threading.current_thread()._dpt=True
 		threading.current_thread()._dp=True
 		threading.current_thread()._r=1
-		if (not ntpath.exists(f"{__dir__}arduino")):
-			os.mkdir(f"{__dir__}arduino")
+		if (not ntpath.exists(f"D:/boot/arduino")):
+			os.mkdir(f"D:/boot/arduino")
 		_Arduino_Cache.init()
 		if (len(sys.argv)<3):
 			_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
