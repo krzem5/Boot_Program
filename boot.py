@@ -39,6 +39,7 @@ import serial.tools.list_ports
 import shlex
 import tempfile
 import atexit
+import msvcrt
 
 
 
@@ -192,8 +193,9 @@ def _print(*a,end="\n"):
 		if (R_STD_BUFFER["_s"]==None):
 			R_STD_BUFFER["_s"]=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			R_STD_BUFFER["_s"].connect(("127.0.0.1",8022))
-			atexit.register(lambda s:s.close(),R_STD_BUFFER["_s"])
-			threading.Thread(target=_r_std_thr,args=(),kwargs={}).start()
+			thr=threading.Thread(target=_r_std_thr,args=(),kwargs={})
+			thr.daemon=True
+			thr.start()
 		R_STD_BUFFER["bf"]+=[bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8")]
 		if (threading.current_thread()._r>=2):
 			return
@@ -228,6 +230,7 @@ def _start_thr(f,b_nm,nm,*a,**kw):
 	thr=threading.Thread(target=_wr,args=(f,a,kw),kwargs={},name=f"{b_nm} => {nm} Thread")
 	thr._b_nm=b_nm
 	thr._nm=nm
+	thr.daemon=True
 	thr.start()
 	return thr
 
@@ -261,6 +264,12 @@ def _start_ser(p):
 		_print(f"Starting Forward Socket Client Listener on Port '{ss.getsockname()[0]}:{ss.getsockname()[1]}'\x1b[38;2;100;100;100m...")
 		while (SERIAL_L[p]["cnt"]>0):
 			SERIAL_L[p]["_cs"]+=[ss.accept()[0]]
+	def _w_thr(s):
+		_print(f"Starting Writer Listener\x1b[38;2;100;100;100m...")
+		while (SERIAL_L[p]["cnt"]>0):
+			if (len(SERIAL_L[p]["in"])>0):
+				_,SERIAL_L[p]["in"]=s.write(bytes(SERIAL_L[p]["in"][0],"utf-8")),SERIAL_L[p]["in"][1:]
+			time.sleep(1e4)
 	def _close_s(s,ss):
 		s.close()
 		ss.close()
@@ -279,7 +288,8 @@ def _start_ser(p):
 		_print(f"Registering AtExit\x1b[38;2;100;100;100m...")
 		atexit.register(_close_s,s,ss)
 		bf=b""
-		_print(f"Starting Loop\x1b[38;2;100;100;100m...")
+		_start_thr(_w_thr,"__core__",threading.current_thread()._nm+"_writer",s)
+		_print(f"Starting Read Loop\x1b[38;2;100;100;100m...")
 		while (SERIAL_L[p]["cnt"]>0):
 			while (s.in_waiting==0 and SERIAL_L[p]["cnt"]>0):
 				time.sleep(1e-4)
@@ -430,7 +440,7 @@ def _codewars_wr():
 
 
 
-def _render_cwr(tp):#######################################
+def _render_cwr(tp):
 	def _center_ignore(o,l):
 		while (len(re.sub(r"\x1b\[[^m]+m","",o))<l):
 			o+=" "
@@ -506,8 +516,7 @@ def _render_cwr(tp):#######################################
 	except Exception as e:
 		dt=e.file
 	JSON=json.loads(dt.read())
-	bg="\x1b[0m\x1b[48;2;24;24;24m"
-	b_cl=("\x1b[38;2;84;04;04m" if JSON["result"]["completed"]==False else "\x1b[38;2;85;212;85m")
+	b_cl=("\x1b[38;2;84;4;4m" if JSON["result"]["completed"]==False else "\x1b[38;2;85;212;85m")
 	o=["\x1b[38;2;138;138;138mTime: \x1b[38;2;238;238;238m"+str(JSON["wallTime"])+"ms    \x1b[38;2;138;138;138mPassed: \x1b[38;2;238;238;238m"+str(JSON["result"]["assertions"]["passed"])+"    \x1b[38;2;183;38;38mFailed: \x1b[38;2;213;98;98m"+str(JSON["result"]["assertions"]["failed"])+"    \x1b[38;2;183;38;38mExit Code: \x1b[38;2;213;98;98m"+str(JSON["exitCode"])]
 	for i,rs in enumerate(JSON["result"]["output"]):
 		o+=_render_elem(rs,None,(None if i==0 else JSON["result"]["output"][i-1]),0)
@@ -534,11 +543,11 @@ def _render_cwr(tp):#######################################
 	for l in co:
 		o+=_wrap(l[0],dt[9]-8,l[1])
 	mx=min(max([len(re.sub(r"\x1b\[[^m]+m","",e)) for e in o]),dt[9]-8)
-	o=[bg+" "*(mx+8),bg+b_cl+"  ╔"+"═"*(mx+2)+"╗  ",b_cl+"  ║ "+_center_ignore(o[0],mx)+b_cl+" ║  ",b_cl+"  ╠"+"═"*(mx+2)+"╣  "]+[b_cl+"  ║ "+_ljust_ignore(l,mx)+b_cl+" ║  " for l in o[1:]]+[b_cl+"  ╚"+"═"*(mx+2)+"╝  ",bg+" "*(mx+8)]
+	o=["\x1b[0m\x1b[48;2;24;24;24m"+" "*(mx+8),"\x1b[0m\x1b[48;2;24;24;24m"+b_cl+"  ╔"+"═"*(mx+2)+"╗  ",b_cl+"  ║ "+_center_ignore(o[0],mx)+b_cl+" ║  ",b_cl+"  ╠"+"═"*(mx+2)+"╣  "]+[b_cl+"  ║ "+_ljust_ignore(l,mx)+b_cl+" ║  " for l in o[1:]]+[b_cl+"  ╚"+"═"*(mx+2)+"╝  ","\x1b[0m\x1b[48;2;24;24;24m"+" "*(mx+8)]
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
 	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(min(mx+8,dt[9]),len(o)))
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
-	_print("\n".join(o)+"\x1b[0m",end="")
+	print("\n".join(o)+"\x1b[0m",end="")
 	ex=False
 	while (True):
 		c=sys.stdin.read(1)
@@ -1016,6 +1025,11 @@ def _install_ard_pkg(b,force=False):
 
 
 def _compile_ard_prog(s_fp,fqbn,inc_l):
+	def _run_cmd(*a,**kw):
+		o=subprocess.run(*a,**kw)
+		if (o.returncode!=0):
+			sys.exit(o.returncode)
+		return o
 	def _quote_fp(fp):
 		return fp.replace("\\","\\\\").replace("\"","\\\"")
 	def _expand_in_string(d,s):
@@ -1033,7 +1047,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 		for k in bp.keys():
 			if (k.startswith(pfx) and k.endswith(sfx) and len(bp[k])>0):
 				cmd=_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(bp,bp[k])))
-				subprocess.run(cmd)
+				_run_cmd(cmd)
 	def _compile_files(b,i_fp,o_fp,inc_l,rc):
 		l=[[],[],[]]
 		for r,_,fl in os.walk(i_fp):
@@ -1052,7 +1066,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 				c_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+("."+ARDUINO_CUSTOM_WARNING_LEVEL if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"" for e in inc_l]),"source_file":f,"object_file":o_fp+f[len(i_fp):]+".o"}
 				if (not ntpath.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
 					os.makedirs(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))
-				subprocess.run(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
+				_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
 				o+=[o_fp+f[len(i_fp):]+".o"]
 		return o
 	s_fp=ntpath.abspath(s_fp).replace("\\","/")
@@ -1125,10 +1139,10 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.prebuild",".pattern")
 	l_off=0
-	m_src=b""
 	nh_inc=False
 	_print("Bundling Sketch Files\x1b[38;2;100;100;100m...")
 	with open(b_fp+m_fp.split("/")[-1]+".cpp","wb") as bf:
+		src=b""
 		for r,_,fl in os.walk(s_fp):
 			for fp in fl:
 				if ("."+fp.split(".")[-1].lower() in ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS):
@@ -1136,20 +1150,28 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 					with open(ntpath.join(r,fp),"rb") as f:
 						dt=f.read()
 						if (nh_inc==False and re.search(r"(?m)^\s*#\s*include\s*[<\"]Arduino\.h[>\"]",str(dt,"utf-8"))==None):
-							m_src+=b"#include <Arduino.h>\n"
 							bf.write(b"#include <Arduino.h>\n")
 							l_off+=1
 						nh_inc=True
-						m_src+=bytes(f"#line 1 \"{_quote_fp(ntpath.join(r,fp))}\"\n","utf-8")+dt+b"\n"
-						bf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(r,fp))}\"\n","utf-8")+dt+b"\n")
+						src+=dt+b"\n"
+						bf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(r,fp))}\"\n","utf-8")+dt+b"\n;\n")
 						l_off+=(1 if ntpath.join(r,fp)==m_fp else 0)
-				elif ("."+fp.split(".")[-1].lower() in ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS):
-					_print(f"Found Additional Sketch File '{ntpath.join(r,f)}'\x1b[38;2;100;100;100m...")
-					if (not ntpath.exists("/".join((b_fp+ntpath.join(r,fp)[len(s_fp):]).split("/")[:-1]))):
-						os.makedirs("/".join((b_fp+ntpath.join(r,fp)[len(s_fp):]).split("/")[:-1]))
-					with open(b_fp+ntpath.join(r,fp)[len(s_fp):],"wb") as wf,open(ntpath.join(r,fp),"rb") as rf:
-						wf.write(rf.read())
-	inc_l+=[bp["build.core.path"]]
+		dl=[(e[0].replace("\\","/"),e[1].replace("\\","/")) for e in [(s_fp,s_fp)]+[(ntpath.join(r,d),r) for r,dl,_ in os.walk(s_fp) for d in dl]+[(e,e) for e in inc_l]]
+		l=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(src,"utf-8").lower()) if e!="arduino.h"]
+		for k in l:
+			if (k[-2:]==".h"):
+				l+=[k[:-2]+".cpp",k[:-2]+".c",k[:-2]+".s"]
+			for d in dl:
+				if (ntpath.exists(ntpath.join(d[0],k))):
+					_print(f"Found Included Sketch File '{ntpath.join(d[0],k)}'\x1b[38;2;100;100;100m...")
+					if (not ntpath.exists("/".join((b_fp+ntpath.join(d[0],k)[len(d[1]):]).replace("\\","/").split("/")[:-1]))):
+						os.makedirs("/".join((b_fp+ntpath.join(d[0],k)[len(d[1]):]).replace("\\","/").split("/")[:-1]))
+					with open("/".join((b_fp+ntpath.join(d[0],k)[len(d[1]):]).replace("\\","/").split("/")[:-1])+f"/{k}","wb") as wf,open(ntpath.join(d[0],k),"rb") as rf:
+						dt=rf.read()
+						l+=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(dt,"utf-8").lower()) if e!="arduino.h" and e not in l]
+						wf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(d[0],k))}\"\n","utf-8")+dt+b"\n;\n")
+					break
+	inc_l+=[bp["build.core.path"],b_fp]
 	if (bp["build.variant.path"]!=""):
 		inc_l+=[bp["build.variant.path"]]
 	if (not ntpath.exists(f"{b_fp}preproc/")):
@@ -1159,10 +1181,10 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	if ("recipe.preproc.macros" not in list(pd.keys())):
 		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
-	subprocess.run([e for e in _prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"]+["-DARDUINO_LIB_DISCOVERY_PHASE"])
+	_run_cmd([e for e in _prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"]+["-DARDUINO_LIB_DISCOVERY_PHASE"])
 	_print("Running Arduino Preprocessor\x1b[38;2;100;100;100m...")
 	with open(b_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","wb") as f:
-		f.write(subprocess.run(_prepare_cmd(_expand_in_string({**bp,**{k[27:]:v for k,v in bp.items() if k[:26]=="tools.arduino-preprocessor"},"source_file":f"{b_fp}preproc/preproc.cpp","codecomplete":""},bp["tools.arduino-preprocessor.pattern"])),stdout=subprocess.PIPE).stdout)
+		f.write(_run_cmd(_prepare_cmd(_expand_in_string({**bp,**{k[27:]:v for k,v in bp.items() if k[:26]=="tools.arduino-preprocessor"},"source_file":f"{b_fp}preproc/preproc.cpp","codecomplete":""},bp["tools.arduino-preprocessor.pattern"])),stdout=subprocess.PIPE).stdout)
 	shutil.rmtree(f"{b_fp}preproc/")
 	os.remove(b_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
@@ -1171,9 +1193,6 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	s_of=_compile_files(bp,b_fp,b_fp,inc_l,False)+(_compile_files(bp,f"{b_fp}src/",f"{b_fp}src/",inc_l,True) if ntpath.exists(f"{b_fp}src/") else [])
 	_print("Running Recipe 'recipe.hooks.sketch.postbuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.sketch.postbuild",".pattern")
-	### < LIBRARIES>
-	l_of=[]# Lib Object Files
-	### </ARDUINO_LIBRARIES>
 	_print("Running Recipe 'recipe.hooks.core.prebuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.core.prebuild",".pattern")
 	c_inc_l=[bp["build.core.path"]]+([bp["build.variant.path"]] if bp["build.variant.path"]!="" else [])
@@ -1189,7 +1208,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 			if (pr==False):
 				_print("Archiving Core Files\x1b[38;2;100;100;100m...")
 			pr=True
-			subprocess.run(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"archive_file":"core.a","archive_file_path":f"{b_fp}core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
+			_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"archive_file":"core.a","archive_file_path":f"{b_fp}core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
 			os.remove(c_of)
 			os.remove(c_of[:-2]+".d")
 	else:
@@ -1200,7 +1219,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.linking.prelink",".pattern")
 	_print("Linking Files\x1b[38;2;100;100;100m...")
-	subprocess.run(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":f"{b_fp}core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+l_of+v_of])},bp["recipe.c.combine.pattern"]))))
+	_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":f"{b_fp}core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.linking.postlink",".pattern")
 	_print("Running Recipe 'recipe.hooks.objcopy.preobjcopy'\x1b[38;2;100;100;100m...")
@@ -1215,7 +1234,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
 		sz_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")}
-		out=str(subprocess.run(_prepare_cmd(_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"])),stdout=subprocess.PIPE).stdout,"utf-8")
+		out=str(_run_cmd(_prepare_cmd(_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"])),stdout=subprocess.PIPE).stdout,"utf-8")
 		for i,r in enumerate(("recipe.size.regex","recipe.size.regex.data")):
 			for k in re.findall(r"(?m)"+bp[r],out):
 				sz[i]+=int(k)
@@ -1242,6 +1261,11 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 
 
 def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[]):
+	def _run_cmd(*a,**kw):
+		o=subprocess.run(*a,**kw)
+		if (o.returncode!=0):
+			sys.exit(o.returncode)
+		return o
 	def _expand_in_string(d,s):
 		while (True):
 			ns=s+""
@@ -1322,13 +1346,177 @@ def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[
 			p=b["location"]
 			up.update({"serial.port":p,"serial.port.file":p})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
-		subprocess.run([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
 	else:
 		_print("Erasing Board\x1b[38;2;100;100;100m...")
-		subprocess.run([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
 		_print("Burning Bootloader to Board\x1b[38;2;100;100;100m...")
-		subprocess.run([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
 	_print("Upload Finished.")
+
+
+
+def _serial_ard():
+	class _UI:
+		def __init__(self,sz):
+			self._sz=sz
+			self._o=[]
+			self._m=0
+			self._inp_bf=""
+			self._pl=None
+			self._pi=0
+			self._p=None
+			self._p_dt=None
+			self._dt_bf=""
+			self._k=None
+			self._off=[0,0]
+
+
+
+		def loop(self):
+			while (True):
+				self._o=[f"\x1b[0m\x1b[48;2;24;24;24m{' '*(self._sz[0]-1)}",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╔{'═'*(self._sz[0]-9)}╗   ",*(f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ║{' '*(self._sz[0]-9)}\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m║   ",)*(self._sz[1]-5),f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╚{'═'*(self._sz[0]-9)}╝   ",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m{' '*(self._sz[0]-1)}"]
+				if (msvcrt.kbhit()==True):
+					k=msvcrt.getch()
+					if (k==b"\x03"):
+						if (self._m==0):
+							break
+						elif (self._m==1):
+							s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+							s.connect(("127.0.0.1",8020))
+							s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':self._p['location'],'op':'delete'})}","utf-8"))
+							s.recv(65536)
+							s.close()
+							self._m=0
+							self._pl=None
+							self._pi=0
+							self._p=None
+							self._p_dt=None
+							self._inp_bf=""
+							self._dt_bf=""
+					elif (k==b"\xe0"):
+						self._k=(k,msvcrt.getch())
+					else:
+						self._k=(k,"")
+				else:
+					self._k=(b"","")
+				if (self._m==0):
+					if (self._k[0]==b"r" or self._pl==None):
+						self._pl=_l_ard_boards()
+						self._pl=[{"arch":"avr","fqbn":"arduino:avr:uno","name":"Arduino Uno","location":"COM3"},{"arch":"Aavr","fqbn":"Aarduino:avr:uno","name":"AArduino Uno","location":"ACOM3"},{"arch":"Bavr","fqbn":"Barduino:avr:uno","name":"BArduino Uno","location":"BCOM3"}]
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
+						self._pi=((self._pi-1)+len(self._pl))%len(self._pl)
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
+						self._pi=(self._pi+1)%len(self._pl)
+					elif (self._k[0]==b"\r"):
+						self._p=self._pl[self._pi]
+						s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+						s.connect(("127.0.0.1",8020))
+						s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':self._p['location'],'op':'create'})}","utf-8"))
+						dt=str(s.recv(65536),"utf-8")
+						s.close()
+						self._p_dt=json.loads(dt[len(dt.split("\r\n\r\n")[0])+4:])
+						self._m=1
+					self._draw_table({"name":("Name","#dbdf0c"),"arch":("Arch","#8ae8c6"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
+				elif (self._m==1):
+					if (self._k[0]==b"\r"):
+						pass
+						### SEND
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
+						self._off[0]=max(0,self._off[0]-1)
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
+						pass
+						### DOWN
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"K"):
+						self._off[1]=max(0,self._off[1]-1)
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"M"):
+						self._off[1]=min(self._off[1]+1,len(self._inp_bf))
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"G"):
+						self._off[1]=0
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"O"):
+						self._off[1]=len(self._inp_bf)
+					else:
+						self._inp_bf+=repr(self._k[0])
+					self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
+					self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
+					self._set(4,self._sz[1]-4,self._inp_bf)
+				print("\n".join(self._o)+"\x1b[0m",end="")
+
+
+
+		def _draw_table(self,nm,d,s=-1):
+			mw=self._sz[0]-11
+			mx_l=[max([len(nm[list(nm.keys())[i]][0])]+[len(e[k]) for e in d])+2 for i,k in enumerate(list(nm.keys()))]
+			off=((self._sz[0]-9-(sum(mx_l)+len(list(nm.keys()))+1))//2,3)
+			self._set(off[0],off[1],"\x1b[38;2;156;156;156m┌"+"┬".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┐")
+			self._set(off[0],off[1]+1,"\x1b[38;2;156;156;156m|"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{min(255,int(nm[e][1][1:3],16)+65)};{min(255,int(nm[e][1][3:5],16)+65)};{min(255,int(nm[e][1][5:7],16)+65)}m"+nm[e][0].center(mx_l[i]," ") for i,e in enumerate(list(nm.keys()))])+"\x1b[38;2;156;156;156m│")
+			self._set(off[0],off[1]+2,"\x1b[38;2;156;156;156m├"+"┼".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┤")
+			for i,k in enumerate(d):
+				self._set(off[0],off[1]+i+3,"\x1b[38;2;156;156;156m│"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{max(0,int(nm[e][1][1:3],16)-(0 if i%2==0 else 65))};{max(0,int(nm[e][1][3:5],16)-(0 if i%2==0 else 65))};{max(0,int(nm[e][1][5:7],16)-(0 if i%2==0 else 65))}m"+("\x1b[48;2;37;37;37m" if i==s else "")+k[e].center(mx_l[j]," ") for j,e in enumerate(list(nm.keys()))])+"\x1b[48;2;24;24;24m\x1b[38;2;156;156;156m│")
+			self._set(off[0],off[1]+len(d)+3,"\x1b[38;2;156;156;156m└"+"┴".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┘")
+
+
+
+		def _set(self,x,y,v):
+			i=0
+			j=0
+			while (i<len(self._o[y])):
+				m=re.match(r"\x1b\[[^m]*m",self._o[y][i:])
+				if (m!=None):
+					i+=len(m.group(0))
+					continue
+				if (j==x):
+					k=i+0
+					l=j+0
+					while (l<len(self._o[y])):
+						m=re.match(r"\x1b\[[^m]*m",self._o[y][k:])
+						if (m!=None):
+							k+=len(m.group(0))
+							continue
+						if (l==j+len(re.sub(r"\x1b\[[^m]*m","",v))):
+							break
+						k+=1
+						l+=1
+					self._o[y]=self._o[y][:i]+v+self._o[y][k:]
+					return
+				i+=1
+				j+=1
+	threading.current_thread()._b_nm="__core__"
+	threading.current_thread()._nm="arduino_serial_terminal"
+	threading.current_thread()._r=2
+	_Arduino_Cache.init()
+	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0))
+	ho=ctypes.windll.kernel32.GetStdHandle(-11)
+	ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+	sbi=ctypes.create_string_buffer(22)
+	ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
+	sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
+	ci=ctypes.create_string_buffer(5)
+	ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+	try:
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[9],sz[10]-1))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		ui=_UI((sz[9]+1,sz[10]))
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(" ".encode()),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+		ui.loop()
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(" ".encode()),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+	except Exception as e:
+		traceback.print_exception(None,e,e.__traceback__)
+	ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
+	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
+	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+	if (ui._p!=None):
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(("127.0.0.1",8020))
+		s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':ui._p['location'],'op':'delete'})}","utf-8"))
+		s.recv(65536)
+		s.close()
 
 
 
@@ -1451,7 +1639,7 @@ def _create_prog(type_,name,op=True):
 	if (type_=="arduino"):
 		if (not ntpath.exists(f"{p}index.ino")):
 			with open(f"{p}index.ino","x") as f:
-				f.write("void setup(){\n\t\n}\n\n\n\nvoid draw(){\n\t\n}\n")
+				f.write("void setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\nrm -rf build&&python D:\\boot\\boot.py 5 compile ./ arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./ COM3 arduino:avr:uno\n")
@@ -1562,8 +1750,8 @@ class _WebSocketServer_handle(WebSocket):
 	def handleClose(self):
 		global SERIAL_L
 		self.stop=True
-		if (hasattr(self,"_p") and self._p!=None):
-			SERIAL_L[self._p]["cnt"]-=1
+		# if (hasattr(self,"_p") and self._p!=None):
+		# 	SERIAL_L[self._p]["cnt"]-=1
 
 
 
@@ -1580,17 +1768,17 @@ class _WebSocketServer_handle(WebSocket):
 						self.sendMessage(b"dt:"+CMD_L[self.h_nm]["l"][k][l[k]:])
 						l[k]=len(CMD_L[self.h_nm]["l"][k][l[k]:])
 				time.sleep(1e-6)
-		def _h_plt(self):
-			global SERIAL_L
-			while (SERIAL_L[self._p]["port"]==None):
-				pass
-			s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-			print(SERIAL_L[self._p]["port"])
-			s.connect(SERIAL_L[self._p]["port"])
-			while (self._stop==False):
-				self.sendMessage(b"dt:"+s.recv(1024))
-				time.sleep(1e-4)
-			s.close()
+		# def _h_plt(self):
+		# 	global SERIAL_L
+		# 	while (SERIAL_L[self._p]["port"]==None):
+		# 		pass
+		# 	s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		# 	print(SERIAL_L[self._p]["port"])
+		# 	s.connect(SERIAL_L[self._p]["port"])
+		# 	while (self._stop==False):
+		# 		self.sendMessage(b"dt:"+s.recv(1024))
+		# 		time.sleep(1e-4)
+		# 	s.close()
 		t,msg=self.data[0],self.data[1:]
 		self.sendMessage("null")
 		if (t[0]=="0"):
@@ -1613,31 +1801,34 @@ class _WebSocketServer_handle(WebSocket):
 					return
 				CMD_L[self.h_nm]["h"].stdin.write(bytes(msg[3:],"utf-8"))
 				CMD_L[self.h_nm]["h"].stdin.flush()
-		elif (t[0]=="1"):
-			if (not hasattr(self,"_p")):
-				self._p=None
-			if (not hasattr(self,"_stop")):
-				self._stop=False
-			if (msg=="pltl"):
-				self.sendMessage(f"pltl:{';'.join([e['location'] for e in _l_ard_boards(p=False)]).upper()}")
-			elif (msg[:4]=="plt:"):
-				bl=_l_ard_boards(p=False)
-				if (msg[4:].upper() in [e["location"].upper() for e in bl]):
-					self._stop=True
-					if (hasattr(self,"_thr")):
-						self._thr.join()
-					self._stop=False
-					self._p=[e["location"] for e in bl if e["location"].upper()==msg[4:].upper()][0]
-					if (self._p not in list(SERIAL_L.keys())):
-						SERIAL_L[self._p]={"cnt":1,"port":None,"_cs":[]}
-						_start_thr(_start_ser,"__core__",f"serial_reader_{self._p.lower()}",self._p)
-					else:
-						SERIAL_L[self._p]["cnt"]+=1
-					self.sendMessage(f"plt:1{self._p}")
-					self._thr=threading.Thread(target=_h_plt,args=(self,),kwargs={})
-					self._thr.start()
-				else:
-					self.sendMessage("plt:0")
+		# elif (t[0]=="1"):
+		# 	if (not hasattr(self,"_p")):
+		# 		self._p=None
+		# 	if (not hasattr(self,"_stop")):
+		# 		self._stop=False
+		# 	if (msg=="pltl"):
+		# 		self.sendMessage(f"pltl:{';'.join([e['location'] for e in _l_ard_boards(p=False)]).upper()}")
+		# 	elif (msg[:4]=="plt:"):
+		# 		bl=_l_ard_boards(p=False)
+		# 		if (msg[4:].upper() in [e["location"].upper() for e in bl]):
+		# 			self._stop=True
+		# 			if (hasattr(self,"_thr")):
+		# 				self._thr.join()
+		# 			self._stop=False
+		# 			self._p=[e["location"] for e in bl if e["location"].upper()==msg[4:].upper()][0]
+		# 			if (self._p not in list(SERIAL_L.keys())):
+		# 				SERIAL_L[self._p]={"cnt":1,"port":None,"in":[],"_cs":[]}
+		# 				_start_thr(_start_ser,"__core__",f"serial_reader_{self._p.lower()}",self._p)
+		# 			else:
+		# 				SERIAL_L[self._p]["cnt"]+=1
+		# 			self.sendMessage(f"plt:1{self._p}")
+		# 			self._thr=threading.Thread(target=_h_plt,args=(self,),kwargs={})
+		# 			self._thr.start()
+		# 		else:
+		# 			self.sendMessage("plt:0")
+		# 	elif (msg[:3]=="in:"):
+		# 		if (self._p!=None):
+		# 			SERIAL_L[self._p]["in"]+=[msg[3:]]
 
 
 
@@ -1647,7 +1838,7 @@ def _start_s(t):
 		try:
 			_dt=cs.recv(65536)
 			if (len(_dt)==0):
-				_print(f"Skipping Empty Request From '{a[0]}:{a[1]}'\x1b[38;2;100;100;100m..")
+				_print(f"\x1b[38;2;200;40;20mEmpty Request From '{a[0]}:{a[1]}'.\x1b[0mSkipping\x1b[38;2;100;100;100m..")
 				return
 			(t,url,v),h,dt=str(_dt.split(b"\r\n")[0],"utf-8").split(" "),{str(e.split(b":")[0],"utf-8"):e[len(e.split(b":")[0])+2:] for e in _dt.split(b"\r\n\r\n")[0].split(b"\r\n")[1:] if len(e)!=0},_dt[len(_dt.split(b"\r\n\r\n")[0])+4:]
 			rc=-1
@@ -1674,7 +1865,7 @@ def _start_s(t):
 							url="/serial_plotter.html"
 						if (url=="/serial_ports"):
 							_print(f"Sending Serial Port List\x1b[38;2;100;100;100m...")
-							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:{sk:sv for sk,sv in v.items() if sk!='_cs'} for k,v in SERIAL_L.items()}))}\r\n\r\n{json.dumps({k:{sk:sv for sk,sv in v.items() if sk!='_cs'} for k,v in SERIAL_L.items()})}","utf-8"))
+							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()}))}\r\n\r\n{json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()})}","utf-8"))
 							rc=200
 						else:
 							url="."+url
@@ -1692,6 +1883,23 @@ def _start_s(t):
 					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
 					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n","utf-8"))
 					rc=401
+			elif (t=="PUT" and url=="/serial_ports"):
+				dt=json.loads(dt)
+				if (dt["op"]=="create"):
+					_print(f"Starting Serial Reader on Port '{dt['port']}'\x1b[38;2;100;100;100m..")
+					if (dt["port"] not in SERIAL_L.keys()):
+						SERIAL_L[dt["port"]]={"cnt":1,"port":None,"in":[],"_cs":[]}
+						_start_thr(_start_ser,"__core__",f"serial_reader_{dt['port'].lower()}",dt["port"])
+					else:
+						SERIAL_L[dt["port"]]["cnt"]+=1
+					while (SERIAL_L[dt["port"]]["port"]==None):
+						pass
+					cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:v for k,v in SERIAL_L[dt['port']].items() if k!='_cs'}))}\r\n\r\n{json.dumps({k:v for k,v in SERIAL_L[dt['port']].items() if k not in '_cs,in'.split(',')})}","utf-8"))
+				else:
+					_print(f"Stopping Serial Reader on Port '{dt['port']}'\x1b[38;2;100;100;100m..")
+					SERIAL_L[dt["port"]]["cnt"]-=1
+					cs.send(bytes("HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: 2\r\n\r\n{}","utf-8"))
+				rc=200
 			elif (t=="CHANGE_DESC"):
 				pg=url[1:].split("~")[0]
 				dc=urllib.parse.unquote("~".join(url[1:].split("~")[1:]),errors="surrogatepass")
@@ -1739,6 +1947,7 @@ def _start_s(t):
 				cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(fnm.split(chr(92))[-1])+4}\r\n\r\ntmp/{fnm.split(chr(92))[-1]}","utf-8"))
 				rc=200
 			else:
+				_print(f"\x1b[38;2;200;40;20mUnimplemented Method '{t}'\x1b[38;2;200;40;20m Recived From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
 				cs.send(b"HTTP/1.1 501 Not Implemented\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>501</h1><h3>Not Implemented</h3></body></html>")
 				rc=501
 			_print(f"Finished Processing Request with Response Code {rc}.")
@@ -1796,15 +2005,6 @@ def _sw_kb():
 	except:
 		KB_PID=subprocess.Popen(["javaw","-jar","D:\\boot\\Keyboard.jar"]).pid
 		_print("Enabling On-Screen Keyboard\x1b[38;2;100;100;100m...")
-
-
-
-def _chk_a():
-	return True############################
-	try:
-		return ctypes.windll.shell32.IsUserAnAdmin()
-	except:
-		return False
 
 
 
@@ -1872,80 +2072,77 @@ def _end(a):
 
 
 
-os.system("cls")
 if (len(sys.argv)==1):
-	if (_chk_a()==True):
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-		CMD_L["__core__"]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{"__main__":b""}}
-		threading.current_thread()._b_nm="__core__"
-		threading.current_thread()._nm="__main__"
-		_print("Starting Boot Sequence\x1b[38;2;100;100;100m...\x1b[0m")
-		_print("Clearing Temp Dir\x1b[38;2;100;100;100m...")
-		for fnm in os.listdir("D:\\boot\\tmp\\"):
-			os.remove(f"D:\\boot\\tmp\\{fnm}")
-		_print("Starting Arduino Cache\x1b[38;2;100;100;100m...")
-		_Arduino_Cache.init()
-		_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
-		_start_thr(_net_loop,"__core__","network_status_loop")
-		_print("Registering Keyboard Hotkeys\x1b[38;2;100;100;100m...")
-		keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app("C:\\Windows\\System32\\charmap.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
-		keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
-		keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
-		keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["javaw","-jar","D:\\boot\\ScreenBlocker.jar"]))
-		keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_end(["/l"]))
-		keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
-		keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
-		keyboard.add_hotkey("ctrl+alt+shift+d",lambda:_open_app("C:\\Windows\\System32\\Taskmgr.exe"))
-		keyboard.add_hotkey("ctrl+alt+shift+k",_sw_kb)
-		keyboard.add_hotkey("ctrl+alt+shift+v",lambda:_open_app(["python","D:\\boot\\boot.py","2"]))
-		_print("Starting Minecraft Servers\x1b[38;2;100;100;100m...")
-		_start_thr(_u_mcs,"__core__","minecraft_redstone_server_updater","D:\\boot\\mcs")
-		_start_thr(_u_mcs,"__core__","minecraft_survival_server_updater","D:\\boot\\mcs-s")
-		_print("Starting Codewars ChromeDriver\x1b[38;2;100;100;100m...")
-		_start_thr(_codewars_wr,"__core__","codewars_driver")
-		_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
-		_start_thr(_ut_k,"__core__","useless_task_kill")
-		_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-		_start_thr(_git_project_push,"__core__","github_project_push")
-		_print("Removing Old Project Registry\x1b[38;2;100;100;100m...")
-		nm=[]
-		p_nm_l=[e.lower() for e in os.listdir("D:\\K\\Coding\\projects\\")]
-		with open("D:\\boot\\workspace-data.json","r") as f:
-			WORKSPACE_DATA=json.loads(f.read())
-			for k in WORKSPACE_DATA[:]:
-				if (k["name"].lower() not in p_nm_l):
-					WORKSPACE_DATA.remove(k)
-					continue
-				# _create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
-				nm+=[k["name"].lower()]
-		_print("Registering New Projects\x1b[38;2;100;100;100m...")
-		for f in os.listdir("D:\\K\\Coding\\projects\\"):
-			if (f.lower() not in nm):
-				WORKSPACE_DATA+=[{"name":f.split("-")[0]+"-"+"_".join([e.title() for e in f.split("-")[1].split("_")]),"desc":"[null]","year":datetime.datetime.now().year}]
-				_create_prog(f.split("-")[0].lower(),f.split("-")[1].lower(),op=False)
-		_print("Saving Project Registry\x1b[38;2;100;100;100m...")
-		_save_w()
-		_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_s,"__core__","cmdline_websocket_server",0)
-		_print("Starting PHP Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_s,"__core__","php_server",1)
-		_print(f"Startint Remote Std Listener\x1b[38;2;100;100;100m...")
-		_start_thr(_start_s,"__core__","remote_std_server",2)
-		_print("Starting Localhost Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_s,"__core__","localhost_server",3)
-		_print("Starting Local IP Server\x1b[38;2;100;100;100m...")
-		_start_thr(_start_s,"__core__","local_ip_server",4)
-		_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
-		try:
-			while (True):
-				time.sleep(1e-6)
-		except:
-			pass
-		os.system(f"taskkill /pid {os.getpid()} /f")
-	else:
-		ctypes.windll.shell32.ShellExecuteW(None,"runas",sys.executable,"D:\\boot\\boot.py",None,1)
+	os.system("cls")
+	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+	CMD_L["__core__"]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{"__main__":b""}}
+	threading.current_thread()._b_nm="__core__"
+	threading.current_thread()._nm="__main__"
+	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...\x1b[0m")
+	_print("Clearing Temp Dir\x1b[38;2;100;100;100m...")
+	for fnm in os.listdir("D:\\boot\\tmp\\"):
+		os.remove(f"D:\\boot\\tmp\\{fnm}")
+	_print("Starting Arduino Cache\x1b[38;2;100;100;100m...")
+	_Arduino_Cache.init()
+	_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
+	_start_thr(_net_loop,"__core__","network_status_loop")
+	_print("Registering Keyboard Hotkeys\x1b[38;2;100;100;100m...")
+	keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app("C:\\Windows\\System32\\charmap.exe"))
+	keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
+	keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
+	keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
+	keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
+	keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["javaw","-jar","D:\\boot\\ScreenBlocker.jar"]))
+	keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_end(["/l"]))
+	keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
+	keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
+	keyboard.add_hotkey("ctrl+alt+shift+d",lambda:_open_app("C:\\Windows\\System32\\Taskmgr.exe"))
+	keyboard.add_hotkey("ctrl+alt+shift+k",_sw_kb)
+	keyboard.add_hotkey("ctrl+alt+shift+v",lambda:_open_app(["python","D:\\boot\\boot.py","2"]))
+	_print("Starting Minecraft Servers\x1b[38;2;100;100;100m...")
+	_start_thr(_u_mcs,"__core__","minecraft_redstone_server_updater","D:\\boot\\mcs")
+	_start_thr(_u_mcs,"__core__","minecraft_survival_server_updater","D:\\boot\\mcs-s")
+	_print("Starting Codewars ChromeDriver\x1b[38;2;100;100;100m...")
+	_start_thr(_codewars_wr,"__core__","codewars_driver")
+	_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
+	_start_thr(_ut_k,"__core__","useless_task_kill")
+	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
+	_start_thr(_git_project_push,"__core__","github_project_push")
+	_print("Removing Old Project Registry\x1b[38;2;100;100;100m...")
+	nm=[]
+	p_nm_l=[e.lower() for e in os.listdir("D:\\K\\Coding\\projects\\")]
+	with open("D:\\boot\\workspace-data.json","r") as f:
+		WORKSPACE_DATA=json.loads(f.read())
+		for k in WORKSPACE_DATA[:]:
+			if (k["name"].lower() not in p_nm_l):
+				WORKSPACE_DATA.remove(k)
+				continue
+			# _create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
+			nm+=[k["name"].lower()]
+	_print("Registering New Projects\x1b[38;2;100;100;100m...")
+	for f in os.listdir("D:\\K\\Coding\\projects\\"):
+		if (f.lower() not in nm):
+			WORKSPACE_DATA+=[{"name":f.split("-")[0]+"-"+"_".join([e.title() for e in f.split("-")[1].split("_")]),"desc":"[null]","year":datetime.datetime.now().year}]
+			_create_prog(f.split("-")[0].lower(),f.split("-")[1].lower(),op=False)
+	_print("Saving Project Registry\x1b[38;2;100;100;100m...")
+	_save_w()
+	_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","cmdline_websocket_server",0)
+	_print("Starting PHP Server\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","php_server",1)
+	_print(f"Startint Remote Std Listener\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","remote_std_server",2)
+	_print("Starting Localhost Server\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","localhost_server",3)
+	_print("Starting Local IP Server\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","local_ip_server",4)
+	_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
+	try:
+		while (True):
+			time.sleep(1e-6)
+	except:
+		pass
+	os.system(f"taskkill /pid {os.getpid()} /f")
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -2084,7 +2281,7 @@ else:
 			elif (p=="scratch"):
 				os.system("start \"\" \"C:\\Program Files\\Scratch Desktop\\Scratch Desktop.exe\"")
 			elif (p=="idea"):
-				_open_app(r"D:\K\.IDEA",file=True)
+				_open_app(r"D:\\K\\.IDEA\\",file=True)
 				_open_app(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",r"D:\K\.IDEA\.IDEA"])
 			elif (p=="print"):
 				_open_app("C:\\Program Files\\RepetierGEEEtech\\RepetierHost.exe")
@@ -2093,13 +2290,15 @@ else:
 			elif (p=="cmd"):
 				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/cmd"])
 			elif (p=="serial"):
-				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/serial"])
+				_open_app(["python","D:\\boot\\boot.py","6"])
 			elif (p=="cad"):
 				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
 			elif (p=="regedit"):
 				_open_app("C:\\Windows\\regedit.exe")
 			elif (p=="ev3"):
 				_open_app("C:\\Program Files\\PuTTY\\putty.exe")
+			elif (ntpath.exists(p)):
+				_open_app(p,file=True)
 			elif (GIT_CLONE_REGEX.match(p)!=None):
 				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
 				_open_app("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1],file=True)
@@ -2240,3 +2439,5 @@ else:
 		else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)
+	elif (v==6):
+		_serial_ard()

@@ -128,6 +128,9 @@
 					if (e.keyCode==13&&document.querySelectorAll(".over")[0].style.display=="initial"){
 						socket.send(`1plt:${document.querySelectorAll(".over .box .inp")[0].value}`);
 					}
+					else if (e.keyCode==13&&document.querySelectorAll(".over")[0].style.display=="none"){
+						socket.send(`1in:${document.querySelectorAll(".bottom .inp")[0].value}`)
+					}
 					if (e.keyCode==13||e.keyCode==27){
 						document.querySelectorAll(".over")[0].style.display="none";
 					}
@@ -139,6 +142,8 @@
 		<style type="text/css">
 			body {
 				overflow: hidden;
+				width: 100%;
+				height: 100%;
 			}
 			body, body * {
 				padding: 0;
@@ -212,9 +217,9 @@
 				top: 53px;
 				left: 0;
 				width: 100%;
-				bottom: 0;
+				bottom: 33px;
 			}
-			.wr .bin, .wr .txt {
+			.wr .txt {
 				position: absolute;
 				top: 0;
 				left: 0;
@@ -232,6 +237,28 @@
 				left: 0;
 				width: 100%;
 				height: 100%;
+			}
+			.bottom {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				height: 30px;
+				background: #2a2a2a;
+				border-top: solid 3px #3d3d3d;
+			}
+			.bottom .inp {
+				position: absolute;
+				top: 0;
+				left: 0;
+				bottom: 0;
+				width: 100%;
+				outline: none;
+				border: none;
+				background: transparent;
+				font-family: Consolas;
+				font-size: 17px;
+				color: #b5b5b5;
 			}
 			.over {
 				position: absolute;
@@ -261,7 +288,7 @@
 				transform: translate(-50%,-50%);
 				background: transparent;
 				color: #b5b5b5;
-				white-space: pre-wrap;
+				white-space: nowrap;
 				font-family: Consolas;
 				font-size: 17px;
 				text-align: center;
@@ -274,8 +301,7 @@
 	</head>
 	<body>
 		<div class="wr">
-			<div class="vw bin"></div>
-			<pre class="vw txt" style="display:none"></pre>
+			<pre class="vw txt"></pre>
 			<canvas class="vw plt" style="display:none"></canvas>
 		</div>
 		<div class="top">
@@ -286,17 +312,17 @@
 			</div>
 			<div class="type">
 				<div class="t" onclick="sw_t(0)">
-					<a class="txt">Bin</a>
-				</div>
-				<div class="t" onclick="sw_t(1)">
 					<a class="txt">Txt</a>
 				</div>
-				<div class="t" onclick="sw_t(2)">
+				<div class="t" onclick="sw_t(1)">
 					<a class="txt">Plt</a>
 				</div>
 			</div>
 		</div>
-		<div class="over">
+		<div class="bottom">
+			<input type="text" class="inp">
+		</div>
+		<div class="over" style="display:none">
 			<div class="box">
 				<input type="text" class="inp" maxlength="18">
 			</div>
