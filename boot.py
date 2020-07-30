@@ -270,6 +270,14 @@ def _start_ser(p):
 			if (len(SERIAL_L[p]["in"])>0):
 				_,SERIAL_L[p]["in"]=s.write(bytes(SERIAL_L[p]["in"][0],"utf-8")),SERIAL_L[p]["in"][1:]
 			time.sleep(1e4)
+	def _s_w_thr(s):
+		_print(f"Starting Socket Writer Listener\x1b[38;2;100;100;100m...")
+		while (SERIAL_L[p]["cnt"]>0):
+			for cs in SERIAL_L[p]["_cs"]:
+				dt=cs.recv(4096)
+				if (len(dt)>0):
+					print(str(dt))
+			time.sleep(1e4)
 	def _close_s(s,ss):
 		s.close()
 		ss.close()
@@ -289,6 +297,7 @@ def _start_ser(p):
 		atexit.register(_close_s,s,ss)
 		bf=b""
 		_start_thr(_w_thr,"__core__",threading.current_thread()._nm+"_writer",s)
+		_start_thr(_s_w_thr,"__core__",threading.current_thread()._nm+"_socket_writer",s)
 		_print(f"Starting Read Loop\x1b[38;2;100;100;100m...")
 		while (SERIAL_L[p]["cnt"]>0):
 			while (s.in_waiting==0 and SERIAL_L[p]["cnt"]>0):
@@ -1367,7 +1376,8 @@ def _serial_ard():
 			self._pi=0
 			self._p=None
 			self._p_dt=None
-			self._dt_bf=""
+			self._p_s=None
+			self._dt_bf=["",""]
 			self._k=None
 			self._off=[0,0]
 
@@ -1382,6 +1392,7 @@ def _serial_ard():
 						if (self._m==0):
 							break
 						elif (self._m==1):
+							self._p_s.close()
 							s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 							s.connect(("127.0.0.1",8020))
 							s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':self._p['location'],'op':'delete'})}","utf-8"))
@@ -1392,18 +1403,19 @@ def _serial_ard():
 							self._pi=0
 							self._p=None
 							self._p_dt=None
+							self._p_s=None
 							self._inp_bf=""
-							self._dt_bf=""
+							self._dt_bf=["",""]
+							self._off=[0,0]
 					elif (k==b"\xe0"):
 						self._k=(k,msvcrt.getch())
 					else:
-						self._k=(k,"")
+						self._k=(k,b"")
 				else:
-					self._k=(b"","")
+					self._k=(b"",b"")
 				if (self._m==0):
 					if (self._k[0]==b"r" or self._pl==None):
 						self._pl=_l_ard_boards()
-						self._pl=[{"arch":"avr","fqbn":"arduino:avr:uno","name":"Arduino Uno","location":"COM3"},{"arch":"Aavr","fqbn":"Aarduino:avr:uno","name":"AArduino Uno","location":"ACOM3"},{"arch":"Bavr","fqbn":"Barduino:avr:uno","name":"BArduino Uno","location":"BCOM3"}]
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
 						self._pi=((self._pi-1)+len(self._pl))%len(self._pl)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
@@ -1416,17 +1428,23 @@ def _serial_ard():
 						dt=str(s.recv(65536),"utf-8")
 						s.close()
 						self._p_dt=json.loads(dt[len(dt.split("\r\n\r\n")[0])+4:])
+						print(self._p_dt)
+						self._p_s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+						self._p_s.connect(self._p_s["port"])
 						self._m=1
 					self._draw_table({"name":("Name","#dbdf0c"),"arch":("Arch","#8ae8c6"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
 				elif (self._m==1):
 					if (self._k[0]==b"\r"):
-						pass
-						### SEND
+						self._dt_bf[0]+=self._inp_bf+"\n"
+						self._p_s.sendall(bytes(self._inp_bf,"utf-8"))
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"\x8d"):
+						self._off[0]=max(0,self._off[0]-1)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
 						self._off[0]=max(0,self._off[0]-1)
+						### Mem UP
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
 						pass
-						### DOWN
+						### Mem DOWN
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"K"):
 						self._off[1]=max(0,self._off[1]-1)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"M"):
@@ -1435,11 +1453,23 @@ def _serial_ard():
 						self._off[1]=0
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"O"):
 						self._off[1]=len(self._inp_bf)
-					else:
-						self._inp_bf+=repr(self._k[0])
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"S"):
+						self._inp_bf=self._inp_bf[:self._off[1]]+self._inp_bf[self._off[1]+1:]
+					elif (self._k[0]==b"\b"):
+						self._inp_bf=self._inp_bf[:max(self._off[1]-1,0)]+self._inp_bf[self._off[1]:]
+						self._off[1]=max(self._off[1]-1,0)
+					elif (self._k[0]==b"\xe0"):
+						raise RuntimeError(f"Ignoring Special Key {self._k[1]}...")
+					elif (len(self._k[0])==1 and self._k[0] not in list(b"\x0a\x13")):
+						self._inp_bf=self._inp_bf[:self._off[1]]+repr(self._k[0])[2:-1]+self._inp_bf[self._off[1]:]
+						self._off[1]+=1
 					self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
 					self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
-					self._set(4,self._sz[1]-4,self._inp_bf)
+					self._set(4,8,repr(self._off))##############################################################
+					self._set(4,self._sz[1]-4,"\x1b[38;2;207;207;207m"+"".join([(e if i!=self._off[1] else f"\x1b[4m{e}\x1b[24m") for i,e in enumerate(list(self._inp_bf+" "))]))
+					h=self._sz[1]-8
+					self._set(4,9,repr(h))
+					# « + » or < + >
 				print("\n".join(self._o)+"\x1b[0m",end="")
 
 
@@ -1485,7 +1515,7 @@ def _serial_ard():
 	threading.current_thread()._nm="arduino_serial_terminal"
 	threading.current_thread()._r=2
 	_Arduino_Cache.init()
-	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0))
+	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 	ho=ctypes.windll.kernel32.GetStdHandle(-11)
 	ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 	sbi=ctypes.create_string_buffer(22)
@@ -1498,12 +1528,12 @@ def _serial_ard():
 		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[9],sz[10]-1))
 		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
 		ui=_UI((sz[9]+1,sz[10]))
-		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(" ".encode()),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
 		ui.loop()
-		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(" ".encode()),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 	except Exception as e:
@@ -1512,6 +1542,7 @@ def _serial_ard():
 	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
 	if (ui._p!=None):
+		ui._p_s.close()
 		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.connect(("127.0.0.1",8020))
 		s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':ui._p['location'],'op':'delete'})}","utf-8"))
