@@ -50,6 +50,8 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
+GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
+SERIAL_BAUD=9600
 R_STD_BUFFER={"_s":None,"bf":[]}
 SERIAL_L={}
 NETWORK=False
@@ -106,7 +108,7 @@ ARDUINO_OS_TYPE="windows"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
 ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
-ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":     "{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags": "-w -x c++ -E -CC"}
+ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 
 
@@ -283,7 +285,7 @@ def _start_ser(p):
 		ss.close()
 	_print(f"Starting Serial Connection to Port '{p}'\x1b[38;2;100;100;100m...")
 	try:
-		s=serial.Serial(p,9600,timeout=5)
+		s=serial.Serial(p,SERIAL_BAUD,timeout=5)
 		while (s.is_open==False):
 			time.sleep(1e-4)
 		s.timeout=0
@@ -688,9 +690,12 @@ def _update_repo(p,b_nm,r_desc,msg):
 				return False
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
-	r_nm=re.sub(r"[^A-Za-z0-9_\.\-]|",r"",b_nm)
+	r_nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
+	if (not ntpath.exists(f"{p}\\.gitconfig")):
+		with open(f"{p}\\.gitconfig","x") as f:
+			f.write(f"### Github File Push Config\n\nname={r_nm}\ndesc={r_nm}\npublic=true\nhomepage=\nlicense=mit\nfile.readme=.\\README.md\nfile.gitignore=.\\.gitignore\n\nconfig.has_issues=true\nconfig.has_projects=true\nconfig.has_wiki=true\nconfig.allow_squash_merge=true\nconfig.allow_merge_commit=true\nconfig.allow_rebase_merge=true\nconfig.delete_branch_on_merge=false\n")
 	try:
-		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_ssues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_issues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}","accept":GITHUB_HEADERS})
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
@@ -879,7 +884,7 @@ class _Arduino_Cache:
 
 
 	@staticmethod
-	def set(k,v,t=86400):
+	def set(k,v,t=2592000):
 		_Arduino_Cache._dt[k]=time.time()+t
 		with open(f"D:/boot/arduino/cache/index","w") as f:
 			f.write("\n".join([f"{e[0]}:{e[1]}" for e in _Arduino_Cache._dt.items()]))
@@ -1167,6 +1172,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 						l_off+=(1 if ntpath.join(r,fp)==m_fp else 0)
 		dl=[(e[0].replace("\\","/"),e[1].replace("\\","/")) for e in [(s_fp,s_fp)]+[(ntpath.join(r,d),r) for r,dl,_ in os.walk(s_fp) for d in dl]+[(e,e) for e in inc_l]]
 		l=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(src,"utf-8").lower()) if e!="arduino.h"]
+		r_dl=[]
 		for k in l:
 			if (k[-2:]==".h"):
 				l+=[k[:-2]+".cpp",k[:-2]+".c",k[:-2]+".s"]
@@ -1179,7 +1185,14 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 						dt=rf.read()
 						l+=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(dt,"utf-8").lower()) if e!="arduino.h" and e not in l]
 						wf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(d[0],k))}\"\n","utf-8")+dt+b"\n;\n")
+					for e in inc_l:
+						if (ntpath.join(d[0],k).replace("\\","/").startswith(e.replace("\\","/"))):
+							if (e not in r_dl):
+								r_dl+=[e]
+							break
 					break
+		for k in r_dl:
+			inc_l.remove(k)
 	inc_l+=[bp["build.core.path"],b_fp]
 	if (bp["build.variant.path"]!=""):
 		inc_l+=[bp["build.variant.path"]]
@@ -1237,7 +1250,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	_run_recipe(bp,"recipe.objcopy.",".pattern")
 	_print("Running Recipe 'recipe.hooks.objcopy.postobjcopy'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.objcopy.postobjcopy",".pattern")
-	_print("Running Recipe 'recipe.hooks.postbuildy'\x1b[38;2;100;100;100m...")
+	_print("Running Recipe 'recipe.hooks.postbuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.postbuild",".pattern")
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
@@ -1269,7 +1282,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 
 
 
-def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[]):
+def _upload_to_ard(s_fp,p,fqbn,bb,vu,inc_l):
 	def _run_cmd(*a,**kw):
 		o=subprocess.run(*a,**kw)
 		if (o.returncode!=0):
@@ -1328,16 +1341,16 @@ def _upload_to_ard(s_fp,p,fqbn,burn_bootloader=False,verify_upload=False,inc_l=[
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Generating Upload Properties\x1b[38;2;100;100;100m...")
 	up={**p_pm,**h_pm,"serial.port":p,"serial.port.file":p,"runtime.platform.path":h_fp}
-	up.update({k[len(h_pm[("bootloader.tool" if burn_bootloader==True else "upload.tool")])+7:]:v for k,v in up.items() if k.startswith(f"tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}.")})
+	up.update({k[len(h_pm[("bootloader.tool" if bb==True else "upload.tool")])+7:]:v for k,v in up.items() if k.startswith(f"tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.")})
 	for k in "upload,program,erase,bootloader".split(","):
 		up[f"{k}.verbose"]=up.get(f"{k}.params.quiet","")
 	for k in ("upload","program"):
-		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if verify_upload==False else '')}verify","")
+		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if vu==False else '')}verify","")
 	_print(f"Loading Tools\x1b[38;2;100;100;100m...")
-	for v in os.listdir(f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/"):
-		up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}-{v}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
-	up[f"runtime.tools.{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if burn_bootloader==True else 'upload.tool')]}/{v}"
-	if (burn_bootloader==False):
+	for v in os.listdir(f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/"):
+		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}-{v}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}"
+	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.path"]=f"D:/boot/arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}"
+	if (bb==False):
 		up.update({"build.path":f"{s_fp}build/","build.project_name":m_fp[len(s_fp):]})
 		_print("Setting Board in Bootloader Mode\x1b[38;2;100;100;100m...")
 		if (bool(up.get("upload.use_1200bps_touch","False"))==True):
@@ -1369,21 +1382,34 @@ def _serial_ard():
 	class _UI:
 		def __init__(self,sz):
 			self._sz=sz
-			self._o=[]
+			self._o=[f"\x1b[0m\x1b[48;2;24;24;24m{' '*(self._sz[0]-1)}",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╔{'═'*(self._sz[0]-9)}╗   ",*(f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ║{' '*(self._sz[0]-9)}\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m║   ",)*(self._sz[1]-5),f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╚{'═'*(self._sz[0]-9)}╝   ",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m{' '*(self._sz[0]-1)}"]
 			self._m=0
+			self._t=0
 			self._inp_bf=""
 			self._pl=None
 			self._pi=0
 			self._p=None
 			self._p_dt=None
 			self._p_s=None
-			self._dt_bf=["",""]
+			self._dt=[]
 			self._k=None
 			self._off=[0,0]
+			self._a_s=True
+			self._mem=[""]
+			self._mem_i=0
+			self._b_tm=-1
+			self._b=True
+			self._nm_d_tm=-1
+			self._nm_d=True
+			self._r_bf=""
+			self._cl_cache=[]
+			self._dl=[]
 
 
 
 		def loop(self):
+			def _cmp(a,b):
+				return (0 if a==b else (-1 if a<b else 1))
 			while (True):
 				self._o=[f"\x1b[0m\x1b[48;2;24;24;24m{' '*(self._sz[0]-1)}",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╔{'═'*(self._sz[0]-9)}╗   ",*(f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ║{' '*(self._sz[0]-9)}\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m║   ",)*(self._sz[1]-5),f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╚{'═'*(self._sz[0]-9)}╝   ",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m{' '*(self._sz[0]-1)}"]
 				if (msvcrt.kbhit()==True):
@@ -1399,14 +1425,25 @@ def _serial_ard():
 							s.recv(65536)
 							s.close()
 							self._m=0
+							self._t=0
 							self._pl=None
 							self._pi=0
 							self._p=None
 							self._p_dt=None
 							self._p_s=None
 							self._inp_bf=""
-							self._dt_bf=["",""]
+							self._dt=[]
 							self._off=[0,0]
+							self._a_s=True
+							self._mem=[""]
+							self._mem_i=0
+							self._b_tm=-1
+							self._b=True
+							self._nm_d_tm=-1
+							self._nm_d=True
+							self._r_bf=""
+							self._cl_cache=[]
+							self._dl=[]
 					elif (k==b"\xe0"):
 						self._k=(k,msvcrt.getch())
 					else:
@@ -1421,56 +1458,206 @@ def _serial_ard():
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
 						self._pi=(self._pi+1)%len(self._pl)
 					elif (self._k[0]==b"\r"):
-						self._p=self._pl[self._pi]
-						s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-						s.connect(("127.0.0.1",8020))
-						s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':self._p['location'],'op':'create'})}","utf-8"))
-						dt=str(s.recv(65536),"utf-8")
-						s.close()
-						self._p_dt=json.loads(dt[len(dt.split("\r\n\r\n")[0])+4:])
-						print(self._p_dt)
-						self._p_s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-						self._p_s.connect(self._p_s["port"])
-						self._m=1
-					self._draw_table({"name":("Name","#dbdf0c"),"arch":("Arch","#8ae8c6"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
+						if (len(self._pl)>0):
+							self._p=self._pl[self._pi]
+							s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+							s.connect(("127.0.0.1",8020))
+							s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':self._p['location'],'op':'create'})}","utf-8"))
+							dt=str(s.recv(65536),"utf-8")
+							s.close()
+							self._p_dt=json.loads(dt[len(dt.split("\r\n\r\n")[0])+4:])
+							self._p_s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+							self._p_s.connect(tuple(self._p_dt["port"]))
+							self._p_thr=threading.Thread(target=self._thr,args=(),kwargs={})
+							self._m=1
+					self._draw_table({"name":("Name","#8ae8c6"),"arch":("Arch","#dbdf0c"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
 				elif (self._m==1):
+					n_dt=False
+					inp_ch=False
 					if (self._k[0]==b"\r"):
-						self._dt_bf[0]+=self._inp_bf+"\n"
+						if (self._inp_bf in self._mem):
+							self._mem.remove(self._inp_bf)
+						self._mem=self._mem[:-1]+[self._inp_bf,""]
+						self._mem_i=len(self._mem)-1
+						self._extend(1,self._inp_bf+"\n")
 						self._p_s.sendall(bytes(self._inp_bf,"utf-8"))
+						self._inp_bf=""
+						self._off[1]=0
+						n_dt=True
+						inp_ch=True
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"\x8d"):
+						self._a_s=False
 						self._off[0]=max(0,self._off[0]-1)
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"\x91"):
+						self._off[0]+=1
+						if (self._off[0]>=sum([len(e[1])-(1 if None in e else 0) for e in self._dt])):
+							self._a_s=True
+							self._off[0]=sum([len(e[1])-(1 if None in e else 0) for e in self._dt])
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"w"):
+						self._a_s=False
+						self._off[0]=0
+					elif (self._k[0]==b"\xe0" and self._k[1]==b"u"):
+						self._a_s=True
+						self._off[0]=sum([len(e[1])-(1 if None in e else 0) for e in self._dt])
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
-						self._off[0]=max(0,self._off[0]-1)
-						### Mem UP
+						if (self._mem_i!=0):
+							inp_ch=True
+						self._mem_i=max(0,self._mem_i-1)
+						self._inp_bf=self._mem[self._mem_i]
+						self._off[1]=len(self._inp_bf)
+						inp_ch=True
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"P"):
-						pass
-						### Mem DOWN
+						if (self._mem_i!=len(self._mem)-1):
+							inp_ch=True
+						self._mem_i=min(len(self._mem)-1,self._mem_i+1)
+						self._inp_bf=self._mem[self._mem_i]
+						self._off[1]=len(self._inp_bf)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"K"):
+						if (self._off[1]!=0):
+							inp_ch=True
 						self._off[1]=max(0,self._off[1]-1)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"M"):
+						if (self._off[1]!=len(self._inp_bf)):
+							inp_ch=True
 						self._off[1]=min(self._off[1]+1,len(self._inp_bf))
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"G"):
+						if (self._off[1]!=0):
+							inp_ch=True
 						self._off[1]=0
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"O"):
+						if (self._off[1]!=len(self._inp_bf)):
+							inp_ch=True
 						self._off[1]=len(self._inp_bf)
 					elif (self._k[0]==b"\xe0" and self._k[1]==b"S"):
+						t=self._inp_bf+""
 						self._inp_bf=self._inp_bf[:self._off[1]]+self._inp_bf[self._off[1]+1:]
+						if (t!=self._inp_bf):
+							inp_ch=True
 					elif (self._k[0]==b"\b"):
+						t=self._inp_bf
 						self._inp_bf=self._inp_bf[:max(self._off[1]-1,0)]+self._inp_bf[self._off[1]:]
 						self._off[1]=max(self._off[1]-1,0)
+						if (t!=self._inp_bf):
+							inp_ch=True
+					elif (self._k[0]==b"\x0c"):
+						self._dt=[]
+					elif (self._k[0]==b"\x14"):
+						self._t=1-self._t
 					elif (self._k[0]==b"\xe0"):
 						raise RuntimeError(f"Ignoring Special Key {self._k[1]}...")
 					elif (len(self._k[0])==1 and self._k[0] not in list(b"\x0a\x13")):
 						self._inp_bf=self._inp_bf[:self._off[1]]+repr(self._k[0])[2:-1]+self._inp_bf[self._off[1]:]
-						self._off[1]+=1
-					self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
-					self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
-					self._set(4,8,repr(self._off))##############################################################
-					self._set(4,self._sz[1]-4,"\x1b[38;2;207;207;207m"+"".join([(e if i!=self._off[1] else f"\x1b[4m{e}\x1b[24m") for i,e in enumerate(list(self._inp_bf+" "))]))
-					h=self._sz[1]-8
-					self._set(4,9,repr(h))
-					# « + » or < + >
-				print("\n".join(self._o)+"\x1b[0m",end="")
+						self._off[1]+=len(repr(self._k[0])[2:-1])
+						inp_ch=True
+					if (len(self._r_bf)>0):
+						self._r_bf,t="",self._r_bf
+						self._extend(0,re.sub(r"\r(\n|$)",r"\1",str(t,"utf-8")).replace("\t","    "))
+						n_dt=True
+					if (self._a_s==True and n_dt==True):
+						self._dt=self._dt[-1000:]
+						self._off[0]=max(0,sum([len(e[1])-(1 if None in e[1] else 0) for e in self._dt])-(self._sz[1]-9))
+					if (inp_ch==False and self._b_tm<time.time()):
+						self._b=not self._b
+						self._b_tm=time.time()+0.65
+					elif (inp_ch==True):
+						self._b=True
+						self._b_tm=time.time()+0.65
+					if (self._nm_d_tm==-1):
+						self._nm_d_tm=time.time()+2
+					elif (self._nm_d_tm<time.time()):
+						self._nm_d=not self._nm_d
+						self._nm_d_tm=time.time()+2
+					if (self._nm_d==True):
+						self._set(4,2,self._p["name"].center(self._sz[0]-9).replace(self._p["name"],f"\x1b[38;2;89;189;240m{self._p['name']}"))
+					else:
+						self._set(4,2,self._p["fqbn"].center(self._sz[0]-9).replace(self._p["fqbn"],f"\x1b[38;2;255;199;255m{self._p['fqbn']}"))
+					self._set(5,2,f"\x1b[38;2;154;255;95m{self._p['location']}")
+					self._set(self._sz[0]-13,2,f"\x1b[38;2;{('255;85;95','115;35;60')[self._t]}mTXT \x1b[38;2;{('255;85;95','115;35;60')[1-self._t]}mPLT")
+					self._set(4,self._sz[1]-4,"\x1b[38;2;207;207;207m"+"".join([(e if i!=self._off[1] else f"\x1b[{('2' if self._b==False else '')}4m{e}\x1b[24m") for i,e in enumerate(list(self._inp_bf+" "))]))
+					if (self._t==0):
+						self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
+						self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
+						l=[]
+						for k in self._dt:
+							l+=[((True if i==0 else False),k[0],e) for i,e in enumerate(k[1]) if e!=None]
+						for i,k in enumerate(l[self._off[0]:self._off[0]+self._sz[1]-9]):
+							if (i==0 or k[0]==True):
+								self._set(4,i+4,("\x1b[38;2;255;135;5m","\x1b[38;2;180;230;60m")[k[1]]+f"{'»«'[k[1]]} {k[2]}")
+							else:
+								self._set(6,i+4,("\x1b[38;2;255;135;5m","\x1b[38;2;180;230;60m")[k[1]]+k[2])
+					else:
+						l=[]
+						for k in self._dt[::-1]:
+							if (k[0]!=0 or None not in k[1]):
+								continue
+							l+=[[float(se) for se in e.split(",")] for e in k[1][::-1] if e!=None and re.fullmatch(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$",e)!=None]
+							if (len(l)>=self._sz[0]-11):
+								l=l[:self._sz[0]-11]
+								break
+						if (len(l)>0):
+							while (len(self._cl_cache)<max([len(e) for e in l])):
+								h=(len(self._cl_cache)*211)%360/30
+								self._cl_cache+=[f"\x1b[38;2;{int(192-64*max(min((h)%12-3,9-(h)%12,1),-1))};{int(192-64*max(min((h+8)%12-3,9-(h+8)%12,1),-1))};{int(192-64*max(min((h+4)%12-3,9-(h+4)%12,1),-1))}m"]
+							r=(min([min(e) for e in l]),max([max(e) for e in l]),self._sz[1]-10,0)
+							if (r[0]==r[1]):
+								r=(r[0]-1,r[1]+1,r[2],r[3])
+							m=[[" ","\x1b[38;2;92;92;92m┤"]+[" " for _ in range(0,self._sz[0]-11)] for _ in range(0,self._sz[1]-9)]
+							dt=[[] for _ in range(0,max([len(e)for e in l]))]
+							for e in l:
+								for j,se in enumerate(e):
+									dt[j]=[int((se-r[0])/(r[1]-r[0])*(r[3]-r[2])+r[2])]+dt[j]
+							dt=[e for e in dt if len(e)>0]
+							if (len(dt)>0):
+								if (len(self._dl)<len(dt)):
+									self._dl+=list(range(len(self._dl),len(dt)))
+								self._set(0,0,repr(self._dl))
+								# ─ ━ │ ┃ ┄ ┅ ┆ ┇ ┈ ┉ ┊ ┋ ┌ ┍ ┎ ┏
+								#
+								# ┐ ┑ ┒ ┓ └ ┕ ┖ ┗ ┘ ┙ ┚ ┛ ├ ┝ ┞ ┟
+								#
+								# ┠ ┡ ┢ ┣ ┤ ┥ ┦ ┧ ┨ ┩ ┪ ┫ ┬ ┭ ┮ ┯
+								#
+								# ┰ ┱ ┲ ┳ ┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻ ┼ ┽ ┾ ┿
+								#
+								# ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╌ ╍ ╎ ╏
+								#
+								# ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟
+								#
+								# ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯
+								#
+								# ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ ╸ ╹ ╺ ╻ ╼ ╽ ╾ ╿
+								for i in self._dl[::-1]:
+									m[dt[i][0]][1]=m[dt[i][0]][1][:-1]+"┼"
+									for j in range(len(dt[i])-1,-1,-1):
+										v=([dt[i][0]]+dt[i])[j:j+2]
+										if (j==len(dt[i])-1):
+											m[v[1]][j+2]=self._cl_cache[i]+"╵╴╷"[_cmp(v[0],v[1])+1]
+										else:
+											m[v[1]][j+2]=self._cl_cache[i]+"└─┌"[_cmp(v[0],v[1])+1]
+										if (v[0]!=v[1]):
+											m[v[0]][j+2]=self._cl_cache[i]+"┐ ┘"[_cmp(v[0],v[1])+1]
+											if (v[0]<v[1]):
+												for k in range(v[0]+1,v[1]):
+													m[k][j+2]=f"{self._cl_cache[i]}│"
+											else:
+												for k in range(v[1]+1,v[0]):
+													m[k][j+2]=f"{self._cl_cache[i]}│"
+								self._set(3,3,f"╠═╤{'═'*(self._sz[0]-11)}╣")
+								self._set(3,self._sz[1]-5,f"╠═╧{'═'*(self._sz[0]-11)}╣")
+								for i in range(0,len(m)):
+									self._set(4,i+4,"".join(m[i]))
+						if (len(l)==0):
+							self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
+							self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
+							self._set(4,self._sz[1]//2,"\x1b[38;2;115;80;55m"+"[No Data]".center(self._sz[0]-9))
+				sys.__stdout__.write("\x1b[0;0H"+"\n".join(self._o)+"\x1b[0m")
+				time.sleep(0.01)
+
+
+
+		def _thr(self):
+			while (self._p_s!=None):
+				self._r_bf+=self._p_s.recv(4096)
 
 
 
@@ -1498,23 +1685,61 @@ def _serial_ard():
 				if (j==x):
 					k=i+0
 					l=j+0
+					em=""
 					while (l<len(self._o[y])):
 						m=re.match(r"\x1b\[[^m]*m",self._o[y][k:])
 						if (m!=None):
+							em+=m.group(0)
 							k+=len(m.group(0))
 							continue
 						if (l==j+len(re.sub(r"\x1b\[[^m]*m","",v))):
 							break
+						em=""
 						k+=1
 						l+=1
-					self._o[y]=self._o[y][:i]+v+self._o[y][k:]
+					self._o[y]=self._o[y][:i]+v+em+self._o[y][k:]
 					return
 				i+=1
 				j+=1
+
+
+
+		def _extend(self,i,v):
+			e=False
+			if (v[-1]=="\n"):
+				e=True
+				v=v[:-1]
+			if ("\n" in v):
+				for j,k in enumerate(v.split("\n")):
+					self._extend(i,k+("\n" if j<len(v.split("\n"))-1 or e==True else ""))
+				return
+			l=[j for j,e in enumerate(self._dt) if e[0]==i]
+			if (len(l)==0 or self._dt[l[-1]][1][-1]==None):
+				self._dt+=[[i,[""]]]
+				i=len(self._dt)-1
+				j=0
+			else:
+				i=l[-1]
+				j=len(self._dt[i][1])-1
+			k=0
+			while (True):
+				nk=self._sz[0]-12-len(self._dt[i][1][j])
+				self._dt[i][1][j]+=v[k:self._sz[0]-12-len(self._dt[i][1][j])]
+				if (nk>=len(v)):
+					break
+				j+=1
+				k=nk
+				self._dt[i][1]+=[""]
+			if (e==True):
+				self._dt[i][1]+=[None]
 	threading.current_thread()._b_nm="__core__"
 	threading.current_thread()._nm="arduino_serial_terminal"
 	threading.current_thread()._r=2
 	_Arduino_Cache.init()
+	inp_cm=ctypes.wintypes.DWORD(0)
+	ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
+	out_cm=ctypes.wintypes.DWORD(0)
+	ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.byref(out_cm))
 	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 	ho=ctypes.windll.kernel32.GetStdHandle(-11)
 	ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
@@ -1523,21 +1748,23 @@ def _serial_ard():
 	sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
 	ci=ctypes.create_string_buffer(5)
 	ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+	ui=_UI((sz[9]+1,sz[10]))
 	try:
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[9],sz[10]-1))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-		ui=_UI((sz[9]+1,sz[10]))
+		# ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		# ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[9],sz[10]-1))
+		# ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
 		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
 		ui.loop()
-		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		# ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		# ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		# ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
+	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
+	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),out_cm)
 	ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
 	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
@@ -1781,9 +2008,6 @@ class _WebSocketServer_handle(WebSocket):
 	def handleClose(self):
 		global SERIAL_L
 		self.stop=True
-		# if (hasattr(self,"_p") and self._p!=None):
-		# 	SERIAL_L[self._p]["cnt"]-=1
-
 
 
 	def _h_msg(self):
@@ -1799,17 +2023,6 @@ class _WebSocketServer_handle(WebSocket):
 						self.sendMessage(b"dt:"+CMD_L[self.h_nm]["l"][k][l[k]:])
 						l[k]=len(CMD_L[self.h_nm]["l"][k][l[k]:])
 				time.sleep(1e-6)
-		# def _h_plt(self):
-		# 	global SERIAL_L
-		# 	while (SERIAL_L[self._p]["port"]==None):
-		# 		pass
-		# 	s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		# 	print(SERIAL_L[self._p]["port"])
-		# 	s.connect(SERIAL_L[self._p]["port"])
-		# 	while (self._stop==False):
-		# 		self.sendMessage(b"dt:"+s.recv(1024))
-		# 		time.sleep(1e-4)
-		# 	s.close()
 		t,msg=self.data[0],self.data[1:]
 		self.sendMessage("null")
 		if (t[0]=="0"):
@@ -1832,34 +2045,6 @@ class _WebSocketServer_handle(WebSocket):
 					return
 				CMD_L[self.h_nm]["h"].stdin.write(bytes(msg[3:],"utf-8"))
 				CMD_L[self.h_nm]["h"].stdin.flush()
-		# elif (t[0]=="1"):
-		# 	if (not hasattr(self,"_p")):
-		# 		self._p=None
-		# 	if (not hasattr(self,"_stop")):
-		# 		self._stop=False
-		# 	if (msg=="pltl"):
-		# 		self.sendMessage(f"pltl:{';'.join([e['location'] for e in _l_ard_boards(p=False)]).upper()}")
-		# 	elif (msg[:4]=="plt:"):
-		# 		bl=_l_ard_boards(p=False)
-		# 		if (msg[4:].upper() in [e["location"].upper() for e in bl]):
-		# 			self._stop=True
-		# 			if (hasattr(self,"_thr")):
-		# 				self._thr.join()
-		# 			self._stop=False
-		# 			self._p=[e["location"] for e in bl if e["location"].upper()==msg[4:].upper()][0]
-		# 			if (self._p not in list(SERIAL_L.keys())):
-		# 				SERIAL_L[self._p]={"cnt":1,"port":None,"in":[],"_cs":[]}
-		# 				_start_thr(_start_ser,"__core__",f"serial_reader_{self._p.lower()}",self._p)
-		# 			else:
-		# 				SERIAL_L[self._p]["cnt"]+=1
-		# 			self.sendMessage(f"plt:1{self._p}")
-		# 			self._thr=threading.Thread(target=_h_plt,args=(self,),kwargs={})
-		# 			self._thr.start()
-		# 		else:
-		# 			self.sendMessage("plt:0")
-		# 	elif (msg[:3]=="in:"):
-		# 		if (self._p!=None):
-		# 			SERIAL_L[self._p]["in"]+=[msg[3:]]
 
 
 
@@ -2356,37 +2541,36 @@ else:
 		cp=ntpath.abspath(f"D:\\boot\\tmp\\xml-{st}.xml")
 		op=ntpath.abspath(f"D:\\boot\\tmp\\{st}.exe")
 		with open(f"D:\\boot\\tmp\\xml-{st}.xml","w") as f:
-			f.write(f"""
-<?xml version="1.0" encoding="UTF-8"?>
-<launch4jConfig>
-	<dontWrapJar>false</dontWrapJar>
-	<headerType>{type_}</headerType>
-	<jar>{jar}</jar>
-	<outfile>{op}</outfile>
-	<errTitle></errTitle>
-	<cmdLine></cmdLine>
-	<chdir>.</chdir>
-	<priority>normal</priority>
-	<downloadUrl>http://java.com/download</downloadUrl>
-	<supportUrl></supportUrl>
-	<stayAlive>true</stayAlive>
-	<restartOnCrash>false</restartOnCrash>
-	<manifest></manifest>
-	<icon></icon>
-	<classPath>
-		<mainClass>{mc}</mainClass>
-	</classPath>
-	<jre>
-		<path>C:\\Program Files (x86)\\Java\\jre1.8.0_231\\</path>
-		<bundledJre64Bit>true</bundledJre64Bit>
-		<bundledJreAsFallback>false</bundledJreAsFallback>
-		<minVersion></minVersion>
-		<maxVersion></maxVersion>
-		<jdkPreference>preferJre</jdkPreference>
-		<runtimeBits>64/32</runtimeBits>
-	</jre>
-</launch4jConfig>
-		""")
+			f.write(f"""<?xml version="1.0" encoding="UTF-8"?>
+				<launch4jConfig>
+					<dontWrapJar>false</dontWrapJar>
+					<headerType>{type_}</headerType>
+					<jar>{jar}</jar>
+					<outfile>{op}</outfile>
+					<errTitle></errTitle>
+					<cmdLine></cmdLine>
+					<chdir>.</chdir>
+					<priority>normal</priority>
+					<downloadUrl>http://java.com/download</downloadUrl>
+					<supportUrl></supportUrl>
+					<stayAlive>true</stayAlive>
+					<restartOnCrash>false</restartOnCrash>
+					<manifest></manifest>
+					<icon></icon>
+					<classPath>
+						<mainClass>{mc}</mainClass>
+					</classPath>
+					<jre>
+						<path>C:\\Program Files (x86)\\Java\\jre1.8.0_231\\</path>
+						<bundledJre64Bit>true</bundledJre64Bit>
+						<bundledJreAsFallback>false</bundledJreAsFallback>
+						<minVersion></minVersion>
+						<maxVersion></maxVersion>
+						<jdkPreference>preferJre</jdkPreference>
+						<runtimeBits>64/32</runtimeBits>
+					</jre>
+				</launch4jConfig>
+			""")
 		os.chdir("\\".join(jar.split("\\")[:-1]))
 		os.system(f"\"C:\\Program Files (x86)\\Launch4j\\launch4jc.exe\" {cp}")
 		shutil.copyfile(op,jar.split("\\")[-1]+".exe")
@@ -2466,7 +2650,7 @@ else:
 			if (len(sys.argv)<6):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 				sys.exit(1)
-			_upload_to_ard(sys.argv[3],sys.argv[4],sys.argv[5],burn_bootloader=(True if "--burn-bootloader" in sys.argv[6:] else False),verify_upload=(True if "--verify" in sys.argv[6:] else False),inc_l=[e for e in sys.argv[6:] if e not in ["--burn-bootloader","--verify"]])
+			_upload_to_ard(sys.argv[3],sys.argv[4],sys.argv[5],(True if "--burn-bootloader" in sys.argv[6:] else False),(True if "--verify" in sys.argv[6:] else False),[e for e in sys.argv[6:] if e not in ["--burn-bootloader","--verify"]])
 		else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)

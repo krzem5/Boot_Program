@@ -4,5 +4,6 @@ tmp
 arduino
 mcs
 mcs-s
+mcs-all
 *.dt
 *.json
