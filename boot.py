@@ -576,26 +576,7 @@ def _render_cwr(tp):
 
 
 
-def _update_repo(p,b_nm,r_desc,msg):
-	def _parse_gitignore(dt):
-		o=[]
-		for ln in dt.split("\n"):
-			if (ln.endswith("\n")):
-				ln=ln[:-1]
-			ln=ln.lstrip()
-			if (not ln.startswith("#")):
-				iv=False
-				if (ln.startswith("!")):
-					ln=ln[1:]
-					iv=True
-				while (ln.endswith(" ") and ln[-2:]!="\\ "):
-					ln=ln[:-1]
-				ln=re.sub(r"\\([!# ])",r"\1",ln)
-				if (len(ln)>0):
-					if ("**/" in ln):
-						o+=[[iv,ln.replace("**/","")]]
-					o+=[[iv,ln]]
-		return o
+def _update_repo(p,b_nm,msg):
 	def _gitigonre_match(gdt,fp):
 		def _pattern(p,fp):
 			fnm=ntpath.normpath(fp).replace(os.sep,"/").split("/")
@@ -623,18 +604,11 @@ def _update_repo(p,b_nm,r_desc,msg):
 		if (ig==True):
 			return False
 		return True
-	def _request(m="get",**kwargs):
-		r=None
-		if (m=="get"):
-			r=requests.get(**kwargs)
-		elif (m=="post"):
-			r=requests.post(**kwargs)
-		elif (m=="put"):
-			r=requests.put(**kwargs)
-		elif (m=="patch"):
-			r=requests.patch(**kwargs)
+	def _request(m="get",**kw):
+		kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
+		r=getattr(requests,m)(**kw)
 		if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
-			_print(r.headers)
+			print(r.headers)
 			sys.exit(1)
 		time.sleep(0.72)
 		if ("message" in r.json().keys() and r.json()["message"]=="Server Error"):
@@ -642,7 +616,7 @@ def _update_repo(p,b_nm,r_desc,msg):
 		return r.json()
 	def _get_tree(r_nm,sha):
 		def _rec_get(r_nm,sha,p):
-			r=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
+			r=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
 			o={}
 			for e in r["tree"]:
 				if (e["type"]=="tree"):
@@ -690,25 +664,53 @@ def _update_repo(p,b_nm,r_desc,msg):
 				return False
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
-	r_nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
-	if (not ntpath.exists(f"{p}\\.gitconfig")):
-		with open(f"{p}\\.gitconfig","x") as f:
-			f.write(f"### Github File Push Config\n\nname={r_nm}\ndesc={r_nm}\npublic=true\nhomepage=\nlicense=mit\nfile.readme=.\\README.md\nfile.gitignore=.\\.gitignore\n\nconfig.has_issues=true\nconfig.has_projects=true\nconfig.has_wiki=true\nconfig.allow_squash_merge=true\nconfig.allow_merge_commit=true\nconfig.allow_rebase_merge=true\nconfig.delete_branch_on_merge=false\n")
+	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
+	cfg_k=list(cfg.keys())
+	if (ntpath.exists(f"{p}\\.gitconfig")):
+		with open(f"{p}\\.gitconfig","r") as f:
+			cfg.update({l.split("=")[0]:l[len(l.split("=")[0])+1:] for l in f.read().replace("\r","").split("\n") if len(l)>0 and "=" in l and l.strip()[0]!="#"})
+	for k in list(cfg.keys()):
+		if (k not in cfg_k):
+			del cfg[k]
+	for k in "public,config.has_issues,config.has_projects,config.has_wiki,config.allow_squash_merge,config.allow_rebase_merge,config.allow_merge_commit,config.delete_branch_on_merge".split(","):
+		cfg[k]=(True if str(cfg[k]) in ("True","true") else False)
+	cfg["homepage"]=(cfg["homepage"] if len(cfg["homepage"])>0 and re.fullmatch(URL_REGEX,cfg["homepage"])!=None else "")
+	os.remove(f"{p}\\.gitconfig")
+	with open(f"{p}\\.gitconfig","w") as f:
+		f.write(f"### Github File Push Config\n\nname={cfg['name']}\ndesc={cfg['desc']}\npublic={str(cfg['public']).lower()}\nhomepage={cfg['homepage']}\nlicense={cfg['license']}\n\nfile.readme={cfg['file.readme']}\nfile.gitignore={cfg['file.gitignore']}\n\nconfig.has_issues={str(cfg['config.has_issues']).lower()}\nconfig.has_projects={str(cfg['config.has_projects']).lower()}\nconfig.has_wiki={str(cfg['config.has_wiki']).lower()}\nconfig.allow_squash_merge={str(cfg['config.allow_squash_merge']).lower()}\nconfig.allow_merge_commit={str(cfg['config.allow_merge_commit']).lower()}\nconfig.allow_rebase_merge={str(cfg['config.allow_rebase_merge']).lower()}\nconfig.delete_branch_on_merge={str(cfg['config.delete_branch_on_merge']).lower()}\n")
+	os.system(f"cd /d {p}&&attrib +h .gitconfig&&cd /d D:\\boot")
+	print(cfg)
 	try:
-		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":r_nm,"description":(b_nm.split("-")[0]+" - "+b_nm.split("-")[1].replace("_"," ").title() if r_desc==None else r_desc),"private":False,"has_issues":True,"has_projects":True,"has_wiki":True}),headers={"Authorization":f"token {GITHUB_TOKEN}","accept":GITHUB_HEADERS})
+		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":cfg["name"],"description":cfg["desc"],"private":not cfg["public"],**({"homepage":cfg["homepage"]} if len(cfg["homepage"])>0 else {})},**{k[7:]:v for k,v in cfg.items() if k[:7]==".config"}))
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
-	with open(f"{p}\\.gitignore","r") as f:
-		gdt=_parse_gitignore(f.read())
+	with open(ntpath.join(p,cfg["file.gitignore"]),"r") as f:
+		gdt=[]
+		for ln in f.read().replace("\r","").split("\n"):
+			if (ln.endswith("\n")):
+				ln=ln[:-1]
+			ln=ln.lstrip()
+			if (not ln.startswith("#")):
+				iv=False
+				if (ln.startswith("!")):
+					ln=ln[1:]
+					iv=True
+				while (ln.endswith(" ") and ln[-2:]!="\\ "):
+					ln=ln[:-1]
+				ln=re.sub(r"\\([!# ])",r"\1",ln)
+				if (len(ln)>0):
+					if ("**/" in ln):
+						gdt+=[[iv,ln.replace("**/","")]]
+					gdt+=[[iv,ln]]
 	r_tf_p=False
 	try:
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/ref/heads/master",headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["object"]["sha"]
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
 	except:
-		_request("put",url=f"https://api.github.com/repos/Krzem5/{r_nm}/contents/_",data=json.dumps({"message":msg,"content":""}),headers={"Authorization":f"token {GITHUB_TOKEN}"})
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/ref/heads/master",headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["object"]["sha"]
+		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
 		r_tf_p=True
-	r_t=_get_tree(r_nm,bt_sha)
+	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
 	for r,_,fl in os.walk(p):
@@ -744,7 +746,7 @@ def _update_repo(p,b_nm,r_desc,msg):
 						b_sha=False
 						dt="File too Large (size = %d b)"%(len(dt))
 					else:
-						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
+						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
 						if (b==None):
 							b_sha=False
 							dt="Github Server Error"
@@ -762,7 +764,7 @@ def _update_repo(p,b_nm,r_desc,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl])):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{r_nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if r_tf_p==True else [])}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"parents":[bt_sha]}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})["sha"],"force":True}),headers={"Authorization":f"token {GITHUB_TOKEN}","User-Agent":"Update API"})
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if r_tf_p==True else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -782,9 +784,9 @@ def _git_project_push(r=False):
 	threading.current_thread()._df=True
 	tm=int(time.time()//604800)
 	t=[0,0]
-	with open("./backup.dt","r") as f:
+	with open("./github.dt","r") as f:
 		b_dt=f.read().replace("\r","").split("\n")
-	with open("./backup.dt","w") as f:
+	with open("./github.dt","w") as f:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
@@ -796,7 +798,7 @@ def _git_project_push(r=False):
 				f.flush()
 				continue
 			t[0]+=1
-			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,p.split("-")[0]+" - "+p.split("-")[1].replace("_"," ").title(),msg)
+			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,msg)
 			f.write(p+"\n")
 			f.flush()
 		if ("Boot_Program" in b_dt[1:]):
@@ -805,7 +807,7 @@ def _git_project_push(r=False):
 			f.flush()
 		else:
 			t[0]+=1
-			_update_repo("D:\\boot\\","Boot_Program","Boot Program",msg)
+			_update_repo("D:\\boot\\","Boot_Program",msg)
 			f.write("Boot_Program\n")
 			f.flush()
 	threading.current_thread()._df=False
@@ -1887,10 +1889,6 @@ def _create_prog(type_,name,op=True):
 		with open(f"{p}.gitignore","x") as f:
 			f.write("### Github File Push Ignore\n\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
-	if (not ntpath.exists(f"{p}.gitconfig")):
-		with open(f"{p}.gitconfig","x") as f:
-			f.write("### Github File Push Config\n\n")
-		os.system(f"cd /d {p}&&attrib +h .gitconfig")
 	global WORKSPACE_DATA
 	if (type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_") not in [e["name"] for e in WORKSPACE_DATA]):
 		WORKSPACE_DATA.append({"name":type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_"),"year":datetime.datetime.now().year,"desc":"[null]"})
@@ -2602,7 +2600,7 @@ else:
 			threading.current_thread()._dp=True
 			threading.current_thread()._df=True
 			threading.current_thread()._r=1
-			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),(None if sys.argv[2].lower().startswith("d:\\k") else "Boot Program"),msg)
+			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
 			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._b_nm="__core__"
