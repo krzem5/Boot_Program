@@ -709,7 +709,7 @@ def _update_repo(p,b_nm,msg):
 	except:
 		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
-		r_tf_p=True
+	r_tf_p=True
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
