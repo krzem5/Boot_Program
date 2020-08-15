@@ -669,17 +669,16 @@ def _update_repo(p,b_nm,msg):
 	if (ntpath.exists(f"{p}\\.gitconfig")):
 		with open(f"{p}\\.gitconfig","r") as f:
 			cfg.update({l.split("=")[0]:l[len(l.split("=")[0])+1:] for l in f.read().replace("\r","").split("\n") if len(l)>0 and "=" in l and l.strip()[0]!="#"})
+		os.remove(f"{p}\\.gitconfig")
 	for k in list(cfg.keys()):
 		if (k not in cfg_k):
 			del cfg[k]
 	for k in "public,config.has_issues,config.has_projects,config.has_wiki,config.allow_squash_merge,config.allow_rebase_merge,config.allow_merge_commit,config.delete_branch_on_merge".split(","):
 		cfg[k]=(True if str(cfg[k]) in ("True","true") else False)
 	cfg["homepage"]=(cfg["homepage"] if len(cfg["homepage"])>0 and re.fullmatch(URL_REGEX,cfg["homepage"])!=None else "")
-	os.remove(f"{p}\\.gitconfig")
 	with open(f"{p}\\.gitconfig","w") as f:
 		f.write(f"### Github File Push Config\n\nname={cfg['name']}\ndesc={cfg['desc']}\npublic={str(cfg['public']).lower()}\nhomepage={cfg['homepage']}\nlicense={cfg['license']}\n\nfile.readme={cfg['file.readme']}\nfile.gitignore={cfg['file.gitignore']}\n\nconfig.has_issues={str(cfg['config.has_issues']).lower()}\nconfig.has_projects={str(cfg['config.has_projects']).lower()}\nconfig.has_wiki={str(cfg['config.has_wiki']).lower()}\nconfig.allow_squash_merge={str(cfg['config.allow_squash_merge']).lower()}\nconfig.allow_merge_commit={str(cfg['config.allow_merge_commit']).lower()}\nconfig.allow_rebase_merge={str(cfg['config.allow_rebase_merge']).lower()}\nconfig.delete_branch_on_merge={str(cfg['config.delete_branch_on_merge']).lower()}\n")
 	os.system(f"cd /d {p}&&attrib +h .gitconfig&&cd /d D:\\boot")
-	print(cfg)
 	try:
 		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":cfg["name"],"description":cfg["desc"],"private":not cfg["public"],**({"homepage":cfg["homepage"]} if len(cfg["homepage"])>0 else {})},**{k[7:]:v for k,v in cfg.items() if k[:7]==".config"}))
 	except requests.exceptions.ConnectionError:
@@ -703,13 +702,13 @@ def _update_repo(p,b_nm,msg):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
-	r_tf_p=False
+	rm_t=False
 	try:
 		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
 	except:
 		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
+		rm_t=True
 		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
-	r_tf_p=True
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -764,7 +763,7 @@ def _update_repo(p,b_nm,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl])):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if r_tf_p==True else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if rm_t else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -791,7 +790,7 @@ def _git_project_push(r=False):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
 		f.flush()
-		for p in os.listdir("D:\\K\\Coding\\projects"):
+		for p in sorted(os.listdir("D:\\K\\Coding\\projects")):
 			if (p in b_dt[1:]):
 				t[1]+=1
 				f.write(p+"\n")
