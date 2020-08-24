@@ -2264,7 +2264,7 @@ def _u_mcs(fp):
 			while (len(fb)>0):
 				h.update(fb)
 				fb=f.read(2**16)
-		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['sha1']}")
+		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
 		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
 			_print(f"Downloading Server For {json['id']}\x1b[38;2;100;100;100m...")
 			urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
