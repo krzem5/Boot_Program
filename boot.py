@@ -40,6 +40,7 @@ import shlex
 import tempfile
 import atexit
 import msvcrt
+import signal
 
 
 
@@ -2225,9 +2226,12 @@ def _ut_k():
 	_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
 	while (True):
 		tl=subprocess.run("tasklist",stdout=subprocess.PIPE).stdout.lower().decode("utf-8")
-		for v in ["totalav.exe","nvsphelper64.exe","\"nvidia share.exe\"","\"nvidia web helper.exe\"","\"nvdisplay.container.exe\""]:
-			if (v.replace("\"","") in tl):
-				os.system(f"taskkill /im {v} /f")
+		for v in ["nvsphelper64.exe","nvidia share.exe","nvidia web helper.exe","nvdisplay.container.exe"]:
+			if (v in tl):
+				i=tl.index(v)+len(v)
+				while (tl[i]==" "):
+					i+=1
+				os.kill(int(tl[i:].split(" ")[0]),signal.SIGABRT)
 		time.sleep(5)
 
 
