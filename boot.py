@@ -769,7 +769,7 @@ def _update_repo(p,b_nm,msg):
 
 
 
-def _git_project_push(r=False):
+def _git_project_push(r=False,f=False):
 	global NETWORK
 	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	_print(f"Starting Github Project Push Check with Commit Message '{msg}'\x1b[38;2;100;100;100m...")
@@ -792,7 +792,7 @@ def _git_project_push(r=False):
 		f.write(str(tm)+"\n")
 		f.flush()
 		for p in sorted(os.listdir("D:\\K\\Coding\\projects")):
-			if (p in b_dt[1:]):
+			if (f==False and p in b_dt[1:]):
 				t[1]+=1
 				f.write(p+"\n")
 				f.flush()
@@ -801,7 +801,7 @@ def _git_project_push(r=False):
 			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,msg)
 			f.write(p+"\n")
 			f.flush()
-		if ("Boot_Program" in b_dt[1:]):
+		if (f==False and "Boot_Program" in b_dt[1:]):
 			t[1]+=1
 			f.write("Boot_Program\n")
 			f.flush()
@@ -1874,7 +1874,7 @@ def _open_prog_w(p):
 def _create_prog(type_,name,op=True):
 	_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
-	if (type_ not in "arduino,chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
+	if (type_ not in "arduino,c,chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
 		_print(f"UNKNOWN TYPE: {type_}")
 		return
 	if (type_=="js"):
@@ -1883,41 +1883,58 @@ def _create_prog(type_,name,op=True):
 		type_="fischertechnic"
 	name=name.replace("_"," ").lower().title().replace(" ","_")
 	p="D:\\K\\Coding\\projects\\"+type_.title()+"-"+name+"\\"
+	fel=[]
+	for r,_,fl in os.walk(p):
+		for f in fl:
+			fel+=[ntpath.join(r,f)]
 	if (not ntpath.exists(p)):
 		os.mkdir(p)
 	if (not ntpath.exists(f"{p}.gitignore")):
 		with open(f"{p}.gitignore","x") as f:
 			f.write("### Github File Push Ignore\n\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
+	if (not ntpath.exists(f"{p}LICENSE")):
+		with open(f"{p}LICENSE","w") as f:
+			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.""")
+	if (not ntpath.exists(f"{p}README.md")):
+		with open(f"{p}README.md","x") as f:
+			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)""")
 	global WORKSPACE_DATA
 	if (type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_") not in [e["name"] for e in WORKSPACE_DATA]):
 		WORKSPACE_DATA.append({"name":type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_"),"year":datetime.datetime.now().year,"desc":"[null]"})
 	if (type_=="arduino"):
-		if (not ntpath.exists(f"{p}index.ino")):
+		if (not ntpath.exists(f"{p}index.ino") and "ino" not in fel):
 			with open(f"{p}index.ino","x") as f:
 				f.write("void setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\nrm -rf build&&python D:\\boot\\boot.py 5 compile ./ arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./ COM3 arduino:avr:uno\n")
+	elif (type_=="c"):
+		if (not ntpath.exists(f"{p}index.c") and "c" not in fel):
+			with open(f"{p}index.c","x") as f:
+				f.write("int main(int argc,const char** argv){\n\treturn 0;\n}")
+		if (not ntpath.exists(f"{p}index.bat")):
+			with open(f"{p}index.bat","x") as f:
+				f.write(f"@echo off\ncls\ndel *.obj&&del index.exe&&cl /EHsc *.c /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
 	elif (type_=="cpp"):
-		if (not ntpath.exists(f"{p}index.cpp")):
+		if (not ntpath.exists(f"{p}index.cpp") and "cpp" not in fel):
 			with open(f"{p}index.cpp","x") as f:
 				f.write("int main(){\n\treturn 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
 	elif (type_=="css"):
-		if (not ntpath.exists(f"{p}index.html")):
+		if (not ntpath.exists(f"{p}index.html") and "html" not in fel):
 			with open(f"{p}index.html","x") as f:
 				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<link href=\"./style.css\" rel=\"stylesheet\" type=\"text/css\">\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}style.css")):
+		if (not ntpath.exists(f"{p}style.css") and "css" not in fel):
 			with open(f"{p}style.css","x") as f:
 				f.write("body {\n\twidth: 100%;\n\theight: 100%\n}\nbody, body * {\n\tmargin: 0;\n\tpadding: 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="fischertechnic"):
-		if (not ntpath.exists(f"{p}index.rpp")):
+		if (not ntpath.exists(f"{p}index.rpp") and "rpp" not in fel):
 			with open(f"{p}index.rpp","x") as f:
 				f.write(f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\n<cvg classname=\"ftProDrawDcmt\">\n\t<title>{name.replace('_',' ')}</title>\n\t<desc>wxCanvasDocument generated by wxCANVAS</desc>\n\t<version>2</version>\n\t<roboprover>04010600</roboprover>\n\t<bluetooth>\n\t\t<centralswitch>2</centralswitch>\n\t</bluetooth>\n\t<camera camerawidth=\"320\" cameraheight=\"240\" cameraframerate=\"15\" cameraconnectpc=\"false\" cameramirror=\"false\" cameraflip=\"false\">\n\t</camera>\n\t<o classname=\"wxCanvasLayers\" flags=\" selectable visible draggable shadow filled snap\" hitflags=\" visible\">\n\t\t<o classname=\"wxLayerInfo\" name=\"layer default\" flags=\" selectable visible draggable shadow filled snap\" hitflags=\" visible\" layervisible=\"true\" layerselectable=\"true\" readlayer=\"true\" inmap=\"0\" outmap=\"0\" order=\"0\">\n\t\t\t\n\t\t\t<properties>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"fill\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourFill\" id=\"1021682\" colour=\"GREY\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"stroke\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourStroke\" id=\"960046\" colour=\"BLACK\" pixelwidth=\"true\" width=\"1\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t</properties>\n\t\t\t\n\t\t</o>\n\t\t\n\t\t<o classname=\"wxLayerInfo\" name=\"layer data wires\" layer=\"1\" flags=\" selectable visible draggable shadow filled snap\" hitflags=\" visible\" layervisible=\"true\" layerselectable=\"true\" readlayer=\"true\" inmap=\"1\" outmap=\"1\" order=\"1\">\n\t\t\t\n\t\t\t<properties>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"fill\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourFill\" id=\"1021666\" colour=\"#E67300\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"stroke\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourStroke\" id=\"959956\" colour=\"#E67300\" width=\"0.5\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t</properties>\n\t\t\t\n\t\t</o>\n\t\t\n\t\t<o classname=\"wxLayerInfo\" name=\"layer flow wires\" layer=\"2\" flags=\" selectable visible draggable shadow filled snap\" hitflags=\" visible\" layervisible=\"true\" layerselectable=\"true\" readlayer=\"true\" inmap=\"2\" outmap=\"2\" order=\"2\">\n\t\t\t\n\t\t\t<properties>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"fill\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourFill\" id=\"1021594\" colour=\"#14007D\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t\t<o classname=\"wxDocviewRefObjectProperty\" name=\"stroke\">\n\t\t\t\t\t<o classname=\"wxCanvasOneColourStroke\" id=\"960096\" colour=\"#14007D\" width=\"0.5\">\n\t\t\t\t\t</o>\n\t\t\t\t</o>\n\t\t\t</properties>\n\t\t\t\n\t\t</o>\n\t\t\n\t</o>\n\t<o classname=\"wxCanvasObject\" id=\"1029794\" flags=\" selectable visible draggable shadow filled snap\" hitflags=\" visible\">\n\t</o>\n</cvg>")
 		if (not ntpath.exists(f"{p}index.bat")):
@@ -1930,24 +1947,24 @@ def _create_prog(type_,name,op=True):
 			os.mkdir(f"{p}com\\krzem\\")
 		if (not ntpath.exists(f"{p}com\\krzem\\{name.lower()}\\")):
 			os.mkdir(f"{p}com\\krzem\\{name.lower()}\\")
-		if (not ntpath.exists(f"{p}com\\krzem\\{name.lower()}\\Main.java")):
+		if (not ntpath.exists(f"{p}com\\krzem\\{name.lower()}\\Main.java") and "java" not in fel):
 			with open(f"{p}com\\krzem\\{name.lower()}\\Main.java","x") as f:
 				f.write("package com.krzem."+name.lower()+";\n\n\n\npublic class Main{\n\tpublic static void main(String[] args){\n\t\tnew Main();\n\t}\n\n\n\n\tpublic Main(){\n\t\t\n\t}\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(p+"index.bat","x") as f:
 				f.write(f"@echo off\necho NUL>_.class&&del /s /f /q *.class\ncls\njavac com/krzem/{name.lower().replace(' ','_')}/Main.java&&java com/krzem/{name.lower().replace(' ','_')}/Main\nstart /min cmd /c \"echo NUL>_.class&&del /s /f /q *.class\"")
 	elif (type_=="javascript"):
-		if (not ntpath.exists(f"{p}index.html")):
+		if (not ntpath.exists(f"{p}index.html") and "html" not in fel):
 			with open(f"{p}index.html","x") as f:
 				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"./index.js\"></script>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}index.js")):
+		if (not ntpath.exists(f"{p}index.js") and "js" not in fel):
 			with open(f"{p}index.js","x") as f:
 				f.write("function init(){\n\t\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="php"):
-		if (not ntpath.exists(f"{p}index.php")):
+		if (not ntpath.exists(f"{p}index.php") and "php" not in fel):
 			with open(f"{p}index.php","x") as f:
 				f.write("<?php\n\n?>")
 		if (not ntpath.exists(f"{p}index.bat")):
@@ -1963,24 +1980,24 @@ def _create_prog(type_,name,op=True):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\nstart /min cmd /c \"{p}index\\index.pde\"")
 	elif (type_=="python"):
-		if (not ntpath.exists(f"{p}index.py")):
+		if (not ntpath.exists(f"{p}index.py") and "py" not in fel):
 			with open(f"{p}index.py","x") as f:
 				f.write("")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\npython index.py")
 	elif (type_=="three"):
-		if (not ntpath.exists(f"{p}index.html")):
+		if (not ntpath.exists(f"{p}index.html") and "html" not in fel):
 			with open(f"{p}index.html","x") as f:
 				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/104/three.min.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"https://threejs.org/js/controls/OrbitControls.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"./index.js\"></script>\n\t\t<style type=\"text/css\">\n\t\t\tbody {{\n\t\t\t\tmargin: 0;\n\t\t\t\tpadding: 0;\n\t\t\t}}\n\t\t\tcanvas {{\n\t\t\t\twidth: 100%%;\n\t\t\t\theight: 100%%;\n\t\t\t}}\n\t\t</style>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}index.js")):
+		if (not ntpath.exists(f"{p}index.js") and "js" not in fel):
 			with open(f"{p}index.js","x") as f:
 				f.write("var scene,cam,renderer,controls\nfunction init(){\n\tscene=new THREE.Scene()\n\tcam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100000)\n\tcam.position.set(0,2000,0)\n\tcam.enablePan=false\n\tcam.lookAt(new THREE.Vector3(0,0,0))\n\trenderer=new THREE.WebGLRenderer({antialias:true})\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n\tscene.background=new THREE.Color().setHSL(1,1,1)\n\tdocument.body.appendChild(renderer.domElement)\n\tambient=new THREE.AmbientLight(0xffffff,1)\n\tscene.add(ambient)\n\trenderer.render(scene,cam)\n\tcontrols=new THREE.OrbitControls(cam,renderer.domElement)\n\tcontrols.target=new THREE.Vector3(0,0,0)\n\twindow.addEventListener(\"resize\",resize,false)\n\twindow.addEventListener(\"keypress\",onkeypress)\n\trequestAnimationFrame(render)\n}\nfunction render(){\n\trenderer.render(scene,cam)\n\trequestAnimationFrame(render)\n}\nfunction resize(){\n\tcam.aspect=window.innerWidth/window.innerHeight\n\tcam.updateProjectionMatrix()\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n}\nfunction onkeypress(e){\n\tswitch (e.keyCode){\n\t\t//\n\t}\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="mindstorm"):
-		if (not ntpath.exists(f"{p}indexev3")):
+		if (not ntpath.exists(f"{p}index.ev3") and "ev3" not in fel):
 			with open(f"{p}index.ev3","wb") as f:
 				f.write(b"PK\x03\x04\x14\x00\x00\x00\x08\x00T\x88VE\xa1\xf9\xe4\xb8\x06\x00\x00\x00\x04\x00\x00\x00\x10\x00\x00\x00___CopyrightYear3204\x01\x00PK\x03\x04\x14\x00\x00\x00\x08\x00T\x88VEr\xe9\x0e\xe0\t\x00\x00\x00\x07\x00\x00\x00\x0f\x00\x00\x00___ProjectTitle\x0b(\xca\xcfJM.\x01\x00PK\x03\x04\x14\x00\x00\x08\x08\x00\x05\x94\xa9N\x0e\xc5\xcb\xd7\x08\x00\x00\x00\x16\x00\x00\x00\x12\x00\x00\x00ActivityAssets.laz\x0b\xf0fec\xc0\x00\x00PK\x03\x04\x14\x00\x00\x08\x08\x00\x05\x94\xa9N\x89\x9fa\x01\xf6\x01\x00\x00\x04\x04\x00\x00\x0c\x00\x00\x00Activity.x3a\x95S\xddn\xda0\x14\xbe\x9f\xb4w\xb0|[-n\xdamBSB\xd5\xf2\x93\x95\x8d\xd2\x12\xca\xa4\xde\x19\xdb\x10\xa7\x8e\x9d%\x0e\x10^m\x17{\xa4\xbd\xc2N\x82 \x14\xc1\xa4E\x8ad\x9f\xf3\x9d\xcf\xe7;?\x7f~\xfd\xf6n\xd6\x89BK\x91\xe5\xd2h\x1f\xbb\xce%FB3\xc3\xa5^\xf8\xb8\xb0\xf3\x0f-|\xd3~\xff\xce\x0bM\x911\xd1\x97J\xa0\xe9\x01\xda\xb9r\\\x08\x01\x12\x9d\xfb8\xb26\xfdB\xc8j\xb5r\xb4t\x98I\xc86lh\xb8P\xce:\xe7\x18\xa8\x10|\xde\x03MD\x9eR&Pu\xf2\xf1cfb\xc1\xec\xce_c\x82Br\xc1\xbf\n\x95\x9e\xe7o0\x87\xf4{\x8aP\x81;?\xb26\x1e\xd4\x84\x87r\x03i\x84\tU\n\xf4Y\xc9\xa8\xc2\xa8\x06m\x13\xc4\xe8A\xac\xed]a\xad\xd1=MgJp\x1fO\xb2B`4\xd25\xae\x13Q\xbd\xa8\xac\x10\'\x17\x9a\xda\"\x83\xb8\xf8)\xa6\xe3\xeb\xe0\x95\xb6n\x03>\xb8\xeb\xb7dy\xc5_\xa2A\xc8?\xc5\xdau\xf9\xc8\x8eF\xeb\x90|\xef\xcfF\xd3\xa7\xf9\xf4\xc2\xfd\xf8Mw\x94z\x0c_\x97\xf3\xf1\xe62\xe0,\xb8_\x90\xc1p\xca\xf2\xe2e\xe3&\xb1\xce/\xae\x17\xbe\x8f\xd1D$\xa9\xa2V\xdcw}\xdc/\x94\xc2\'dn\xa5J\x00\x8a.\xb5\x14=k\xf9\xb3\xa8#\xc6\x92E\x13P4\x91V\x81\x86}O\xa1\x99\xcf\xb9\xc8z\\\xdaJ$PS\x95\x03\xe0G\xa5\xd0h\x9b\x19\xb5\xb3\x9dy\xaf~\xb3\xa2n{\xbbG\xba\x86\x15\x89\xd0\x16\xcd\x81!\xaf+\xed~\xc6\xf5mN\x13\xa9J\x1fC\x02\x9cj\xfa\x8fQ\xbaeV.\xa5-\x8fI\xb7\x8d\xf7\xd2\xb67k{\xa4\xfa\xe1H\x8eQ`\xaas:S#\xd2\x14\xe9\xbf\xca\xd8KR[\xbe-\x1f9G\xd0\x89\xa4\xe2\x99\xd0\'\x11\x90A5D\xc7\x03LNN\xb07\x14\\\xd2\xae\x84\x8a\x18M\xb3\xf2\r\xa3w\xb0\x14\xbbu#\xfb}\xabv\x994\xcb\xdc\xfe\x0bPK\x03\x04\x14\x00\x00\x08\x08\x00\x05\x94\xa9NHu\xf8\xec\x11\x03\x00\x008\n\x00\x00\t\x00\x00\x00Main.ev3p\xcdV\xcdn\xda@\x10\xbeW\xea;X\xee9\xb6\t$M]\x9c(\x84\xa0 \xa5!\x02Dr\xa8\x84\x16{\x0c\xdb\xd8\xbb\xee\xee\x1a\xc8\xb3\xf5\xd0G\xea+t\xbc`\xec\x00!\xd0\x1eZ\xec\x83=3\xdf\xcc7\x9e\x1f\xf6\xd7\x8f\x9f\xf5\x8by\x1c\x19S\x10\x92r\xe6\x99\x15\xcb1\r`>\x0f(\x1b{f\xaa\xc2\xa33\xf3\xe2\xfc\xfd\xbbz\x8f\xa7\xc2\x87\x16\x8d\xc0\x18\x94\xac\xadc\xab\x82\x10t\xc2\xa4gN\x94J\\\xdb\x9e\xcdf\x16\xa3\x96\xcfc{\x01\xfb\xc2\x03\x88\xac\xb9\x0cLte\xe0\xaf~Gb\x90\t\xf1\xc1\xc8\x9e<\xf3^\xf0o\xe0\xab\\\xafm\x06T\xa8\x94Dm&\x95Hc`\xcah\xcb>Ona\n\x91g\x86$\x92`\xa2\xa8\x0b\xa8\x12\x84\xa9\x95l\x8d \xf2\xeb`\x86\x82fIi*M\x08)\xa3\nm\xfa\xcf\tF\x7f\xac\x0e\xdaM\xee\xeb ;\x92\xd9 TNiE\xbb%8S\xf7\x84A\xb4\xa6\xd1\xda0\x11)S4\x06\xb7\xb0\xbb\"lJ\xe4Z\\\xe9O &\xd2\x8a\xa9/\xb8\xe4\xa1\xd2\x14f\x94\x85s\xfb\xd8qN\xed9\x89#;\x11 \x91\x08\xc9rY2w\xe7\x87\xf9\xc8a+f\x9e\xe9G\xe2\x88\xe5\x15r\xef\xb4\xf7r\xde\xd2\xba%\xa3A\xfb\xfa\xc1*\x92\xe8.\xc0\x9f\x89\x94\x10\x8f\xa2g\xef XNB\x97g\x1f\x02\xe5\xc6j\x82\xa4c\x06bw\xec\x12\x02\xa3\xb9\x8b\xbe+\x88\x98\x86V\xb9\xb9\xb3^*B\x0c\x8e\x8d\x99\x80P\x14\xa4\x85e\xea1\x92\xf4yg\x94\xf5*\x96\xaa/Rx\x1b\xf7g\xa0\t\x9fe\xc0\x8828\x08t\x85\t\t\x1e]\x06\\\xa0\xcd\n\xfa@\x035\xf1\xcc\xd3\x1aN\xc3\r\xd0\xf1\x04\xc7\xa5v\x86/\xf6z\xff\xda\xaf6p\xbd\x11q\xff\xa9I\xc9X\x90x9\xb8\xc3a\x97s\xb5\x94\r\x87\xe6\xb6\x9e\xef)\"\x94\xc6\x1a\xed\xc03Y\xc54\x1a<e\x01\x92\xab\x1d\x1b\xd5\x9a\xf1\xd11>\xa1\xb0O\xc4\x18T6\x8e_\xad[:r\x0b\\\x1f\xa4\xda\xe6Z\xbb\xc7\x8cC:N\x05\x19E\xf0\x05\xd4\x84\x07}\x101\xc5\xf2\xbf\x82\xd0\xa8\xdcFS\xea\x82L#\x1c\xfd&\x15X$\xbd;:\xa9J\xd2LD\x14Yl\x89\x06\xe7\x11\x10\x1c\xb3\x1b\xaed\xc2\x91\xa8c\x9d\x18\xa5d\x1cC_\x9b\xdf\xb4\xf8\xb6\x07s}\xc9\xb3\x07\xdfS\\\xcf\xd0I\xdf\"\xbbe\x02\xdc\xd2\x04\xb8\xb9\xa5t\x1f\xab\xb9\xd7\x07t\x98\xcbKYV\x0c\xcc\xb3\xc8\xf2\x04KV5*gxo\xcf\xb4n\x17\x85\xdbh\xaer\x0b\xad+\xdb>g\xdb\xfci\xc6\x8e\x9b\xa9u[\xfe\xebM\xb9\xe0s\xc8\x9a\x1c\xb4\x97Kj\xbf\xf5\x88\xe6/\xb7\xd5\xff\xb0\xa0\xf3\xadqr\xba\xda&\xd9c\x83\xf8Oc\x91\xf5\x86g~h\xb5\xae\x9d\xeczuV\x8b\xbf\xbfKFcM\xa0\xb4\xbfV2\xb9kr\xb7\xf8\x90\xd9\xd6#\xb8*\xc5\x8e\xd9\xfb\xcb\xd8\xa5\xb8\xd7S\xfcX%\xac~\xdf\x93\xb3\xb6=\x8c\xee\xde\xe1\xea\xf6\xfa\xa8l\xcc\xdf\xda\x8c\xd57\x0f5\xf9\x11\xcd^\x9d\xd1\xb2\xf3\x9f]\x1c\x00\xcf\x7f\x03PK\x03\x04\x14\x00\x00\x08\x08\x00\x05\x94\xa9Nv\x8c2j \x03\x00\x00\xc0\x0f\x00\x00\x0f\x00\x00\x00Project.lvprojx\xddW\xefn\xda0\x10\xff>i\xef\x10\xe5s\xeb\xb4\xe3\xcb4\x05\xaa\xb6@\x17\xa9\xb4\xa8tY\'!!\x93\x1c\xe0\xcd\xd8\x91\xe3\x04\xd8\xab\xed\xc3\x1ei\xaf0\x9b$$\xa4\t\xa3]\xd7uk%\x88r\xe7\xbb\xdf\xef\xfe\xf8\x8e\x1f\xdf\xbe\xdb\'\xcb95b\x10!\xe1\xaci\x1e\xa3#\xd3\x00\xe6q\x9f\xb0i\xd3\x8c\xe4\xe4\xf0\xady\xd2z\xfd\xca\x1e\xf0Hx\xd0%\x14\x0c\xb7\xa0\x8d\xde\xa0cuD\x19aa\xd3\x9cI\x19\xbc\xb3\xac\xc5b\x81\x18A\x1e\x9f[\xc9\xb1\x1e\xf7\x81\xa2e\xe8\x9b\xca\x94\xa1\xfe\xec+<\x870\xc0\x1e\x18\xfa\xa9i\xb6a\x82#*3\xf9Z\xa7/\xf8g\xf0d\xbd\xf1T\xa1hxs\xf8\x16\x8b)H\xa3\xcd\xbdh\x0eL\xde\xae\x02p|\xf5@&\x04D\xd3t\x1d\xb7\x97\xa8\x98)\x02\xd7\x19\x1a.\x112\xc2th\xf4\xb07#\x0c\xcaV\x8b\xb0n`\x02B\x85\n\x8c\xcdSb\xe8\nK\x15\x1dL\x1d\x16J\xb1v\x1e\"\xd7A\xa9\xed\xd42\xba\x89\x14\x969\x1cl\xa2y\x84\xd6\xfffn\xae\x8f\xe5\xaci\x9a\x86\xf5T(.\xf1\xd8u:\x1f\xd19\x17\xf0\xbb\xfe\xf3z\xc8!\x0c$\x17x\x9a\x9e;\xf5$\x89\x89\\\xa1e\x03k\xa3T\x01\x8aa\x87J]\xaa\xaa\x98\\D\xc4\x07\xff=\xd0\xa0+\x14\xdd\x05\x17_PRd\xb9$Kl\xe6e\x98\xb8y\x1c\x9b\x1e&\x0cA\xdc\x08j\xa8\x14\xe4\xd7\xaa\x9b\x04\xd1\rT\xc7\xe8\xae\xe1:\x99\xeca\xbc\xb3\x0c\xaazZ\xd3UN\xb2\xc2\xca\xd52\xe2\x1a\xd30\x05U\xc9Z5\x1daD{\xc9Y?\x04Mg)A\xa8w:n\x83(\x08\xb8\x909\xac\xa2P\x1b+\xa7\xe34\x0cA\x86CD\xf1W\xd38#L\x07Luy\x87\xc5|uP\x81\xec\xa03\x1f\x83\xafr\x9b\xbfI{\xc0\x910o\xabT\xb4\x05\x0f\xd2{d\x00\"&\x1e\xfc!\xdew\rt\x1a\x04\xea\xab\xcb\xa9\x0f\xe2\x92c\xf5\x99\x1b\xcd\x98\xc6D\xb1#\xe3\xd1#\xe9\xbd\xa4\xa4\x8dF\xa34\xd8\xb7DR\xf8\xd7\x12\xf6X\xce\xe7<X\t2\x9d\xc9O\x80\xc5\x7f^\xa5\xfd\xb3\x9b\'+T\xdbJfk\xf9u\x1a\x8a\x01H\xa9\xbdT\xb1\xd6\xa0\xfc\x0b\xca\xc7\x98\xb6\xb1\xc4\xf5\xc3\xff\xaeQR]\xaf\x01;\x87\xe5\xb5\xca%aFrc\x03;\xfc0\xb0\x1c\x96$\xdf\xea\n\x80>\xc5+\xa5:U#E_\x9b\xe6.\xe7[&w\xb8nc\x12\xae\xceg\xea*\xd6\x05g\\\xab\xb5\xa9\x8bi\x08\xfb\x18W_\x01\x08I \xcc\x17\xa8\x8aX\xd7Gu#\xcb\xd6.k\xb3w\xd5-b\xbfZ\x83\xec|s\xaag\x90\xeblc\xde\xc3\x7f\xd5x(\xba/vk=\x80\xa2V\xe5zX1\xc4[\xdb\xae\xb5g\xdb\xaa\xd2+\x99*\x8al\xabZ\xd1\xdeB\xb4\x7f46#\xa4h\xab\xdc\xc9\xf5a(kVo\xca\xea.iU\xdf\x11\xaa\x8f\xb5\xb0t@Ck\xc5d\r,\xe1P\xd6\xb8\xe4\xde\xfaB\xda*V\xfb\x1e\x9c\xfd\xe3P\x9e?\xcfT\x11%\xb7\x7f\xbd\x1c\xee\x8d\xa4\xe7\x8b\xc3\x96\xdf\x17\xd3\x17zh\xbd\xd4\xd6P\xd8\x9e\xbe;l+\xff\xa9\xd2\xfa\tPK\x01\x023\x00\x14\x00\x00\x00\x08\x00T\x88VE\xa1\xf9\xe4\xb8\x06\x00\x00\x00\x04\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00___CopyrightYearPK\x01\x023\x00\x14\x00\x00\x00\x08\x00T\x88VEr\xe9\x0e\xe0\t\x00\x00\x00\x07\x00\x00\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x004\x00\x00\x00___ProjectTitlePK\x01\x023\x00\x14\x00\x00\x08\x08\x00\x05\x94\xa9N\x0e\xc5\xcb\xd7\x08\x00\x00\x00\x16\x00\x00\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00j\x00\x00\x00ActivityAssets.lazPK\x01\x023\x00\x14\x00\x00\x08\x08\x00\x05\x94\xa9N\x89\x9fa\x01\xf6\x01\x00\x00\x04\x04\x00\x00\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa2\x00\x00\x00Activity.x3aPK\x01\x023\x00\x14\x00\x00\x08\x08\x00\x05\x94\xa9NHu\xf8\xec\x11\x03\x00\x008\n\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc2\x02\x00\x00Main.ev3pPK\x01\x023\x00\x14\x00\x00\x08\x08\x00\x05\x94\xa9Nv\x8c2j \x03\x00\x00\xc0\x0f\x00\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfa\x05\x00\x00Project.lvprojxPK\x05\x06\x00\x00\x00\x00\x06\x00\x06\x00i\x01\x00\x00G\t\x00\x00\x00\x00")
 		if (not ntpath.exists(f"{p}index.bat")):
@@ -2231,6 +2248,7 @@ def _ut_k():
 				i=tl.index(v)+len(v)
 				while (tl[i]==" "):
 					i+=1
+				_print(int(tl[i:].split(" ")[0]))
 				os.kill(int(tl[i:].split(" ")[0]),signal.SIGABRT)
 		time.sleep(5)
 
@@ -2334,7 +2352,7 @@ if (len(sys.argv)==1):
 			if (k["name"].lower() not in p_nm_l):
 				WORKSPACE_DATA.remove(k)
 				continue
-			# _create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
+			_create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
 			nm+=[k["name"].lower()]
 	_print("Registering New Projects\x1b[38;2;100;100;100m...")
 	for f in os.listdir("D:\\K\\Coding\\projects\\"):
@@ -2592,19 +2610,27 @@ else:
 			_start_thr(_net_loop,"__core__","github_project_push_remote_network_loop")
 			_git_project_push(r=True)
 		else:
-			threading.current_thread()._b_nm="__core__"
-			threading.current_thread()._nm="github_project_push_single"
-			threading.current_thread()._dpt=True
-			threading.current_thread()._r=2
-			nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
-			dc=("None" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
-			msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
-			_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
-			threading.current_thread()._dp=True
-			threading.current_thread()._df=True
-			threading.current_thread()._r=1
-			_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
-			input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
+			if (sys.argv[2]=="*"):
+				threading.current_thread()._b_nm="__core__"
+				threading.current_thread()._nm="github_project_push_all"
+				threading.current_thread()._dpt=True
+				threading.current_thread()._r=2
+				_start_thr(_net_loop,"__core__","github_project_push_all_network_loop")
+				_git_project_push(r=True,f=True)
+			else:
+				threading.current_thread()._b_nm="__core__"
+				threading.current_thread()._nm="github_project_push_single"
+				threading.current_thread()._dpt=True
+				threading.current_thread()._r=2
+				nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
+				dc=("None" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
+				msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
+				_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
+				threading.current_thread()._dp=True
+				threading.current_thread()._df=True
+				threading.current_thread()._r=1
+				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
+				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="arduino_runner"
