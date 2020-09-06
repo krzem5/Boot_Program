@@ -1894,7 +1894,7 @@ def _create_prog(type_,name,op=True):
 			f.write("### Github File Push Ignore\n\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
 	if (not ntpath.exists(f"{p}LICENSE")):
-		with open(f"{p}LICENSE","w") as f:
+		with open(f"{p}LICENSE","x") as f:
 			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.""")
 	if (not ntpath.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
