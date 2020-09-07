@@ -1886,7 +1886,7 @@ def _create_prog(type_,name,op=True):
 	fel=[]
 	for r,_,fl in os.walk(p):
 		for f in fl:
-			fel+=[ntpath.join(r,f)]
+			fel+=[ntpath.join(r,f).split(".")[-1]]
 	if (not ntpath.exists(p)):
 		os.mkdir(p)
 	if (not ntpath.exists(f"{p}.gitignore")):
