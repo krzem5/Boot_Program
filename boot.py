@@ -769,7 +769,7 @@ def _update_repo(p,b_nm,msg):
 
 
 
-def _git_project_push(r=False,f=False):
+def _git_project_push(r=False,fr=False):
 	global NETWORK
 	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	_print(f"Starting Github Project Push Check with Commit Message '{msg}'\x1b[38;2;100;100;100m...")
@@ -792,7 +792,7 @@ def _git_project_push(r=False,f=False):
 		f.write(str(tm)+"\n")
 		f.flush()
 		for p in sorted(os.listdir("D:\\K\\Coding\\projects")):
-			if (f==False and p in b_dt[1:]):
+			if (fr==False and p in b_dt[1:]):
 				t[1]+=1
 				f.write(p+"\n")
 				f.flush()
@@ -801,7 +801,7 @@ def _git_project_push(r=False,f=False):
 			_update_repo(f"D:\\K\\Coding\\projects\\{p}",p,msg)
 			f.write(p+"\n")
 			f.flush()
-		if (f==False and "Boot_Program" in b_dt[1:]):
+		if (fr==False and "Boot_Program" in b_dt[1:]):
 			t[1]+=1
 			f.write("Boot_Program\n")
 			f.flush()
