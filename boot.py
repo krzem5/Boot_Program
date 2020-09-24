@@ -1910,13 +1910,13 @@ def _create_prog(type_,name,op=True):
 			with open(f"{p}index.bat","x") as f:
 				f.write(f"@echo off\ncls\nrm -rf build&&python D:\\boot\\boot.py 5 compile ./ arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./ COM3 arduino:avr:uno\n")
 	elif (type_=="c"):
-		if (not ntpath.exists(f"{p}src")):
-			os.mkdir(f"{p}src")
-		if (not ntpath.exists(f"{p}src/{name.lower()}")):
-			os.mkdir(f"{p}src/{name.lower()}")
-		if (not ntpath.exists(f"{p}src/include")):
-			os.mkdir(f"{p}src/include")
 		if (not ntpath.exists(f"{p}src/main.c") and "c" not in fel):
+			if (not ntpath.exists(f"{p}src")):
+				os.mkdir(f"{p}src")
+			if (not ntpath.exists(f"{p}src/{name.lower()}")):
+				os.mkdir(f"{p}src/{name.lower()}")
+			if (not ntpath.exists(f"{p}src/include")):
+				os.mkdir(f"{p}src/include")
 			with open(f"{p}src/main.c","x") as f:
 				f.write("int main(int argc,const char** argv){\n\treturn 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
