@@ -612,7 +612,7 @@ def _update_repo(p,b_nm,msg):
 			print(r.headers)
 			sys.exit(1)
 		time.sleep(0.72)
-		if ("message" in r.json().keys() and r.json()["message"]=="Server Error"):
+		if (type(r.json())==dict and "message" in r.json().keys() and r.json()["message"]=="Server Error"):
 			return None
 		return r.json()
 	def _get_tree(r_nm,sha):
@@ -704,12 +704,19 @@ def _update_repo(p,b_nm,msg):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
 	rm_t=False
-	try:
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
-	except:
-		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
+	br=[e["name"] for e in _request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/branches")]
+	br=("main" if "main" in br else ("master" if "master" in br else br[0]))
+	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")
+	if ("object" in list(bt_sha.keys())):
+		bt_sha=bt_sha["object"]["sha"]
+	else:
+		bt_sha=_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		rm_t=True
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/master")["object"]["sha"]
+		if ("commit" in list(bt_sha.keys())):
+			bt_sha=bt_sha["commit"]["tree"]["sha"]
+		else:
+			_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+			bt_sha=_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))["commit"]["tree"]["sha"]
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -764,7 +771,7 @@ def _update_repo(p,b_nm,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl])):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/master",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if rm_t else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if rm_t else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1938,7 +1945,7 @@ def _create_prog(type_,name,op=True):
 				f.write("body {\n\twidth: 100%;\n\theight: 100%\n}\nbody, body * {\n\tmargin: 0;\n\tpadding: 0;\n}")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
+				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="fischertechnic"):
 		if (not ntpath.exists(f"{p}index.rpp") and "rpp" not in fel):
 			with open(f"{p}index.rpp","x") as f:
@@ -1968,14 +1975,14 @@ def _create_prog(type_,name,op=True):
 				f.write("function init(){\n\t\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
+				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="php"):
 		if (not ntpath.exists(f"{p}index.php") and "php" not in fel):
 			with open(f"{p}index.php","x") as f:
 				f.write("<?php\n\n?>")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}index.php")
+				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}index.php")
 	elif (type_=="processing"):
 		if (not ntpath.exists(f"{p}index\\")):
 			os.mkdir(f"{p}index\\")
@@ -2001,7 +2008,7 @@ def _create_prog(type_,name,op=True):
 				f.write("var scene,cam,renderer,controls\nfunction init(){\n\tscene=new THREE.Scene()\n\tcam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100000)\n\tcam.position.set(0,2000,0)\n\tcam.enablePan=false\n\tcam.lookAt(new THREE.Vector3(0,0,0))\n\trenderer=new THREE.WebGLRenderer({antialias:true})\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n\tscene.background=new THREE.Color().setHSL(1,1,1)\n\tdocument.body.appendChild(renderer.domElement)\n\tambient=new THREE.AmbientLight(0xffffff,1)\n\tscene.add(ambient)\n\trenderer.render(scene,cam)\n\tcontrols=new THREE.OrbitControls(cam,renderer.domElement)\n\tcontrols.target=new THREE.Vector3(0,0,0)\n\twindow.addEventListener(\"resize\",resize,false)\n\twindow.addEventListener(\"keypress\",onkeypress)\n\trequestAnimationFrame(render)\n}\nfunction render(){\n\trenderer.render(scene,cam)\n\trequestAnimationFrame(render)\n}\nfunction resize(){\n\tcam.aspect=window.innerWidth/window.innerHeight\n\tcam.updateProjectionMatrix()\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n}\nfunction onkeypress(e){\n\tswitch (e.keyCode){\n\t\t//\n\t}\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" http://localhost:8020/{p}")
+				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="mindstorm"):
 		if (not ntpath.exists(f"{p}index.ev3") and "ev3" not in fel):
 			with open(f"{p}index.ev3","wb") as f:
@@ -2494,7 +2501,7 @@ else:
 				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, batexe, vm, android, github, blender, scratch, idea, print, work, cmd, serial, cad, regedit, ev3, <kata url>, <git clone url>, <any url>")
 				continue
 			elif (p=="chrome"):
-				_open_app("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
+				_open_app("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe")
 			elif (p=="python"):
 				_open_app(f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Programs\\Python\\Python38\\python.exe")
 			elif (p=="python37"):
@@ -2527,9 +2534,9 @@ else:
 			elif (p=="print"):
 				_open_app("C:\\Program Files\\RepetierGEEEtech\\RepetierHost.exe")
 			elif (p=="work"):
-				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/"])
+				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",f"http:/127.0.0.1:8020/"])
 			elif (p=="cmd"):
-				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",f"http:/127.0.0.1:8020/cmd"])
+				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",f"http:/127.0.0.1:8020/cmd"])
 			elif (p=="serial"):
 				_open_app(["python","D:\\boot\\boot.py","6"])
 			elif (p=="cad"):
@@ -2547,7 +2554,7 @@ else:
 				with open("D:\\boot\\codewars-swapfile.dt","a") as f:
 					f.write("1"+p)
 			elif (URL_REGEX.match(p)!=None):
-				_open_app(["C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",p])
+				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",p])
 			elif (p=="" or p=="exit"):
 				break
 			else:
