@@ -771,7 +771,9 @@ def _update_repo(p,b_nm,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl])):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]+([{"path":"_","mode":"100644","type":"blob","sha":None}] if rm_t else [])}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+	if (rm_t==True):
+		_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
