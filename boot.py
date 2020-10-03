@@ -50,7 +50,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_DATA,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
+global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 SERIAL_BAUD=9600
 R_STD_BUFFER={"_s":None,"bf":[]}
@@ -60,7 +60,6 @@ STDOUT_LOCK=False
 CMD_L={}
 KB_PID=-1
 BLK_PID=-1
-WORKSPACE_DATA=[]
 WORKSPACE_PHP_SERVER_PORT=random.randint(9001,49151)
 WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
@@ -1819,15 +1818,6 @@ def _save_f(fn,txt):
 
 
 
-def _save_w():
-	_print("Saving Workspace Data\x1b[38;2;100;100;100m...")
-	global WORKSPACE_DATA
-	WORKSPACE_DATA=sorted(WORKSPACE_DATA,key=lambda x:x["name"])
-	with open("D:\\boot\\workspace-data.json","w") as f:
-		f.write(json.dumps(WORKSPACE_DATA,indent=4,sort_keys=True).replace("    ","\t"))
-
-
-
 def _open_prog_w(p):
 	def _open_prog_w_f(p,p2,e,*f):
 		op=False
@@ -1908,9 +1898,6 @@ def _create_prog(type_,name,op=True):
 	if (not ntpath.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
 			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)""")
-	global WORKSPACE_DATA
-	if (type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_") not in [e["name"] for e in WORKSPACE_DATA]):
-		WORKSPACE_DATA.append({"name":type_.title()+"-"+name.replace("_"," ").lower().title().replace(" ","_"),"year":datetime.datetime.now().year,"desc":"[null]"})
 	if (type_=="arduino"):
 		if (not ntpath.exists(f"{p}index.ino") and "ino" not in fel):
 			with open(f"{p}index.ino","x") as f:
@@ -2020,7 +2007,6 @@ def _create_prog(type_,name,op=True):
 				f.write(f"@echo off\ncls\n\"C:/Program Files/LEGO Software/LEGO MINDSTORMS EV3 Home Edition/MindstormsEV3.exe\" {p}index.ev3")
 	if (op==True):
 		_open_prog_w(type_.title()+"-"+name)
-	_save_w()
 
 
 
@@ -2080,7 +2066,6 @@ class _WebSocketServer_handle(WebSocket):
 
 def _start_s(t):
 	def _h_request(cs,a,ip):
-		global WORKSPACE_DATA
 		try:
 			_dt=cs.recv(65536)
 			if (len(_dt)==0):
@@ -2150,10 +2135,6 @@ def _start_s(t):
 				pg=url[1:].split("~")[0]
 				dc=urllib.parse.unquote("~".join(url[1:].split("~")[1:]),errors="surrogatepass")
 				_print(f"Changing Description for Project '{pg}' to '{dc}'\x1b[38;2;100;100;100m...")
-				for o in WORKSPACE_DATA:
-					if (o["name"]==pg):
-						o["desc"]=dc
-				_save_w()
 				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
 				rc=200
 			elif (t=="START_PROG"):
@@ -2173,13 +2154,6 @@ def _start_s(t):
 				_print(f"Creating Project (type='{url[1:].split('~')[0]}', name='{url[1:].split('~')[1]}')\x1b[38;2;100;100;100m...")
 				_create_prog(*url[1:].split("~"))
 				cs.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n")
-				rc=200
-			elif (t=="LIST_PROGS"):
-				_print(f"Sending Project List\x1b[38;2;100;100;100m...")
-				s=""
-				for d in WORKSPACE_DATA:
-					s+=str(d["name"])+","+str(d["year"])+","+str(d["desc"])+"|"
-				cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(s[:-1])}\r\n\r\n{s[:-1]}","utf-8"))
 				rc=200
 			elif (t=="DOWNLOAD_PROG"):
 				_print(f"Zipping Project '{url[1:]}'\x1b[38;2;100;100;100m...")
@@ -2358,24 +2332,6 @@ if (len(sys.argv)==1):
 	_start_thr(_ut_k,"__core__","useless_task_kill")
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
-	_print("Removing Old Project Registry\x1b[38;2;100;100;100m...")
-	nm=[]
-	p_nm_l=[e.lower() for e in os.listdir("D:\\K\\Coding\\projects\\")]
-	with open("D:\\boot\\workspace-data.json","r") as f:
-		WORKSPACE_DATA=json.loads(f.read())
-		for k in WORKSPACE_DATA[:]:
-			if (k["name"].lower() not in p_nm_l):
-				WORKSPACE_DATA.remove(k)
-				continue
-			_create_prog(k["name"].split("-")[0].lower(),k["name"].split("-")[1].lower(),op=False)
-			nm+=[k["name"].lower()]
-	_print("Registering New Projects\x1b[38;2;100;100;100m...")
-	for f in os.listdir("D:\\K\\Coding\\projects\\"):
-		if (f.lower() not in nm):
-			WORKSPACE_DATA+=[{"name":f.split("-")[0]+"-"+"_".join([e.title() for e in f.split("-")[1].split("_")]),"desc":"[null]","year":datetime.datetime.now().year}]
-			_create_prog(f.split("-")[0].lower(),f.split("-")[1].lower(),op=False)
-	_print("Saving Project Registry\x1b[38;2;100;100;100m...")
-	_save_w()
 	_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
 	_start_thr(_start_s,"__core__","cmdline_websocket_server",0)
 	_print("Starting PHP Server\x1b[38;2;100;100;100m...")
