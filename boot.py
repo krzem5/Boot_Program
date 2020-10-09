@@ -704,7 +704,7 @@ def _update_repo(p,b_nm,msg):
 					gdt+=[[iv,ln]]
 	rm_t=False
 	br=[e["name"] for e in _request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/branches")]
-	br=("main" if "main" in br else ("master" if "master" in br else br[0]))
+	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
 	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")
 	if ("object" in list(bt_sha.keys())):
 		bt_sha=bt_sha["object"]["sha"]
@@ -2600,7 +2600,7 @@ else:
 				threading.current_thread()._dp=True
 				threading.current_thread()._df=True
 				threading.current_thread()._r=1
-				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
+				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:\\k\\coding\\projects\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._b_nm="__core__"
