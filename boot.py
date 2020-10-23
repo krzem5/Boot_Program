@@ -71,7 +71,7 @@ CODEWARS_SIGNIN_URL="https://www.codewars.com/users/sign_in"
 CODEWARS_SIGNIN_EMAIL_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[2]/div/div/div/input"
 CODEWARS_SIGNIN_PASSWORD_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[3]/div/div/div/input"
 CODEWARS_SIGNIN_LOGIN_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/button"
-USER_EMAIL,USER_PASSWORD,GITHUB_TOKEN=f.replace("\r","").split("\n")[:3]
+USER_EMAIL,USER_PASSWORD,GITHUB_TOKEN,GITHUB_SIG=f.replace("\r","").split("\n")[:4]
 CODEWARS_DASHBOARD_URL="https://www.codewars.com/dashboard"
 KATA_METADATA_URL="https://www.codewars.com/kata/%s"
 KATA_METADATA_LANGUAGE_LIST_CONTAINER_XPATH="/html/body/div[1]/div[1]/main/div[3]/div/div[2]/div/div[1]/div/div/dl"
@@ -714,7 +714,6 @@ def _update_repo(p,b_nm,msg):
 		if ("commit" in list(bt_sha.keys())):
 			bt_sha=bt_sha["commit"]["tree"]["sha"]
 		else:
-			_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 			bt_sha=_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))["commit"]["tree"]["sha"]
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
@@ -769,10 +768,9 @@ def _update_repo(p,b_nm,msg):
 			_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m")
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
-	if (any([(True if b[1]!=None else False) for b in bl])):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-	if (rm_t==True):
-		_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha],"signature":GITHUB_SIG}))["sha"],"force":True}))
+	_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -2587,7 +2585,7 @@ else:
 				threading.current_thread()._dpt=True
 				threading.current_thread()._r=2
 				_start_thr(_net_loop,"__core__","github_project_push_all_network_loop")
-				_git_project_push(r=True,f=True)
+				_git_project_push(r=True,fr=True)
 			else:
 				threading.current_thread()._b_nm="__core__"
 				threading.current_thread()._nm="github_project_push_single"
