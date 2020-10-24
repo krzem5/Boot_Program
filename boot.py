@@ -403,19 +403,10 @@ def _update_repo(p,b_nm,msg):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
-	rm_t=False
 	br=[e["name"] for e in _request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/branches")]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
-	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")
-	if ("object" in list(bt_sha.keys())):
-		bt_sha=bt_sha["object"]["sha"]
-	else:
-		bt_sha=_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
-		rm_t=True
-		if ("commit" in list(bt_sha.keys())):
-			bt_sha=bt_sha["commit"]["tree"]["sha"]
-		else:
-			bt_sha=_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))["commit"]["tree"]["sha"]
+	# _request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
+	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -471,7 +462,7 @@ def _update_repo(p,b_nm,msg):
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-	_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+	# _request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1569,11 +1560,12 @@ def _open_prog_w(p):
 
 
 
-def _create_prog(type_,name,op=True):
-	_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
+def _create_prog(type_,name,op=True,pr=True):
+	if (pr==True):
+		_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
-	if (type_ not in "arduino,c,chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
-		_print(f"UNKNOWN TYPE: {type_}")
+	if (type_ not in "arduino,assembly,c,chromeext,cpp,css,ft,fischertechnic,java,js,javascript,mindstorm,php,processing,python,three,websocket".split(",")):
+		_print(f"Unknown Prog Type: {type_}")
 		return
 	if (type_=="js"):
 		type_="javascript"
@@ -2027,6 +2019,9 @@ if (len(sys.argv)==1):
 	_start_thr(_u_mcs,"__core__","minecraft_survival_server_updater","D:\\boot\\mcs-s")
 	_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
 	_start_thr(_ut_k,"__core__","useless_task_kill")
+	_print("Registering All Projects\x1b[38;2;100;100;100m...")
+	for k in os.listdir("D:\\K\\Coding\\projects"):
+		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
 	_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
