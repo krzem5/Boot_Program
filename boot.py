@@ -1,9 +1,3 @@
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from SimpleWebSocketServer import SimpleWebSocketServer,WebSocket
 import keyboard
 import socket
@@ -63,46 +57,8 @@ BLK_PID=-1
 WORKSPACE_PHP_SERVER_PORT=random.randint(9001,49151)
 WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
-CODEWARS_KATA_URL_REGEX=re.compile(r"^(?:https?://)?www\.codewars\.com/kata/([0-9a-f]{24})(/.*)?$")
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
-SWAP_DATA=[]
-SWAP_FILE_NAME="D:\\boot\\codewars-swapfile.dt"
-CODEWARS_SIGNIN_URL="https://www.codewars.com/users/sign_in"
-CODEWARS_SIGNIN_EMAIL_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[2]/div/div/div/input"
-CODEWARS_SIGNIN_PASSWORD_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/div[3]/div/div/div/input"
-CODEWARS_SIGNIN_LOGIN_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[2]/form/button"
-USER_EMAIL,USER_PASSWORD,GITHUB_TOKEN,GITHUB_SIG=f.replace("\r","").split("\n")[:4]
-CODEWARS_DASHBOARD_URL="https://www.codewars.com/dashboard"
-KATA_METADATA_URL="https://www.codewars.com/kata/%s"
-KATA_METADATA_LANGUAGE_LIST_CONTAINER_XPATH="/html/body/div[1]/div[1]/main/div[3]/div/div[2]/div/div[1]/div/div/dl"
-KATA_METADATA_NAME_XPATH="/html/body/div[1]/div[1]/main/div[3]/div/div[1]/div[1]/h4"
-KATA_LANGUAGES="python javascript java php cpp bf nasm powershell shell".split(" ")
-KATA_SETUP_URL="https://www.codewars.com/kata/%s/train/%s"
-KATA_SETUP_SOLUTION_CONTAINER_ID=1
-KATA_SETUP_FIXTURE_TESTS_CONTAINER_ID=2
-KATA_SETUP_CODEMIRROR_CONTAINER_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[%d]"
-KATA_SETUP_CODEMIRROR_CONTAINER_LINES_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[%d]/div[2]/div/div[1]/div[1]/div[6]/div[1]/div/div/div/div[5]/div/pre"
-KATA_SETUP_CODEMIRROR_SOLUTION_CONTAINER_FIRST_ELEMENT_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]/div[6]/div[1]/div/div/div/div[5]/div[1]/pre/span/span[1]"
-KATA_SETUP_CODEMIRROR_TEST_CONTAINER_FIRST_ELEMENT_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[1]/div[1]/div[6]/div[1]/div/div/div/div[5]/div[1]/pre/span/span[1]"
-KATA_SETUP_SELECT_CODEMIRROR_SCRIPT="document.evaluate(arguments[0],document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue.click();console.log(document.evaluate(arguments[0],document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue.outerHTML)"
-KATA_SETUP_FINAL_TEST_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[3]/div[2]/a[2]"
-KATA_SETUP_SUBMIT_TEST_BUTTON_XPATH="/html/body/div[1]/div[1]/main/div[3]/view/div[2]/div[2]/div[2]/div/div[3]/div[2]/a[3]"
-KATA_SETUP_SCRIPT="return JSON.stringify(App.instance.data);"
-KATA_BUILD_SYSTEM="@echo off\ncls\npython \"D:\\boot\\boot.py\" 3 %1"
-KATA_LANGUAGE_EXTENSIONS={
-	"python": "py",
-	"javascript": "js",
-	"java": "java",
-	"php": "php",
-	"cpp": "cpp",
-	"bf": "bf",
-	"nasm": "asm",
-	"powershell": "ps1",
-	"shell": "sh"
-}
-KATA_DIR="D:\\K\\Codewars\\%s"
-KATA_DIR_LANG="D:\\K\\Codewars\\%s\\%s"
-KATA_FILE="D:\\K\\Codewars\\%s\\%s\\%s.%s"
+GITHUB_TOKEN=f.replace("\r","").split("\n")[0]
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_OS_TYPE="windows"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
@@ -321,261 +277,6 @@ def _start_ser(p):
 
 
 
-def _codewars_wr():
-	global SWAP_DATA
-	def _sawp_thr():
-		global SWAP_DATA
-		_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
-		while (SWAP_DATA!=None):
-			try:
-				if (ntpath.getsize(SWAP_FILE_NAME)>0 or len(SWAP_DATA)>0):
-					with open(SWAP_FILE_NAME,"r") as f:
-						f=f.read()
-						SWAP_DATA+=[e for e in f.split("\n") if len(e)>0]
-					with open(SWAP_FILE_NAME,"w"):
-						pass
-			except TypeError as e:
-				if (SWAP_DATA==None):
-					break
-				else:
-					traceback.print_exception(None,e,e.__traceback__)
-			time.sleep(1e-6)
-		_print("\x1b[38;2;200;40;20mData Swap Loop Stopped.\x1b[0m")
-	_print("Starting Data Swap Loop\x1b[38;2;100;100;100m...")
-	_start_thr(_sawp_thr,"__core__","codewars_driver_swap_loop")
-	_print("Starting ChromeDriver\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists("C:\\Program Files\\ChromeDriver\\chromedriver.exe")):
-		SWAP_DATA=None
-		_print("\x1b[38;2;200;40;20mChromeDriver.exe Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-		return
-	opts=webdriver.ChromeOptions()
-	opts.headless=True
-	driver=webdriver.Chrome(executable_path="C:\\Program Files\\ChromeDriver\\chromedriver.exe",options=opts)
-	_print("Logging In\x1b[38;2;100;100;100m...")
-	driver.get(CODEWARS_SIGNIN_URL)
-	wait=WebDriverWait(driver,100)
-	try:
-		e=wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_EMAIL_XPATH))).send_keys(USER_EMAIL)
-		e=wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_PASSWORD_XPATH))).send_keys(USER_PASSWORD)
-		_print("Submiting Log In\x1b[38;2;100;100;100m...")
-		wait.until(EC.presence_of_element_located((By.XPATH,CODEWARS_SIGNIN_LOGIN_BUTTON_XPATH))).click()
-		while (driver.current_url!=CODEWARS_DASHBOARD_URL):
-			pass
-		_print("Starting Listener\x1b[38;2;100;100;100m...")
-		while (True):
-			if (len(SWAP_DATA)>0):
-				open_,kid,SWAP_DATA=SWAP_DATA[0][0],SWAP_DATA[0][1:].replace("https://www.codewars.com/kata/","").split("/"),SWAP_DATA[1:]
-				_print(f"Request Found: (url='https://www.codewars.com/kata/{'/'.join(kid)}', id='{kid[0]}', language={(chr(39)+kid[2]+chr(39) if len(kid)>=3 else 'unknown')}, open_in_editor={open_})")
-				kid,k_o_nm=kid[0],(kid[2] if len(kid)>=3 else None)
-				while (True):
-					try:
-						_print(f"Querying URL '{KATA_METADATA_URL%(kid)}'\x1b[38;2;100;100;100m...")
-						driver.get(KATA_METADATA_URL%(kid))
-						lce=wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_LANGUAGE_LIST_CONTAINER_XPATH)))
-						k_f_nm=re.sub(r"[^a-z0-9\_\-]","",wait.until(EC.presence_of_element_located((By.XPATH,KATA_METADATA_NAME_XPATH))).get_attribute("innerText").replace(" ","_").lower())
-						_print(f"Creating Output Dir '{KATA_DIR%(k_f_nm)}'\x1b[38;2;100;100;100m...")
-						if (not ntpath.exists(KATA_DIR%(k_f_nm))):
-							os.mkdir(KATA_DIR%(k_f_nm))
-						psd=None
-						_print(f"Cloning All Languages... ({', '.join([e.get_attribute('data-value') for e in lce.find_elements_by_css_selector('dd[data-value]') if e.get_attribute('data-value') in KATA_LANGUAGES])})")
-						for l in [e.get_attribute("data-value") for e in lce.find_elements_by_css_selector("dd[data-value]") if e.get_attribute("data-value") in KATA_LANGUAGES]:
-							_print(f"Querying URL '{KATA_SETUP_URL%(kid,l)}'\x1b[38;2;100;100;100m...")
-							driver.get(KATA_SETUP_URL%(kid,l))
-							_print("Waiting Until Content Loads\x1b[38;2;100;100;100m...")
-							wait.until(EC.presence_of_element_located((By.XPATH,KATA_SETUP_CODEMIRROR_CONTAINER_XPATH%(KATA_SETUP_SOLUTION_CONTAINER_ID))))
-							wait.until(EC.presence_of_element_located((By.XPATH,KATA_SETUP_CODEMIRROR_CONTAINER_XPATH%(KATA_SETUP_FIXTURE_TESTS_CONTAINER_ID))))
-							while (len(driver.find_elements_by_xpath(KATA_SETUP_CODEMIRROR_CONTAINER_LINES_XPATH%(KATA_SETUP_SOLUTION_CONTAINER_ID)))==0 or len(driver.find_elements_by_xpath(KATA_SETUP_CODEMIRROR_CONTAINER_LINES_XPATH%(KATA_SETUP_FIXTURE_TESTS_CONTAINER_ID)))==0):
-								pass
-							_print("Requesting Data\x1b[38;2;100;100;100m...")
-							kdt=json.loads(driver.execute_script(KATA_SETUP_SCRIPT))
-							_print("Cleaning-Up Previous Output\x1b[38;2;100;100;100m...")
-							if (psd==None):
-								if (kdt["previousSolutions"]==None):
-									psd={}
-								else:
-									psd={ps["sym"]:ps for ps in kdt["previousSolutions"] if ps["sym"] in KATA_LANGUAGES}
-							if (not ntpath.exists(KATA_DIR_LANG%(k_f_nm,l))):
-								os.mkdir(KATA_DIR_LANG%(k_f_nm,l))
-							_print("Writing Files\x1b[38;2;100;100;100m...")
-							for k in os.listdir(KATA_DIR_LANG%(k_f_nm,l)):
-								if (k.split("-")[0]!="solution" or k.split(".")[0]=="solution-working"):
-									continue
-								os.remove(KATA_DIR_LANG%(k_f_nm,l)+"\\"+k)
-							if (not ntpath.exists(KATA_FILE%(k_f_nm,l,"","codewars-data"))):
-								with open(KATA_FILE%(k_f_nm,l,"","codewars-data"),"w") as f:
-									f.write("id="+kid+"\nsol-id="+kdt["languageInfo"]["solutionId"]+"\nlang="+kdt["languageInfo"]["languageName"]+"\nlang-ver="+kdt["languageInfo"]["activeVersion"]+"\ntest-fr="+kdt["languageInfo"]["testFramework"]+"\nfixture="+kdt["languageInfo"]["fixture"].replace("\n","")+"\nsetup="+kdt["languageInfo"]["package"].replace("\n",""))
-								os.system(f"cd /d \"{KATA_DIR_LANG%(k_f_nm,l)}\"&&attrib +h .codewars-data")
-							with open(KATA_FILE%(k_f_nm,l,"run","bat"),"w") as f:
-								f.write(KATA_BUILD_SYSTEM)
-							with open(KATA_FILE%(k_f_nm,l,"challenge","md"),"wb") as f:
-								f.write(kdt["description"].encode("utf-8"))
-							if (not ntpath.exists(KATA_FILE%(k_f_nm,l,"solution-working",KATA_LANGUAGE_EXTENSIONS[l])) or (l in psd.keys() and kdt["languageInfo"]["workingCode"] in psd[l]["solutions"])):
-								if (kdt["languageInfo"]["workingFixture"]==None):
-									kdt["languageInfo"]["workingFixture"]=kdt["languageInfo"]["exampleFixture"]
-								if (kdt["languageInfo"]["workingCode"]==None):
-									kdt["languageInfo"]["workingCode"]=kdt["languageInfo"]["setup"]
-								with open(KATA_FILE%(k_f_nm,l,"solution-working",KATA_LANGUAGE_EXTENSIONS[l]),"wb") as f:
-									f.write(kdt["languageInfo"]["workingCode"].encode("utf-8"))
-								with open(KATA_FILE%(k_f_nm,l,"tdd_local",KATA_LANGUAGE_EXTENSIONS[l]),"wb") as f:
-									f.write(kdt["languageInfo"]["workingFixture"].encode("utf-8"))
-							if (l not in psd.keys()):
-								continue
-							_print("Writing Previous Solutions\x1b[38;2;100;100;100m...")
-							for pss in psd[l]["solutions"]:
-								psl=[f.split(".")[0] for f in os.listdir(KATA_DIR_LANG%(k_f_nm,psd[l]["sym"])) if "solution-" in f]
-								s_id=0
-								while ("solution-"+str(s_id) in psl):
-									s_id+=1
-								with open(KATA_FILE%(k_f_nm,psd[l]["sym"],"solution-"+str(s_id),KATA_LANGUAGE_EXTENSIONS[psd[l]["sym"]]),"wb") as f:
-									f.write(bytes(pss,"utf-8"))
-						break
-					except:
-						_print(f"Failed to Process Request. Retrying... (id='{kid}')")
-				if (open_=="1"):
-					if (k_o_nm==None):
-						_print("Opening Cloned Files in File Explorer\x1b[38;2;100;100;100m...")
-						_open_app(KATA_DIR%(k_f_nm),file=True)
-					else:
-						_print("Opening Cloned Files in Editor\x1b[38;2;100;100;100m...")
-						_open_app(f"C:\\Program Files\\Sublime Text 3\\sublime_text.exe {KATA_FILE%(k_f_nm,k_o_nm,'solution-working',KATA_LANGUAGE_EXTENSIONS[k_o_nm])}")
-						_open_app(f"C:\\Program Files\\Sublime Text 3\\sublime_text.exe {KATA_FILE%(k_f_nm,k_o_nm,'challenge','md')}")
-				_print(f"Finished Processing Request (id='{kid}')")
-	except Exception as e:
-		f=io.StringIO()
-		traceback.print_exception(None,e,e.__traceback__,file=f)
-		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
-		print(f.getvalue(),file=sys.__stderr__,end="")
-	_print("Stopping ChromeDriver\x1b[38;2;100;100;100m...")
-	SWAP_DATA=None
-	driver.quit()
-
-
-
-def _render_cwr(tp):
-	def _center_ignore(o,l):
-		while (len(re.sub(r"\x1b\[[^m]+m","",o))<l):
-			o+=" "
-			if (len(re.sub(r"\x1b\[[^m]+m","",o))==l):
-				break
-			o=" "+o
-		return o
-	def _ljust_ignore(o,l):
-		while (len(re.sub(r"\x1b\[[^m]+m","",o))<l):
-			o+=" "
-		return o
-	def _render_elem(e,ppe,pe,i):
-		o=[]
-		if (e["t"]=="describe" or e["t"]=="it"):
-			cl=("\x1b[38;2;183;38;38m" if e["p"]==False else "\x1b[38;2;72;183;38m")
-			o+=[[("" if pe==None and ppe!=None and (ppe["t"]=="it" or ppe["t"]=="describe") else "\n")+" "*i+cl+"■ \x1b[38;2;238;238;238m"+e["v"].replace("\t","    ").replace("\r",""),i]]
-			for ei,ce in enumerate(e["items"]):
-				o+=_render_elem(ce,e,(None if ei==0 else e["items"][ei-1]),i+4)
-		elif ("items" not in e.keys() and e["t"]!="log" and e["t"]!="completedin"):
-			cl=("\x1b[38;2;183;38;38m" if e["t"]=="failed" else "\x1b[38;2;72;183;38m")
-			o+=[[("" if ((pe!=None and pe["t"]=="log") or (pe==None and ppe!=None)) else "\n")+" "*(i-2)+cl+"» "+e["v"].replace("\t","    ").replace("\r",""),i]]
-		elif (e["t"]=="log"):
-			o+=[[("" if pe!=None and (pe["t"]=="log" or pe["t"]=="it" or pe["t"]=="describe") else "\n")+" "*i+"\x1b[38;2;138;138;138mLOG:\n\x1b[38;2;238;238;238m"+" "*i+str(e["v"][:-1]).replace("\n","\n"+" "*i).replace("\t","    ").replace("\r",""),i+2]]
-		elif (e["t"]=="completedin"):
-			o+=[[" "*(i-2)+"\x1b[38;2;138;138;138m"+str(e["v"]).replace("\t","    ").replace("\r","")+"ms",i-2]]
-		else:
-			o+=[["UNKNOWN"+e["t"]+" => "+e["v"].replace("\t","    ").replace("\r",""),0]]
-		return o
-	def _wrap(l,mx,ws):
-		p=" "*len(re.sub(r"\x1b\[[^m]+m","",l)[:ws])
-		i=0
-		ll=0
-		st=""
-		while (i<len(l)):
-			if (l[i]=="\x1b"):
-				st+=l[i]
-				i+=1
-				while (l[i-1]!="m"):
-					st+=l[i]
-					i+=1
-				continue
-			if (l[i]=="\n"):
-				l=l[:i+1]+st+l[i+1:]
-				i+=len(st)+1
-				ll=0
-				continue
-			if (ll>=mx):
-				l=l[:i]+"\n"+p+st+l[i:]
-				i+=len(p)+len(st)+1
-				ll=ws
-			i+=1
-			ll+=1
-		return l.split("\n")
-	cmd={"ciphered":["setup"]}
-	with open(".codewars-data","r") as f:
-		s={e.split("=")[0]:"=".join(e.split("=")[1:]) for e in f.read().split("\n") if len(e.split("="))>=2}
-	if (tp=="--local"):
-		with open([x for x in os.listdir("./") if x.split(".")[0]=="tdd_local"][0],"r") as f:
-			cmd["fixture"]=f.read()
-	else:
-		cmd["fixture"]=s["fixture"]
-		cmd["ciphered"]+=["fixture"]
-	cmd["relayId"]=s["sol-id"]
-	cmd["setup"]=s["setup"]
-	with open([x for x in os.listdir("./") if x.split(".")[0]=="solution-working"][0],"r") as f:
-		cmd["code"]=f.read()
-	cmd["language"]=s["lang"]
-	cmd["languageVersion"]=s["lang-ver"]
-	cmd["testFramework"]=s["test-fr"]
-	dt=None
-	try:
-		dt=urllib.request.urlopen(urllib.request.Request("https://runner.codewars.com/run",data=bytes(json.dumps(cmd),"utf-8")),timeout=20)
-	except Exception as e:
-		dt=e.file
-	JSON=json.loads(dt.read())
-	b_cl=("\x1b[38;2;84;4;4m" if JSON["result"]["completed"]==False else "\x1b[38;2;85;212;85m")
-	o=["\x1b[38;2;138;138;138mTime: \x1b[38;2;238;238;238m"+str(JSON["wallTime"])+"ms    \x1b[38;2;138;138;138mPassed: \x1b[38;2;238;238;238m"+str(JSON["result"]["assertions"]["passed"])+"    \x1b[38;2;183;38;38mFailed: \x1b[38;2;213;98;98m"+str(JSON["result"]["assertions"]["failed"])+"    \x1b[38;2;183;38;38mExit Code: \x1b[38;2;213;98;98m"+str(JSON["exitCode"])]
-	for i,rs in enumerate(JSON["result"]["output"]):
-		o+=_render_elem(rs,None,(None if i==0 else JSON["result"]["output"][i-1]),0)
-	if (len(JSON["message"])>0):
-		o+=[["",0],["\x1b[38;2;183;38;38mERROR: \x1b[38;2;213;98;98m"+JSON["message"].replace("\t","    ").replace("\r",""),7],["",0]]
-	if (len(JSON["stdout"])>0):
-		o+=[["\x1b[38;2;138;138;138mSTDOUT:\n\x1b[38;2;238;238;238m"+JSON["stdout"].replace("\t","    ").replace("\r",""),0]]
-	if (len(JSON["stderr"])>0):
-		o+=[["\x1b[38;2;138;138;138mSTDERR:\n\x1b[38;2;238;238;238m"+JSON["stderr"].replace("\t","    ").replace("\r",""),0]]
-	ho=ctypes.windll.kernel32.GetStdHandle(-10)
-	dw_m=ctypes.wintypes.DWORD()
-	ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(dw_m))
-	dw_m.value=0
-	ctypes.windll.kernel32.SetConsoleMode(ho,dw_m)
-	ho=ctypes.windll.kernel32.GetStdHandle(-11)
-	dw_m=ctypes.wintypes.DWORD()
-	ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(dw_m))
-	dw_m.value|=4
-	ctypes.windll.kernel32.SetConsoleMode(ho,dw_m)
-	sbi=ctypes.create_string_buffer(22)
-	ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
-	dt=struct.unpack("hhhhHhhhhhh",sbi.raw)
-	o,co=[o[0]],o[1:]
-	for l in co:
-		o+=_wrap(l[0],dt[9]-8,l[1])
-	mx=min(max([len(re.sub(r"\x1b\[[^m]+m","",e)) for e in o]),dt[9]-8)
-	o=["\x1b[0m\x1b[48;2;24;24;24m"+" "*(mx+8),"\x1b[0m\x1b[48;2;24;24;24m"+b_cl+"  ╔"+"═"*(mx+2)+"╗  ",b_cl+"  ║ "+_center_ignore(o[0],mx)+b_cl+" ║  ",b_cl+"  ╠"+"═"*(mx+2)+"╣  "]+[b_cl+"  ║ "+_ljust_ignore(l,mx)+b_cl+" ║  " for l in o[1:]]+[b_cl+"  ╚"+"═"*(mx+2)+"╝  ","\x1b[0m\x1b[48;2;24;24;24m"+" "*(mx+8)]
-	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
-	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(min(mx+8,dt[9]),len(o)))
-	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,min(mx+7,dt[9]-1),min(len(o)-1,dt[10]-1))))
-	print("\n".join(o)+"\x1b[0m",end="")
-	ex=False
-	while (True):
-		c=sys.stdin.read(1)
-		if (c=="\x03"):
-			ex=True
-			break
-		elif (c=="\n"):
-			break
-	os.system("cls")
-	ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*dt[:2]))
-	ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*dt[5:9])))
-	if (ex==True):
-		return
-	_render_cwr(tp)
-
-
-
 def _update_repo(p,b_nm,msg):
 	def _gitigonre_match(gdt,fp):
 		def _pattern(p,fp):
@@ -769,7 +470,7 @@ def _update_repo(p,b_nm,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha],"signature":GITHUB_SIG}))["sha"],"force":True}))
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
@@ -2324,8 +2025,6 @@ if (len(sys.argv)==1):
 	_print("Starting Minecraft Servers\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_redstone_server_updater","D:\\boot\\mcs")
 	_start_thr(_u_mcs,"__core__","minecraft_survival_server_updater","D:\\boot\\mcs-s")
-	_print("Starting Codewars ChromeDriver\x1b[38;2;100;100;100m...")
-	_start_thr(_codewars_wr,"__core__","codewars_driver")
 	_print("Starting Useless Task Kill Loop\x1b[38;2;100;100;100m...")
 	_start_thr(_ut_k,"__core__","useless_task_kill")
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
@@ -2506,9 +2205,6 @@ else:
 			elif (GIT_CLONE_REGEX.match(p)!=None):
 				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
 				_open_app("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1],file=True)
-			elif (CODEWARS_KATA_URL_REGEX.match(p)!=None):
-				with open("D:\\boot\\codewars-swapfile.dt","a") as f:
-					f.write("1"+p)
 			elif (URL_REGEX.match(p)!=None):
 				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",p])
 			elif (p=="" or p=="exit"):
@@ -2564,11 +2260,6 @@ else:
 		shutil.copyfile(op,jar.split("\\")[-1]+".exe")
 		os.remove(cp)
 		os.remove(op)
-	elif (v==3):
-		if (sys.argv[2] not in ["--local","--final"]):
-			_print(f"Unknown Switch: '{sys.argv[2]}'")
-		else:
-			_render_cwr(sys.argv[2])
 	elif (v==4):
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 		if (len(sys.argv)==2):
