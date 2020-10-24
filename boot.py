@@ -46,6 +46,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
+MIME_TYPES={"aac":"audio/aac","abw":"application/x-abiword","arc":"application/x-freearc","avi":"video/x-msvideo","azw":"application/vnd.amazon.ebook","bin":"application/octet-stream","bmp":"image/bmp","bz":"application/x-bzip","bz2":"application/x-bzip2","csh":"application/x-csh","css":"text/css","csv":"text/csv","doc":"application/msword","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","eot":"application/vnd.ms-fontobject","epub":"application/epub+zip","gz":"application/gzip","gif":"image/gif","htm":"text/html","html":"text/html","ico":"image/vnd.microsoft.icon","ics":"text/calendar","jar":"application/java-archive","jpeg":"image/jpeg","jpg":"image/jpeg","js":"text/javascript","json":"application/json","jsonld":"application/ld+json","mid":"audio/midi","midi":"audio/x-midi","mjs":"text/javascript","mp3":"audio/mpeg","mpeg":"video/mpeg","mpkg":"application/vnd.apple.installer+xml","odp":"application/vnd.oasis.opendocument.presentation","ods":"application/vnd.oasis.opendocument.spreadsheet","odt":"application/vnd.oasis.opendocument.text","oga":"audio/ogg","ogv":"video/ogg","ogx":"application/ogg","opus":"audio/opus","otf":"font/otf","png":"image/png","pdf":"application/pdf","php":"application/x-httpd-php","ppt":"application/vnd.ms-powerpoint","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","rar":"application/vnd.rar","rtf":"application/rtf","sh":"application/x-sh","svg":"image/svg+xml","swf":"application/x-shockwave-flash","tar":"application/x-tar","tif":"image/tiff","tiff":"image/tiff","ts":"video/mp2t","ttf":"font/ttf","txt":"text/plain","vsd":"application/vnd.visio","wav":"audio/wav","weba":"audio/webm","webm":"video/webm","webp":"image/webp","woff":"font/woff","woff2":"font/woff2","xhtml":"application/xhtml+xml","xls":"application/vnd.ms-excel","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xml":"application/xml","xul":"application/vnd.mozilla.xul+xml","zip":"application/zip","3gp":"video/3gpp","3g2":"video/3gpp2","7z":"application/x-7z-compressed"}
 SERIAL_BAUD=9600
 R_STD_BUFFER={"_s":None,"bf":[]}
 SERIAL_L={}
@@ -405,8 +406,11 @@ def _update_repo(p,b_nm,msg):
 					gdt+=[[iv,ln]]
 	br=[e["name"] for e in _request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/branches")]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
-	# _request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
-	bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
+	try:
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
+	except KeyError:
+		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -462,7 +466,7 @@ def _update_repo(p,b_nm,msg):
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-	# _request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+	_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1779,6 +1783,7 @@ def _start_s(t):
 						rc=int(php_s.split(b"\r\n")[0].split(b" ")[1])
 					else:
 						_print("Patching URL\x1b[38;2;100;100;100m...")
+						url=re.sub(r"\.+/",r"./",url.replace("\\","/"))
 						if (url.endswith("/")):
 							url+="index.html"
 						elif (url=="/cmd"):
@@ -1790,15 +1795,19 @@ def _start_s(t):
 							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()}))}\r\n\r\n{json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()})}","utf-8"))
 							rc=200
 						else:
-							url="."+url
+							if (url[:10]=="/projects/"):
+								url=f"D:\\K\\Coding\\.{url}"
+							else:
+								url=f".{url}"
 							if (not ntpath.exists(url)):
 								_print(f"\x1b[38;2;200;40;20mFile '{ntpath.abspath(url)}' Doesn't Exist.\x1b[0m Sending Redirect\x1b[38;2;100;100;100m...")
 								cs.send(bytes(f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://{ip}:8020/\r\n\r\n","utf-8"))
 								rc=301
 							else:
-								_print(f"Sending Content of '{ntpath.abspath(url)}'\x1b[38;2;100;100;100m...")
+								mt=("text/plain" if url.split("?")[0].split("#")[0].split(".")[-1] not in list(MIME_TYPES.keys()) else MIME_TYPES[url.split("?")[0].split("#")[0].split(".")[-1]])
+								_print(f"Sending Content of '{ntpath.abspath(url)}' as '{mt}'\x1b[38;2;100;100;100m...")
 								f=open(ntpath.abspath(url),"rb")
-								cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
+								cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: {mt}\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
 								f.close()
 								rc=200
 				else:
