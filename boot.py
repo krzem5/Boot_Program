@@ -1554,6 +1554,7 @@ if (len(sys.argv)==1):
 	_print("Registering All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir("D:\\K\\Coding\\projects"):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
+	_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
 	_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
