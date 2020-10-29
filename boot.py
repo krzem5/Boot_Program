@@ -1732,8 +1732,127 @@ else:
 				continue
 			break
 	elif (v==2):
-		print("AAA")
-		input()
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="work_terminal"
+		threading.current_thread()._r=2
+		inp_cm=ctypes.wintypes.DWORD(0)
+		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
+		out_cm=ctypes.wintypes.DWORD(0)
+		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.byref(out_cm))
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ho=ctypes.windll.kernel32.GetStdHandle(-11)
+		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+		sbi=ctypes.create_string_buffer(22)
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
+		sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
+		ci=ctypes.create_string_buffer(5)
+		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		try:
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+			rl=[e.split("-")[:2] for e in os.listdir("D:\\K\\Coding\\projects")]
+			tl=[]
+			for k in rl:
+				if (k[0] not in tl):
+					tl+=[k[0]]
+			l={}
+			for k in rl:
+				if (k[0].lower() not in list(l.keys())):
+					l[k[0].lower()]=[]
+				l[k[0].lower()]+=[k[1].replace("_"," ").title().replace(" ","_")]
+			w=sz[9]+1
+			h=sz[10]
+			bf=["",""]
+			ll=0
+			pr=["",""]
+			pri=-1
+			pri_s=""
+			u=True
+			bfi=0
+			while (True):
+				if (msvcrt.kbhit()==True):
+					k=msvcrt.getch()
+					if (k in b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):
+						bf[bfi]+=str(k,"utf-8")
+						pri=-1
+						pri_s=""
+						u=True
+					elif (k==b"-"):
+						bfi=1-bfi
+						pri=-1
+						pri_s=""
+						u=True
+					elif (k==b"\t"):
+						if ((len(pr[bfi])>0 or pri!=-1) and len((l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))>0):
+							al=([e for e in (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())) if e.lower().startswith(pri_s)] if pri_s!="" else (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))
+							if (len(al)>0):
+								if (pri==-1):
+									pri_s=bf[bfi].lower()
+									bf[bfi]=(bf[bfi]+pr[bfi]).replace("_"," ").title().replace(" ","_")
+									pri+=1
+								else:
+									bf[bfi]=al[pri].replace("_"," ").title().replace(" ","_")
+								pri=(pri+1)%len(al)
+								u=True
+					elif (k==b"\x08"):
+						if (len(bf[bfi])>0):
+							bf[bfi]=bf[bfi][:-1]
+							if (bfi==0):
+								bf[1]=""
+							pri=-1
+							pri_s=""
+							u=True
+					elif (k==b"\r"):
+						if (bf[0].lower() in list(l.keys())):
+							ok=False
+							for k in l.get(bf[0].lower(),[]):
+								if (k.lower()==bf[1].lower()):
+									ok=True
+									break
+							if (ok==True):
+								_open_prog_w(f"{bf[0].title()}-{bf[1].replace('_',' ').title().replace(' ','_')}")
+								break
+					elif (k==b"\x03"):
+						break
+				if (u==True):
+					pr=["",""]
+					if (len(bf[0])>0):
+						for k in tl:
+							if (k.lower().startswith(bf[0].lower())):
+								pr[0]=k[len(bf[0]):]
+								break
+					else:
+						pr=rl[0][:]
+					if (len(bf[1])>0):
+						for k in l.get(bf[0].lower(),[]):
+							if (k.lower().startswith(bf[1].lower())):
+								pr[1]=k[1][len(bf[1]):]
+								break
+					elif (len(bf[0])>0):
+						for k in list(l.keys()):
+							if (k.lower()==bf[0].lower()):
+								pr[1]=l[k][0]
+								break
+					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"
+					ln=len(re.sub(r"\x1b\[[^m]*m","",o))
+					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+					sys.__stdout__.flush()
+					ll=ln
+					u=False
+				time.sleep(0.01)
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		except Exception as e:
+			traceback.print_exception(None,e,e.__traceback__)
+			input()
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),out_cm)
+		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
 	elif (v==3):
 		class _UI:
 			def __init__(self,sz):
