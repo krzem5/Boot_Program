@@ -1835,7 +1835,7 @@ else:
 					if (len(bf[1])>0):
 						for k in l.get(bf[0].lower(),[]):
 							if (k.lower().startswith(bf[1].lower())):
-								pr[1]=k[1][len(bf[1]):]
+								pr[1]=k[len(bf[1]):]
 								break
 					elif (len(bf[0])>0):
 						for k in list(l.keys()):
