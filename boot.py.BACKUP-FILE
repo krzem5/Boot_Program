@@ -301,11 +301,11 @@ def _update_repo(p,b_nm,msg):
 		for p in gdt:
 			if ((ig==False or p[0]==True) and _pattern(p,fp)==True):
 				if (p[0]==True):
-					return False
+					return True
 				ig=True
 		if (ig==True):
-			return True
-		return False
+			return False
+		return True
 	def _request(m="get",**kw):
 		kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 		r=getattr(requests,m)(**kw)
@@ -314,7 +314,6 @@ def _update_repo(p,b_nm,msg):
 			sys.exit(1)
 		time.sleep(0.72)
 		if (type(r.json())==dict and "message" in r.json().keys() and r.json()["message"]=="Server Error"):
-			print(r.json())
 			return None
 		return r.json()
 	def _get_tree(r_nm,sha):
@@ -418,7 +417,7 @@ def _update_repo(p,b_nm,msg):
 	for r,_,fl in os.walk(p):
 		for f in fl:
 			fp=ntpath.join(r,f).replace(p,"")[(1 if not p.endswith("\\") else 0):].replace("\\","/")
-			if (_gitigonre_match(gdt,fp)==True):
+			if (_gitigonre_match(gdt,fp)==False):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
