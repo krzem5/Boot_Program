@@ -1712,6 +1712,8 @@ else:
 				_open_app(["python","D:\\boot\\boot.py","2"])
 			elif (p=="serial"):
 				_open_app(["python","D:\\boot\\boot.py","3"])
+			elif (p=="docs"):
+				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"])
 			elif (p=="cad"):
 				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
 			elif (p=="ev3"):
