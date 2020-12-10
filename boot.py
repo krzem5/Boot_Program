@@ -352,22 +352,22 @@ def _update_repo(p,b_nm,msg):
 	def _match_f(fp,dt):
 		if (_is_b(fp)==False):
 			try:
-				with open(fp,"r") as f:
+				with open(fp,"r",encoding="utf-8") as f:
 					f=f.read().replace("\r\n","\n")
 					if (len(f)!=dt["sz"]):
 						return False
-					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode()).hexdigest()==dt["sha"] else False)
+					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("utf-8")).hexdigest()==dt["sha"] else False)
 			except:
 				if (os.stat(fp).st_size!=dt["sz"]):
 					return False
 				with open(fp,"rb") as f:
-					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
+					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("utf-8")+f.read()).hexdigest()==dt["sha"] else False)
 		else:
 			if (os.stat(fp).st_size!=dt["sz"]):
 				return False
 			with open(fp,"rb") as f:
-				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode()+f.read()).hexdigest()==dt["sha"] else False)
-	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","remote":"","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
+				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("utf-8")+f.read()).hexdigest()==dt["sha"] else False)
+	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
 	cfg_k=list(cfg.keys())
 	if (ntpath.exists(f"{p}\\.gitconfig")):
 		with open(f"{p}\\.gitconfig","r") as f:
@@ -380,7 +380,7 @@ def _update_repo(p,b_nm,msg):
 		cfg[k]=(True if str(cfg[k]) in ("True","true") else False)
 	cfg["homepage"]=(cfg["homepage"] if len(cfg["homepage"])>0 and re.fullmatch(URL_REGEX,cfg["homepage"])!=None else "")
 	with open(f"{p}\\.gitconfig","w") as f:
-		f.write(f"### Github File Push Config\n\nname={cfg['name']}\ndesc={cfg['desc']}\npublic={str(cfg['public']).lower()}\nhomepage={cfg['homepage']}\nlicense={cfg['license']}\nremote={cfg['remote']}\n\nfile.readme={cfg['file.readme']}\nfile.gitignore={cfg['file.gitignore']}\n\nconfig.has_issues={str(cfg['config.has_issues']).lower()}\nconfig.has_projects={str(cfg['config.has_projects']).lower()}\nconfig.has_wiki={str(cfg['config.has_wiki']).lower()}\nconfig.allow_squash_merge={str(cfg['config.allow_squash_merge']).lower()}\nconfig.allow_merge_commit={str(cfg['config.allow_merge_commit']).lower()}\nconfig.allow_rebase_merge={str(cfg['config.allow_rebase_merge']).lower()}\nconfig.delete_branch_on_merge={str(cfg['config.delete_branch_on_merge']).lower()}\n")
+		f.write(f"### Github File Push Config\n\nname={cfg['name']}\ndesc={cfg['desc']}\npublic={str(cfg['public']).lower()}\nhomepage={cfg['homepage']}\nlicense={cfg['license']}\n\nfile.readme={cfg['file.readme']}\nfile.gitignore={cfg['file.gitignore']}\n\nconfig.has_issues={str(cfg['config.has_issues']).lower()}\nconfig.has_projects={str(cfg['config.has_projects']).lower()}\nconfig.has_wiki={str(cfg['config.has_wiki']).lower()}\nconfig.allow_squash_merge={str(cfg['config.allow_squash_merge']).lower()}\nconfig.allow_merge_commit={str(cfg['config.allow_merge_commit']).lower()}\nconfig.allow_rebase_merge={str(cfg['config.allow_rebase_merge']).lower()}\nconfig.delete_branch_on_merge={str(cfg['config.delete_branch_on_merge']).lower()}\n")
 	os.system(f"cd /d {p}&&attrib +h .gitconfig&&cd /d D:\\boot")
 	try:
 		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":cfg["name"],"description":cfg["desc"],"private":not cfg["public"],**({"homepage":cfg["homepage"]} if len(cfg["homepage"])>0 else {})},**{k[7:]:v for k,v in cfg.items() if k[:7]==".config"}))
@@ -412,6 +412,7 @@ def _update_repo(p,b_nm,msg):
 	except KeyError:
 		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
+		_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	r_t=_get_tree(cfg["name"],bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -429,7 +430,7 @@ def _update_repo(p,b_nm,msg):
 				continue
 			cnt[0]+=1
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
-			dt="File too Large (size = %d b)"%(os.stat(ntpath.join(r,f)).st_size)
+			dt=f"File too Large (size = {os.stat(ntpath.join(r,f)).st_size} b)"
 			b_sha=False
 			if (os.stat(ntpath.join(r,f)).st_size<=50*1024*1024):
 				b64=True
@@ -443,7 +444,7 @@ def _update_repo(p,b_nm,msg):
 				if (b64==True):
 					b_sha=True
 					with open(ntpath.join(r,f),"rb") as rbf:
-						dt=str(base64.b64encode(rbf.read()))[2:-1]
+						dt=str(base64.b64encode(rbf.read()),"utf-8")
 					if (len(dt)>50*1024*1024):
 						b_sha=False
 						dt="File too Large (size = %d b)"%(len(dt))
@@ -467,7 +468,6 @@ def _update_repo(p,b_nm,msg):
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-	_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
