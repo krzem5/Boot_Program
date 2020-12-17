@@ -352,21 +352,21 @@ def _update_repo(p,b_nm,msg):
 	def _match_f(fp,dt):
 		if (_is_b(fp)==False):
 			try:
-				with open(fp,"r",encoding="utf-8") as f:
+				with open(fp,"r",encoding="cp1252") as f:
 					f=f.read().replace("\r\n","\n")
 					if (len(f)!=dt["sz"]):
 						return False
-					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("utf-8")).hexdigest()==dt["sha"] else False)
+					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("cp1252")).hexdigest()==dt["sha"] else False)
 			except:
 				if (os.stat(fp).st_size!=dt["sz"]):
 					return False
 				with open(fp,"rb") as f:
-					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("utf-8")+f.read()).hexdigest()==dt["sha"] else False)
+					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 		else:
 			if (os.stat(fp).st_size!=dt["sz"]):
 				return False
 			with open(fp,"rb") as f:
-				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("utf-8")+f.read()).hexdigest()==dt["sha"] else False)
+				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
 	cfg_k=list(cfg.keys())
 	if (ntpath.exists(f"{p}\\.gitconfig")):
@@ -436,7 +436,7 @@ def _update_repo(p,b_nm,msg):
 				b64=True
 				if (_is_b(ntpath.join(r,f))==False):
 					try:
-						with open(ntpath.join(r,f),"r") as rbf:
+						with open(ntpath.join(r,f),"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
 						b64=False
 					except:
