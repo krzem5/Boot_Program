@@ -48,7 +48,7 @@ global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERI
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 MIME_TYPES={"aac":"audio/aac","abw":"application/x-abiword","arc":"application/x-freearc","avi":"video/x-msvideo","azw":"application/vnd.amazon.ebook","bin":"application/octet-stream","bmp":"image/bmp","bz":"application/x-bzip","bz2":"application/x-bzip2","csh":"application/x-csh","css":"text/css","csv":"text/csv","doc":"application/msword","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","eot":"application/vnd.ms-fontobject","epub":"application/epub+zip","gz":"application/gzip","gif":"image/gif","htm":"text/html","html":"text/html","ico":"image/vnd.microsoft.icon","ics":"text/calendar","jar":"application/java-archive","jpeg":"image/jpeg","jpg":"image/jpeg","js":"text/javascript","json":"application/json","jsonld":"application/ld+json","mid":"audio/midi","midi":"audio/x-midi","mjs":"text/javascript","mp3":"audio/mpeg","mpeg":"video/mpeg","mpkg":"application/vnd.apple.installer+xml","odp":"application/vnd.oasis.opendocument.presentation","ods":"application/vnd.oasis.opendocument.spreadsheet","odt":"application/vnd.oasis.opendocument.text","oga":"audio/ogg","ogv":"video/ogg","ogx":"application/ogg","opus":"audio/opus","otf":"font/otf","png":"image/png","pdf":"application/pdf","php":"application/x-httpd-php","ppt":"application/vnd.ms-powerpoint","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","rar":"application/vnd.rar","rtf":"application/rtf","sh":"application/x-sh","svg":"image/svg+xml","swf":"application/x-shockwave-flash","tar":"application/x-tar","tif":"image/tiff","tiff":"image/tiff","ts":"video/mp2t","ttf":"font/ttf","txt":"text/plain","vsd":"application/vnd.visio","wav":"audio/wav","weba":"audio/webm","webm":"video/webm","webp":"image/webp","woff":"font/woff","woff2":"font/woff2","xhtml":"application/xhtml+xml","xls":"application/vnd.ms-excel","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xml":"application/xml","xul":"application/vnd.mozilla.xul+xml","zip":"application/zip","3gp":"video/3gpp","3g2":"video/3gpp2","7z":"application/x-7z-compressed"}
 SERIAL_BAUD=9600
-R_STD_BUFFER={"_s":None,"e":False,"bf":[]}
+R_STD_BUFFER={"_s":None,"bf":[]}
 NETWORK=False
 STDOUT_LOCK=False
 CMD_L={}
@@ -131,7 +131,7 @@ def _print(*a,end="\n"):
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	def _r_std_thr():
 		global R_STD_BUFFER
-		while (len(R_STD_BUFFER["bf"])>0 or R_STD_BUFFER["e"]==False):
+		while (len(R_STD_BUFFER["bf"])>0):
 			if (len(R_STD_BUFFER["bf"])>0):
 				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
@@ -152,7 +152,9 @@ def _print(*a,end="\n"):
 			R_STD_BUFFER["_s"]=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			R_STD_BUFFER["_s"].connect(("127.0.0.1",8022))
 			thr=threading.Thread(target=_r_std_thr,args=(),kwargs={})
+			thr.daemon=True
 			thr.start()
+			atexit.register(lambda:[R_STD_BUFFER["_s"].sendall(base64.b64encode(e)+b"\n") for e in R_STD_BUFFER["bf"]])
 		R_STD_BUFFER["bf"]+=[bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8")]
 		if (threading.current_thread()._r>=2):
 			return
@@ -771,7 +773,7 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	with open(f"{h_fp}platform.txt","r") as hp_f:
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
-	bp={**ARDUINO_PREPROCESSOR_BUILD_PROPERTIES,"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":re.sub(r"/$","",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
+	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":re.sub(r"/$","",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
 	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":"D:/boot/","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
 	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
@@ -843,23 +845,12 @@ def _compile_ard_prog(s_fp,fqbn,inc_l):
 	inc_l+=[bp["build.core.path"],b_fp]
 	if (bp["build.variant.path"]!=""):
 		inc_l+=[bp["build.variant.path"]]
-	if (not ntpath.exists(f"{b_fp}preproc/")):
-		os.mkdir(f"{b_fp}preproc/")
 	_print("Generating Preprocessor Properties\x1b[38;2;100;100;100m...")
-	pd={**bp,"source_file":b_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":f"{b_fp}preproc/preproc.cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
+	pd={**bp,"source_file":b_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":b_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
 	if ("recipe.preproc.macros" not in list(pd.keys())):
 		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
 	_run_cmd([e for e in _prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"]+["-DARDUINO_LIB_DISCOVERY_PHASE"])
-	_print("Running Arduino Preprocessor\x1b[38;2;100;100;100m...")
-	###############################################################################
-	with open(f"{b_fp}preproc/preproc.cpp","rb") as rf,open(b_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","wb") as wf:
-		wf.write(rf.read())
-	###############################################################################
-	# with open(b_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","wb") as f:
-	# 	f.write(_run_cmd(_prepare_cmd(_expand_in_string({**bp,**{k[27:]:v for k,v in bp.items() if k[:26]=="tools.arduino-preprocessor"},"source_file":f"{b_fp}preproc/preproc.cpp","codecomplete":""},bp["tools.arduino-preprocessor.pattern"])),stdout=subprocess.PIPE).stdout)
-	###############################################################################
-	shutil.rmtree(f"{b_fp}preproc/")
 	os.remove(b_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
@@ -1017,7 +1008,8 @@ def _upload_to_ard(s_fp,p,fqbn,bb,vu,inc_l):
 					if (usb_b["location"]==p or b==None):
 						b=usb_b
 			if (b==None):
-				raise RuntimeError("No Board Found.")
+				_print("\x1b[38;2;200;40;20mNo Boards Found.\x1b[0m Stopping Upload\x1b[38;2;100;100;100m...")
+				sys.exit(1)
 			time.sleep(0.5)
 			p=b["location"]
 			up.update({"serial.port":p,"serial.port.file":p})
@@ -1522,7 +1514,7 @@ else:
 					data=json.loads(f.read())
 				_save_f(fn,json.dumps(data,indent=4,sort_keys=True).replace("    ","\t"))
 			except:
-				_print("SKIPPING: "+fn)
+				_print("Skipping: "+fn)
 		for fn in glob.iglob("D:\\**\\*.java",recursive=True):
 			try:
 				with open(fn,"r") as f:
@@ -1565,7 +1557,7 @@ else:
 				txt=txt[:sl]+imp+imps+(["","",""] if len(imp)+len(imps)>0 else [])+txt[i:]
 				_save_f(fn,"\n".join(txt))
 			except:
-				_print("SKIPPING: "+fn)
+				_print("Skipping: "+fn)
 		for fn in glob.iglob("D:\\**\\*.py",recursive=True):
 			try:
 				with open(fn,"r") as f:
@@ -1602,7 +1594,7 @@ else:
 				txt=txt[:sl]+cimp+["","",""]+txt[i:]
 				_save_f(fn,"\n".join(txt))
 			except:
-				_print("SKIPPING: "+fn)
+				_print("Skipping: "+fn)
 		threading.current_thread()._df=False
 		_rec_rm_pycache("D:\\")
 	elif (v==1):
@@ -2268,4 +2260,3 @@ else:
 		else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)
-R_STD_BUFFER["e"]=True
