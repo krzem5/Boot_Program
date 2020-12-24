@@ -304,6 +304,7 @@ def _update_repo(p,b_nm,msg):
 				return False
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
+	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
 	cfg_k=list(cfg.keys())
 	if (ntpath.exists(f"{p}\\.gitconfig")):
@@ -1962,8 +1963,6 @@ else:
 						elif (self._k[0]==b"\xe0" and self._k[1]==b"\x92"):# CTRL + Insert
 							self._t=1-self._t
 							ud=True
-						# elif (self._k[0]==b"\xe0"):
-						# 	raise RuntimeError(repr(self._k[1]))
 						elif (len(self._k[0])==1 and self._k[0][0]>31 and self._k[0][0]<127):
 							self._inp_bf=self._inp_bf[:self._off[1]]+repr(self._k[0])[2:-1]+self._inp_bf[self._off[1]:]
 							self._off[1]+=len(repr(self._k[0])[2:-1])
