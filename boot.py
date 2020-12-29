@@ -33,8 +33,11 @@ import serial.tools.list_ports
 import shlex
 import tempfile
 import atexit
+import math
 import msvcrt
 import signal
+import yaml
+import regex
 
 
 
@@ -45,7 +48,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
-GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
+GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 MIME_TYPES={"aac":"audio/aac","abw":"application/x-abiword","arc":"application/x-freearc","avi":"video/x-msvideo","azw":"application/vnd.amazon.ebook","bin":"application/octet-stream","bmp":"image/bmp","bz":"application/x-bzip","bz2":"application/x-bzip2","csh":"application/x-csh","css":"text/css","csv":"text/csv","doc":"application/msword","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","eot":"application/vnd.ms-fontobject","epub":"application/epub+zip","gz":"application/gzip","gif":"image/gif","htm":"text/html","html":"text/html","ico":"image/vnd.microsoft.icon","ics":"text/calendar","jar":"application/java-archive","jpeg":"image/jpeg","jpg":"image/jpeg","js":"text/javascript","json":"application/json","jsonld":"application/ld+json","mid":"audio/midi","midi":"audio/x-midi","mjs":"text/javascript","mp3":"audio/mpeg","mpeg":"video/mpeg","mpkg":"application/vnd.apple.installer+xml","odp":"application/vnd.oasis.opendocument.presentation","ods":"application/vnd.oasis.opendocument.spreadsheet","odt":"application/vnd.oasis.opendocument.text","oga":"audio/ogg","ogv":"video/ogg","ogx":"application/ogg","opus":"audio/opus","otf":"font/otf","png":"image/png","pdf":"application/pdf","php":"application/x-httpd-php","ppt":"application/vnd.ms-powerpoint","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","rar":"application/vnd.rar","rtf":"application/rtf","sh":"application/x-sh","svg":"image/svg+xml","swf":"application/x-shockwave-flash","tar":"application/x-tar","tif":"image/tiff","tiff":"image/tiff","ts":"video/mp2t","ttf":"font/ttf","txt":"text/plain","vsd":"application/vnd.visio","wav":"audio/wav","weba":"audio/webm","webm":"video/webm","webp":"image/webp","woff":"font/woff","woff2":"font/woff2","xhtml":"application/xhtml+xml","xls":"application/vnd.ms-excel","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xml":"application/xml","xul":"application/vnd.mozilla.xul+xml","zip":"application/zip","3gp":"video/3gpp","3g2":"video/3gpp2","7z":"application/x-7z-compressed"}
 SERIAL_BAUD=9600
 R_STD_BUFFER={"_s":None,"bf":[]}
@@ -66,6 +69,18 @@ ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
 ARDUINO_CUSTOM_WARNING_LEVEL=""
+REPO_STATS_MAX_READ=65536
+REPO_STATS_IGNORE_REGEX=re.compile(r"""(?://|#|%).*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|0[bB][0-1]+|0[oO][0-7]+|0[xX][0-9a-f]+|(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][\+\-]?[0-9]+)?""",re.M|re.S)
+REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
+REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ \t\v\n\r])",re.M|re.S)
+REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
+REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
+REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
+REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
+REPO_STATS_MAX_TOKEN_LEN=32
+REPO_STATS_LOG_ZERO_TOKENS=None
+REPO_STATS_BAR_WIDTH=60
+REPO_STATS_DEFAULT_COLOR=(240,240,240)
 
 
 
@@ -216,34 +231,61 @@ def _r_cmd(nm,e,h):
 
 
 
-def _update_repo(p,b_nm,msg):
-	def _gitigonre_match(gdt,fp):
-		def _pattern(p,fp):
-			fnm=ntpath.normpath(fp).replace(os.sep,"/").split("/")
-			if (len(fnm)<len(p[1].split("/"))):
-				return False
-			if (len(p[1].split("/")[0])==0):
-				for sr,sfnm in zip(p[1].split("/"),fnm):
-					if (fnmatch.fnmatch(sfnm,sr)==False):
-						return False
-				return True
-			else:
-				for i in range(0,len(fnm)-len(p[1].split("/"))+1):
-					for sr,sfnm in zip(p[1].split("/"),fnm[i:]):
-						if (fnmatch.fnmatch(sfnm,sr)==False):
-							break
-					else:
-						return True
-				return False
-		ig=False
-		for p in gdt:
-			if ((ig==False or p[0]==True) and _pattern(p,fp)==True):
-				if (p[0]==True):
+def _gitigonre_match(gdt,fp):
+	def _pattern(p,fp):
+		fnm=ntpath.normpath(fp).replace(os.sep,"/").split("/")
+		if (len(fnm)<len(p[1].split("/"))):
+			return False
+		if (len(p[1].split("/")[0])==0):
+			for sr,sfnm in zip(p[1].split("/"),fnm):
+				if (fnmatch.fnmatch(sfnm,sr)==False):
 					return False
-				ig=True
-		if (ig==True):
 			return True
+		else:
+			for i in range(0,len(fnm)-len(p[1].split("/"))+1):
+				for sr,sfnm in zip(p[1].split("/"),fnm[i:]):
+					if (fnmatch.fnmatch(sfnm,sr)==False):
+						break
+				else:
+					return True
+			return False
+	ig=False
+	for p in gdt:
+		if ((ig==False or p[0]==True) and _pattern(p,fp)==True):
+			if (p[0]==True):
+				return False
+			ig=True
+	if (ig==True):
+		return True
+	return False
+
+
+
+def _is_bin(fp):
+	with open(fp,"rb") as f:
+		dt=f.read(4096)
+	if (len(dt)==0):
 		return False
+	r1=len(dt.translate(None,b"\t\r\n\f\b"+bytes(range(32,127))))/len(dt)
+	r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
+	if (r1>0.90 and r2>0.9):
+		return True
+	enc=chardet.detect(dt)
+	enc_u=False
+	if (enc["confidence"]>0.9 and enc["encoding"]!="ascii"):
+		try:
+			dt.decode(encoding=enc["encoding"])
+			enc_u=True
+		except:
+			pass
+	if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
+		return (False if enc_u==True else True)
+	else:
+		return (True if enc_u==False and (b"\x00" in dt or b"\xff" in dt) else False)
+
+
+
+def _update_repo(p,b_nm,msg):
 	def _request(m="get",**kw):
 		kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 		r=getattr(requests,m)(**kw)
@@ -266,29 +308,8 @@ def _update_repo(p,b_nm,msg):
 					o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
 			return o
 		return _rec_get(r_nm,sha,".")
-	def _is_b(fp):
-		with open(fp,"rb") as f:
-			dt=f.read(4096)
-		if (len(dt)==0):
-			return False
-		r1=len(dt.translate(None,b"\t\r\n\f\b"+bytes(range(32,127))))/len(dt)
-		r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
-		if (r1>0.90 and r2>0.9):
-			return True
-		enc=chardet.detect(dt)
-		enc_u=False
-		if (enc["confidence"]>0.9 and enc["encoding"]!="ascii"):
-			try:
-				dt.decode(encoding=enc["encoding"])
-				enc_u=True
-			except:
-				pass
-		if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
-			return (False if enc_u==True else True)
-		else:
-			return (True if enc_u==False and (b"\x00" in dt or b"\xff" in dt) else False)
 	def _match_f(fp,dt):
-		if (_is_b(fp)==False):
+		if (_is_bin(fp)==False):
 			try:
 				with open(fp,"r",encoding="cp1252") as f:
 					f=f.read().replace("\r\n","\n")
@@ -373,7 +394,7 @@ def _update_repo(p,b_nm,msg):
 			b_sha=False
 			if (os.stat(ntpath.join(r,f)).st_size<=50*1024*1024):
 				b64=True
-				if (_is_b(ntpath.join(r,f))==False):
+				if (_is_bin(ntpath.join(r,f))==False):
 					try:
 						with open(ntpath.join(r,f),"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
@@ -455,6 +476,190 @@ def _git_project_push(r=False,fr=False):
 			f.flush()
 	threading.current_thread()._df=False
 	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
+
+
+
+def _repo_file_tokenize(dt,el=None):
+	o=[]
+	i=0
+	sl=True
+	ig=0
+	t=min(REPO_STATS_MAX_READ,len(dt))
+	while (i<t):
+		if (el!=None and el["__e__"]==1):
+			return []
+		sl=(True if i==0 or dt[i-1] in "\r\n" else False)
+		if (sl==True):
+			m=REPO_STATS_SHEBANG_REGEX.match(dt[i:])
+			if (m!=None):
+				i+=m.end(0)
+				if (m.group(1).split("/")[-1]=="env"):
+					o+="~~SHEBANG"+m.group(2)
+				else:
+					o+="~~SHEBANG"+m.group(1).split("/")[-1]
+				continue
+		m=REPO_STATS_IGNORE_REGEX.match(dt[i:])
+		if (m!=None):
+			ig+=m.end(0)
+			if (ig/t>0.25):
+				return []
+			i+=m.end(0)
+			continue
+		m=REPO_STATS_TAG_REGEX.match(dt[i:])
+		if (m!=None):
+			i+=m.end(0)
+			o+=["<"+m.group(1)+">"]
+			if (len(m.group(2))>0):
+				o+=REPO_STATS_TAG_ATTR_REGEX.findall(m.group(2).strip())
+			continue
+		m=REPO_STATS_COMMON_REGEX.match(dt[i:])
+		if (m!=None):
+			i+=m.end(0)
+			if (m.end(0)<=REPO_STATS_MAX_TOKEN_LEN):
+				o+=[m.group(0)]
+			continue
+		i+=1
+	return o
+
+
+
+def _repo_stats_detect_file(r,fn,ll,hdt,db):
+	if (os.stat(ntpath.join(r,fn)).st_size==0 or _is_bin(ntpath.join(r,fn))==True or fn=="LICENSE"):
+		return None
+	o=list(ll.keys())
+	c=[]
+	for k in db["languages"]:
+		if (fn in db["filenames"][k]):
+			c.append(k)
+	if (el["__e__"]==1):
+		return
+	if (len(c)>0):
+		o=c[:]
+	if (len(o)==1):
+		return o[0]
+	ex="."+fn.split(".")[-1].lower()
+	c.clear()
+	for k in o:
+		if (ex in ll[k][0]):
+			c.append(k)
+	if (el["__e__"]==1):
+		return
+	if (len(c)>0):
+		o=c[:]
+	if (len(o)==1):
+		return o[0]
+	dt=None
+	try:
+		with open(ntpath.join(r,fn),"rb") as f:
+			dt=f.read().decode("utf-8",errors="replace")
+	except PermissionError:
+		return None
+	if (REPO_STATS_XML_REGEX.search("\n".join(dt.split("\n")[:2]))!=None):
+		return "XML"
+	if (el["__e__"]==1):
+		return
+	c.clear()
+	for k in hdt:
+		if (ex in k[0]):
+			for e in k[1]:
+				if (e[1]==None):
+					c.append(e[0])
+					break
+				f=True
+				for p in e[1]:
+					if ((p[0].match(dt)!=None)!=p[1]):
+						f=False
+						break
+				if (f==False):
+					continue
+				c.append(e[0])
+				break
+			break
+	if (el["__e__"]==1):
+		return
+	if (len(c)>0):
+		o=c[:]
+	if (len(o)==1):
+		return o[0]
+	if (len(o)==0):
+		return None
+	tl=_repo_file_tokenize(dt,el)
+	if (el["__e__"]==1):
+		return
+	if (len(tl)==0):
+		return None
+	tc={}
+	for t in tl:
+		if (t not in tc):
+			tc[t]=1
+		else:
+			tc[t]+=1
+	p=[]
+	for l in o:
+		if (l not in db["languages"]):
+			continue
+		lp=math.log(db["languages"][l]/db["languages_total"])
+		for k,v in tc.items():
+			lp+=v*(math.log(db["tokens"][l][k]/db["language_tokens"][l]) if k in db["tokens"][l] else REPO_STATS_LOG_ZERO_TOKENS)
+		p+=[(l,lp)]
+	return sorted(p,key=lambda e:-e[1])[0][0]
+
+
+
+def _repo_stats(fp,ll,hdt,db,el):
+	gdt=[]
+	with open(ntpath.join(fp,".gitignore"),"r") as f:
+		for ln in f.read().replace("\r","").split("\n"):
+			if (ln.endswith("\n")):
+				ln=ln[:-1]
+			ln=ln.lstrip()
+			if (not ln.startswith("#")):
+				iv=False
+				if (ln.startswith("!")):
+					ln=ln[1:]
+					iv=True
+				while (ln.endswith(" ") and ln[-2:]!="\\ "):
+					ln=ln[:-1]
+				ln=re.sub(r"\\([!# ])",r"\1",ln)
+				if (len(ln)>0):
+					if ("**/" in ln):
+						gdt+=[[iv,ln.replace("**/","")]]
+					gdt+=[[iv,ln]]
+	if (el["__e__"]==1):
+		return
+	for r,_,fl in os.walk(fp):
+		if (el["__e__"]==1):
+			return
+		if ("\\build" not in r.lower()):
+			for f in fl:
+				if (el["__e__"]==1):
+					return
+				el["__cf__"]=ntpath.join(r,f)
+				if (el["__ig__"]==True and _gitigonre_match(gdt,ntpath.join(r,f)[len(fp):])==True):
+					continue
+				l=_repo_stats_detect_file(r,f,ll,hdt,db)
+				if (el["__e__"]==1):
+					return
+				if (l==None):
+					continue
+				if (l not in el):
+					el[l]=0
+				el[l]+=os.stat(ntpath.join(r,f)).st_size
+				el["__tcnt__"]+=os.stat(ntpath.join(r,f)).st_size
+
+
+
+def _read_repo_stats(fp,ll,hdt,db,el):
+	if (fp==None):
+		for fp in os.listdir("D:\\K\\Coding\\"):
+			_repo_stats(f"D:\\K\\Coding\\{fp}\\",ll,hdt,db,el)
+			if (el["__e__"]==1):
+				break
+		_repo_stats("D:\\boot\\",ll,hdt,db,el)
+	else:
+		_repo_stats(fp,ll,hdt,db,el)
+	el["__cf__"]=None
+	el["__e__"]=2
 
 
 
@@ -1131,7 +1336,7 @@ def _create_prog(type_,name,op=True,pr=True):
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
 	if (not ntpath.exists(f"{p}LICENSE")):
 		with open(f"{p}LICENSE","x") as f:
-			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.""")
+			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
 	if (not ntpath.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
 			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)\n""")
@@ -1602,7 +1807,7 @@ else:
 			p=input("> ").lower().strip()
 			if (p=="list"):
 				os.system("cls")
-				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, vm, android, github, blender, scratch, print, serial, cad, ev3, <any file path>, <git clone url>, <any url>")
+				_print("list, chrome, python, python37, processing, mindstorm, fischer, sublime, minecraft, vm, android, github, blender, scratch, print, serial, stats, cad, ev3, <any file path>, <git clone url>, <any url>")
 				continue
 			elif (p=="chrome"):
 				_open_app("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe")
@@ -1636,6 +1841,8 @@ else:
 				_open_app(["python","D:\\boot\\boot.py","2"])
 			elif (p=="serial"):
 				_open_app(["python","D:\\boot\\boot.py","3"])
+			elif (p=="stats"):
+				_open_app(["python","D:\\boot\\boot.py","6"])
 			elif (p=="docs"):
 				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"])
 			elif (p=="cad"):
@@ -2025,21 +2232,6 @@ else:
 									if (len(self._dl)<len(dt)):
 										self._dl+=list(range(len(self._dl),len(dt)))
 									self._set(0,0,repr(self._dl))
-									# ─ ━ │ ┃ ┄ ┅ ┆ ┇ ┈ ┉ ┊ ┋ ┌ ┍ ┎ ┏
-									#
-									# ┐ ┑ ┒ ┓ └ ┕ ┖ ┗ ┘ ┙ ┚ ┛ ├ ┝ ┞ ┟
-									#
-									# ┠ ┡ ┢ ┣ ┤ ┥ ┦ ┧ ┨ ┩ ┪ ┫ ┬ ┭ ┮ ┯
-									#
-									# ┰ ┱ ┲ ┳ ┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻ ┼ ┽ ┾ ┿
-									#
-									# ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╌ ╍ ╎ ╏
-									#
-									# ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟
-									#
-									# ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯
-									#
-									# ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ ╸ ╹ ╺ ╻ ╼ ╽ ╾ ╿
 									for i in self._dl[::-1]:
 										m[dt[i][0]][1]=m[dt[i][0]][1][:-1]+"┼"
 										for j in range(len(dt[i])-1,-1,-1):
@@ -2160,23 +2352,10 @@ else:
 			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
 			ui.loop()
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),out_cm)
-		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-		if (ui._p!=None):
-			ui._p_s.close()
-			s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-			s.connect(("127.0.0.1",8020))
-			s.send(bytes(f"PUT /serial_ports HTTP/1.1\r\n\r\n{json.dumps({'port':ui._p['location'],'op':'delete'})}","utf-8"))
-			s.recv(65536)
-			s.close()
+			while (True):
+				pass
 	elif (v==4):
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 		if (len(sys.argv)==2):
@@ -2260,3 +2439,214 @@ else:
 		else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)
+	elif (v==6):
+		ll=None
+		hdt=None
+		db=None
+		if (not ntpath.exists("D:\\boot\\git-languages.json") or not ntpath.exists("D:\\boot\\git-languages-h.json") or not ntpath.exists("D:\\boot\\git-languages-db.json")):
+			ll={}
+			l_id_m={}
+			for k,v in yaml.load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.Loader).items():
+				l_id_m[k]=len(ll)
+				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
+			with open("D:\\boot\\git-languages.json","w") as f:
+				f.write(json.dumps(ll,separators=(",",":"),indent=None))
+			hdt=[]
+			_hdt=yaml.load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.Loader)
+			for k in _hdt["disambiguations"]:
+				rl=[]
+				for e in k["rules"]:
+					pl=[]
+					if ("and" in e):
+						pl=e["and"]
+					elif ("pattern" in e):
+						pl+=[{"pattern":e["pattern"]}]
+					elif ("negative_pattern" in e):
+						pl+=[{"negative_pattern":e["negative_pattern"]}]
+					elif ("named_pattern" in e):
+						pl+=[{"named_pattern":e["named_pattern"]}]
+					if (len(pl)==0):
+						rl+=[(e["language"],None)]
+					else:
+						npl=[]
+						for se in pl:
+							pm=True
+							if ("named_pattern" in se):
+								se=_hdt["named_patterns"][se["named_pattern"]]
+							elif ("negative_pattern" in se):
+								se=se["negative_pattern"]
+								pm=False
+							else:
+								se=se["pattern"]
+							if (type(se)==str):
+								se=[se]
+							npl+=[(sse,pm) for sse in se]
+						rl+=[(e["language"],npl)]
+				hdt+=[(k["extensions"],rl)]
+			with open("D:\\boot\\git-languages-h.json","w") as f:
+				f.write(json.dumps(hdt,separators=(",",":"),indent=None))
+			t=requests.get("https://api.github.com/repos/github/linguist/branches/master",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).json()["commit"]["commit"]["tree"]["sha"]
+			db={"tokens_total":0,"languages_total":0,"tokens":{},"language_tokens":{},"languages":{},"filenames":{}}
+			for e in requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{t}").json()["tree"]:
+				if (e["path"]=="samples"):
+					t=requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{e['sha']}?recursive=1").json()
+					if (t["truncated"]==True):
+						raise RuntimeError("Samples Tree Truncated")
+					for k in t["tree"]:
+						if (k["type"]!="blob"):
+							continue
+						nm=k["path"].split("/")[0]
+						if (nm not in l_id_m):
+							continue
+						print(k["path"])
+						tl=_repo_file_tokenize(requests.get(k["url"],headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content.decode("utf-8",errors="replace"))
+						if (len(tl)==0):
+							continue
+						db["languages_total"]+=1
+						if (nm not in db["tokens"]):
+							db["tokens"][nm]={}
+							db["language_tokens"][nm]=1
+							db["languages"][nm]=1
+							db["filenames"][nm]=[k["path"].split("/")[-1]]
+						else:
+							db["language_tokens"][nm]+=1
+							db["languages"][nm]+=1
+							db["filenames"][nm]+=[k["path"].split("/")[-1]]
+						for t in tl:
+							if (t not in db["tokens"][nm]):
+								db["tokens"][nm][t]=1
+							else:
+								db["tokens"][nm][t]+=1
+							db["tokens_total"]+=1
+					break
+			with open("D:\\boot\\git-languages-db.json","w") as f:
+				f.write(json.dumps(db,indent=4).replace("    ","\t"))
+		else:
+			with open("D:\\boot\\git-languages.json","r") as f:
+				ll=json.loads(f.read())
+			with open("D:\\boot\\git-languages-h.json","r") as f:
+				hdt=json.loads(f.read())
+				for i,k in enumerate(hdt):
+					hdt[i]=(k[0],tuple((e[0],(tuple((regex.compile(sk,regex.M|regex.V1),sv) for sk,sv in e[1]) if e[1]!=None else None)) for e in k[1]))
+			with open("D:\\boot\\git-languages-db.json","r") as f:
+				db=json.loads(f.read())
+		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
+		sbi=ctypes.create_string_buffer(22)
+		ho=ctypes.windll.kernel32.GetStdHandle(-11)
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
+		sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
+		ci=ctypes.create_string_buffer(5)
+		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[7]+1,sz[8]+1))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
+		thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+		thr.daemon=True
+		thr.start()
+		elc=0
+		elcf=None
+		elcf_sz=0
+		ud=False
+		f=True
+		o0=[]
+		o1=[]
+		vs=0
+		while (True):
+			if (msvcrt.kbhit()==True):
+				c=(msvcrt.getch(),None)
+				if (c[0]==b"\xe0"):
+					c=(c[0],msvcrt.getch())
+				if (c[0]==b"\x03"):
+					break
+				elif (c[0]==b"t"):
+					f=not f
+					elc=-1
+				elif (c[0]==b"a"):
+					if (el["__e__"]==0):
+						el["__e__"]=1
+					thr=None
+				elif (c[0]==b"\xe0" and c[1]==b"H" and vs>0):
+					vs-=1
+					ud=True
+				elif (c[0]==b"\xe0" and c[1]==b"P"):
+					vs+=1
+					ud=True
+			if (thr==None and el["__e__"]==2):
+				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
+				thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+				thr.daemon=True
+				thr.start()
+			if (elc!=el["__tcnt__"]):
+				elc=el["__tcnt__"]
+				pl={}
+				pt=0
+				pkl=0
+				for k,v in list(el.items()):
+					if (k[:2]=="__" or (f==True and ll[k][2] not in ["programming","markup"])):
+						continue
+					pl[k]=v
+					pt+=v
+					pkl=max(pkl,len(k))
+				if (len(pl)!=0):
+					ud=True
+					pl={k:(v,v*10000//pt/100) for k,v in sorted(pl.items(),key=lambda e:-e[1])}
+					pvl=max([len(str(int(e[1]))) for e in pl.values()])
+					ptvl=max([len(str(e[0])) for e in pl.values()])
+					o0=[f"\x1b[48;2;18;18;18m{' '*sz[9]}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sz[9]-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
+					np=0
+					po=False
+					ln=sz[9]-10
+					mv=0
+					si=None
+					for k,v in pl.items():
+						if (mv==0):
+							mv=v[0]
+						bw=round(v[0]*(sz[9]-10)*2/pt)/2-np/2
+						if (bw<0):
+							bw=0
+						o0[2]+=(f"\x1b[48;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+						if (si==None):
+							si=len(o0[1])-1
+						o0[2]+="█"*int(bw)
+						ln-=int(bw)+np
+						np=int((bw-int(bw))*2)
+						if (bw==0):
+							break
+					if (ln!=0 or np!=0):
+						ln-=np
+						if (ln<0):
+							o0[2]=o0[2][:si]+o0[2][si-ln:]
+						if (ln<-1):
+							print(ln)
+							while (True):
+								pass
+						o0[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
+					o0[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
+					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sz[9]-8)}╣   "]
+					bs=int((sz[9]-pkl-pvl-ptvl-22)*pt/mv)*2/pt
+					for k,v in pl.items():
+						bw=round(v[0]*bs)/2
+						cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+						o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sz[9]-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   "]
+					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sz[9]-8)}╝   "]
+					elcf=-1
+					elcf_sz=max(len(pl)+6,sz[8]+1)-len(pl)-5
+			if (el["__cf__"]!=elcf):
+				elcf=el["__cf__"]
+				ud=True
+				lc=(math.ceil(len(elcf)/sz[9]) if elcf!=None else 0)
+				o1=[" "*sz[9] for i in range(0,max(elcf_sz,lc))]
+				if (elcf!=None):
+					for i in range(0,lc):
+						o1[-lc+i]="\x1b[38;2;200;200;200m"+elcf[i*sz[9]:(i+1)*sz[9]]+(" "*(sz[9]-len(elcf)%sz[9]) if i==lc-1 else "")
+			vs=min(vs,max(len(o0)+len(o1)-sz[8]-1,0))
+			if (ud==True):
+				ud=False
+				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sz[8]+1])+"\x1b[0m")
+			time.sleep(0.01)
