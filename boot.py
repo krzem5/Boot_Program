@@ -2523,13 +2523,13 @@ else:
 				f.write(json.dumps(db,indent=4).replace("    ","\t"))
 		else:
 			with open("D:\\boot\\git-languages.json","r") as f:
-				ll=json.loads(f.read())
+				ll=json.loads(f.read(),strict=False)
 			with open("D:\\boot\\git-languages-h.json","r") as f:
-				hdt=json.loads(f.read())
+				hdt=json.loads(f.read(),strict=False)
 				for i,k in enumerate(hdt):
 					hdt[i]=(k[0],tuple((e[0],(tuple((regex.compile(sk,regex.M|regex.V1),sv) for sk,sv in e[1]) if e[1]!=None else None)) for e in k[1]))
 			with open("D:\\boot\\git-languages-db.json","r") as f:
-				db=json.loads(f.read())
+				db=json.loads(f.read(),strict=False)
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.create_string_buffer(22)
 		ho=ctypes.windll.kernel32.GetStdHandle(-11)
