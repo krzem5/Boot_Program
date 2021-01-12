@@ -1388,9 +1388,12 @@ def _create_prog(type_,name,op=True,pr=True):
 				os.mkdir(f"{p}src/com/krzem/{name.lower()}/")
 			with open(f"{p}src/com/krzem/{name.lower()}/Main.java","x") as f:
 				f.write("package com.krzem."+name.lower()+";\n\n\n\npublic class Main{\n\tpublic static void main(String[] args){\n\t\tnew Main();\n\t}\n\n\n\n\tpublic Main(){\n\t\t\n\t}\n}")
+		if (not ntpath.exists(f"{p}/manifest.mf")):
+			with open(p+"manifest.mf","x") as f:
+				f.write(f"Manifest-Version: 1.0\nCreated-By: Krzem\nMain-Class: com.krzem.{name.lower().replace(' ','_')}.Main\n")
 		if (not ntpath.exists(f"{p}index.bat")):
 			with open(p+"index.bat","x") as f:
-				f.write(f"@echo off\necho NUL>_.class&&del /s /f /q *.class\ncls\ncd src\njavac com/krzem/{name.lower().replace(' ','_')}/Main.java&&java com/krzem/{name.lower().replace(' ','_')}/Main\ncd ..\nstart /min cmd /c \"echo NUL>_.class&&del /s /f /q *.class\"")
+				f.write(f"@echo off\ncls\nif exist build rmdir /s /q build\nmkdir build\ncd src\njavac -d ../build com/krzem/{name.lower().replace(' ','_')}/Main.java&&jar cvmf ../manifest.mf ../build/{name.lower().replace(' ','_')}.ja\n -C ../build *&&goto run\ncd ..\ngoto end\n:run\ncd ..\npushd \"build\"\nfor /D %%D in (\"*\") do (\n\trd /S /Q \"%%~D\"\n)\nfor %%F in (\"*\") do (\n\tif /I not \"%%~nxF\"==\"{name.lower().replace(' ','_')}.jar\" del \"%%~F\"\n)\npopd\njava -jar build/{name.lower().replace(' ','_')}.jar\n:end\n")
 	elif (type_=="javascript"):
 		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
