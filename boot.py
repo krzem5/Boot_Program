@@ -327,27 +327,13 @@ def _update_repo(p,b_nm,msg):
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
-	cfg={"name":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"desc":re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm),"public":True,"homepage":"","license":"mit","file.readme":".\\README.md","file.gitignore":".\\.gitignore","config.has_issues":True,"config.has_projects":True,"config.has_wiki":True,"config.allow_squash_merge":True,"config.allow_merge_commit":True,"config.allow_rebase_merge":True,"config.delete_branch_on_merge":False}
-	cfg_k=list(cfg.keys())
-	if (ntpath.exists(f"{p}\\.gitconfig")):
-		with open(f"{p}\\.gitconfig","r") as f:
-			cfg.update({l.split("=")[0]:l[len(l.split("=")[0])+1:] for l in f.read().replace("\r","").split("\n") if len(l)>0 and "=" in l and l.strip()[0]!="#"})
-		os.remove(f"{p}\\.gitconfig")
-	for k in list(cfg.keys()):
-		if (k not in cfg_k):
-			del cfg[k]
-	for k in "public,config.has_issues,config.has_projects,config.has_wiki,config.allow_squash_merge,config.allow_rebase_merge,config.allow_merge_commit,config.delete_branch_on_merge".split(","):
-		cfg[k]=(True if str(cfg[k]) in ("True","true") else False)
-	cfg["homepage"]=(cfg["homepage"] if len(cfg["homepage"])>0 and re.fullmatch(URL_REGEX,cfg["homepage"])!=None else "")
-	with open(f"{p}\\.gitconfig","w") as f:
-		f.write(f"### Github File Push Config\n\nname={cfg['name']}\ndesc={cfg['desc']}\npublic={str(cfg['public']).lower()}\nhomepage={cfg['homepage']}\nlicense={cfg['license']}\n\nfile.readme={cfg['file.readme']}\nfile.gitignore={cfg['file.gitignore']}\n\nconfig.has_issues={str(cfg['config.has_issues']).lower()}\nconfig.has_projects={str(cfg['config.has_projects']).lower()}\nconfig.has_wiki={str(cfg['config.has_wiki']).lower()}\nconfig.allow_squash_merge={str(cfg['config.allow_squash_merge']).lower()}\nconfig.allow_merge_commit={str(cfg['config.allow_merge_commit']).lower()}\nconfig.allow_rebase_merge={str(cfg['config.allow_rebase_merge']).lower()}\nconfig.delete_branch_on_merge={str(cfg['config.delete_branch_on_merge']).lower()}\n")
-	os.system(f"cd /d {p}&&attrib +h .gitconfig&&cd /d D:\\boot")
+	nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
 	try:
-		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":cfg["name"],"description":cfg["desc"],"private":not cfg["public"],**({"homepage":cfg["homepage"]} if len(cfg["homepage"])>0 else {})},**{k[7:]:v for k,v in cfg.items() if k[:7]==".config"}))
+		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm}))
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
-	with open(ntpath.join(p,cfg["file.gitignore"]),"r") as f:
+	with open(ntpath.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r","").split("\n"):
 			if (ln.endswith("\n")):
@@ -365,15 +351,18 @@ def _update_repo(p,b_nm,msg):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
-	br=[e["name"] for e in _request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/branches")]
+	br=_request("get",url=f"https://api.github.com/repos/Krzem5/{nm}/branches")
+	if ("message" in br):
+		return
+	br=[e["name"] for e in br]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
 	try:
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
-		_request("put",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"content":""}))
-		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/ref/heads/{br}")["object"]["sha"]
-		_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
-	r_t=_get_tree(cfg["name"],bt_sha)
+		_request("put",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
+		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{nm}/git/ref/heads/{br}")["object"]["sha"]
+		_request("delete",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+	r_t=_get_tree(nm,bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
 	for r,_,fl in os.walk(p):
@@ -409,7 +398,7 @@ def _update_repo(p,b_nm,msg):
 						b_sha=False
 						dt="File too Large (size = %d b)"%(len(dt))
 					else:
-						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
+						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
 						if (b==None):
 							b_sha=False
 							dt="Github Server Error"
@@ -427,8 +416,7 @@ def _update_repo(p,b_nm,msg):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
-		_request("patch",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-		_request("delete",url=f"https://api.github.com/repos/Krzem5/{cfg['name']}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+		_request("patch",url=f"https://api.github.com/repos/Krzem5/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1624,7 +1612,7 @@ def _u_mcs(fp):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
-	json=requests.get(requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"][0]["url"]).json()
+	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"]!="1.16.5-rc1"][0]["url"]).json()
 	if (ntpath.exists(f"{fp}\\server.jar")):
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
@@ -1635,13 +1623,29 @@ def _u_mcs(fp):
 				fb=f.read(2**16)
 		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
 		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
+			_print(f"Creating Backup\x1b[38;2;100;100;100m...")
+			if (not ntpath.exists(f"{fp}\\world-backup_{json['id']}")):
+				os.mkdir(f"{fp}\\world-backup_{json['id']}")
+			for r,dl,fl in os.walk(f"{fp}\\world"):
+				nr=f"{fp}\\world-backup_{json['id']}"+r[len(f"{fp}\\world"):]
+				for d in dl:
+					if (not ntpath.exists(ntpath.join(nr,d))):
+						os.mkdir(ntpath.join(nr,d))
+				for f in fl:
+					if (not ntpath.exists(ntpath.join(nr,f))):
+						try:
+							with open(ntpath.join(r,f),"rb") as rf,open(ntpath.join(nr,f),"wb") as wf:
+								wf.write(rf.read())
+						except PermissionError:
+							if (ntpath.exists(ntpath.join(nr,f))):
+								os.remove(ntpath.join(nr,f))
+							pass
 			_print(f"Downloading Server For {json['id']}\x1b[38;2;100;100;100m...")
 			urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
 	else:
 		urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	p=subprocess.Popen(["java","-Xms4G","-Xmx4G","-jar","server.jar","--nogui"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=fp)
-	_r_cmd(fp[fp.replace("/","\\").rfind("\\")+1:],lambda:(p.stdin.write(b"stop\n"),p.stdin.flush(),p.wait()),p)
+	p=subprocess.Popen(["vdesk","on:3","noswitch:true","run:cmd","/c","java -Xms4G -Xmx4G -jar server.jar --nogui"],cwd=fp,creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
