@@ -417,6 +417,12 @@ def _update_repo(p,b_nm,msg):
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+	with open("D:\\boot\\github-created.dt","r") as f:
+		dt=f.read().strip().replace("\r","").split("\n")
+	if (nm not in dt):
+		_request("delete",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
+		with open("D:\\boot\\github-created.dt","w") as f:
+			f.write("\n".join(dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1314,7 +1320,7 @@ def _create_prog(type_,name,op=True,pr=True):
 		os.mkdir(f"{p}src")
 	if (not ntpath.exists(f"{p}.gitignore")):
 		with open(f"{p}.gitignore","x") as f:
-			f.write("### Github File Push Ignore\n\n")
+			f.write("build\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
 	if (not ntpath.exists(f"{p}LICENSE.txt")):
 		with open(f"{p}LICENSE.txt","x") as f:
