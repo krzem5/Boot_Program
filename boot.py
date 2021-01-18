@@ -62,6 +62,7 @@ WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
 GITHUB_TOKEN,CONTACT_EMAIL=f.replace("\r","").split("\n")[:2]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5"]
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_OS_TYPE="windows"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
@@ -328,11 +329,14 @@ def _update_repo(p,b_nm,msg):
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
-	try:
-		_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm}))
-	except requests.exceptions.ConnectionError:
-		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-		return
+	with open("D:\\boot\\github-created.dt","r") as f:
+		gr_dt=f.read().strip().replace("\r","").split("\n")
+	if (nm not in gr_dt):
+		try:
+			_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
+		except requests.exceptions.ConnectionError:
+			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+			return
 	with open(ntpath.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r","").split("\n"):
@@ -361,7 +365,6 @@ def _update_repo(p,b_nm,msg):
 	except KeyError:
 		_request("put",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_request("get",url=f"https://api.github.com/repos/Krzem5/{nm}/git/ref/heads/{br}")["object"]["sha"]
-		_request("delete",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 	r_t=_get_tree(nm,bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
@@ -417,12 +420,10 @@ def _update_repo(p,b_nm,msg):
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
-	with open("D:\\boot\\github-created.dt","r") as f:
-		dt=f.read().strip().replace("\r","").split("\n")
-	if (nm not in dt):
+	if (nm not in gr_dt):
 		_request("delete",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
 		with open("D:\\boot\\github-created.dt","w") as f:
-			f.write("\n".join(dt)+f"\n{nm}")
+			f.write("\n".join(gr_dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 
 
@@ -1618,7 +1619,7 @@ def _u_mcs(fp):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
-	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"]!="1.16.5-rc1"][0]["url"]).json()
+	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
 	if (ntpath.exists(f"{fp}\\server.jar")):
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
