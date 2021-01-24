@@ -1,4 +1,3 @@
-from SimpleWebSocketServer import SimpleWebSocketServer,WebSocket
 import keyboard
 import socket
 import subprocess
@@ -1262,7 +1261,7 @@ def _open_prog_w(p):
 		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}index.ino")
 	elif (type_=="c"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+		subprocess.Popen(["	C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}main.c")
 	elif (type_=="cpp"):
 		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
