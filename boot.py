@@ -47,7 +47,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,SERIAL_L,R_STD_BUFFER
+global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,R_STD_BUFFER
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 MIME_TYPES={"aac":"audio/aac","abw":"application/x-abiword","arc":"application/x-freearc","avi":"video/x-msvideo","azw":"application/vnd.amazon.ebook","bin":"application/octet-stream","bmp":"image/bmp","bz":"application/x-bzip","bz2":"application/x-bzip2","csh":"application/x-csh","css":"text/css","csv":"text/csv","doc":"application/msword","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","eot":"application/vnd.ms-fontobject","epub":"application/epub+zip","gz":"application/gzip","gif":"image/gif","htm":"text/html","html":"text/html","ico":"image/vnd.microsoft.icon","ics":"text/calendar","jar":"application/java-archive","jpeg":"image/jpeg","jpg":"image/jpeg","js":"text/javascript","json":"application/json","jsonld":"application/ld+json","mid":"audio/midi","midi":"audio/x-midi","mjs":"text/javascript","mp3":"audio/mpeg","mpeg":"video/mpeg","mpkg":"application/vnd.apple.installer+xml","odp":"application/vnd.oasis.opendocument.presentation","ods":"application/vnd.oasis.opendocument.spreadsheet","odt":"application/vnd.oasis.opendocument.text","oga":"audio/ogg","ogv":"video/ogg","ogx":"application/ogg","opus":"audio/opus","otf":"font/otf","png":"image/png","pdf":"application/pdf","php":"application/x-httpd-php","ppt":"application/vnd.ms-powerpoint","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","rar":"application/vnd.rar","rtf":"application/rtf","sh":"application/x-sh","svg":"image/svg+xml","swf":"application/x-shockwave-flash","tar":"application/x-tar","tif":"image/tiff","tiff":"image/tiff","ts":"video/mp2t","ttf":"font/ttf","txt":"text/plain","vsd":"application/vnd.visio","wav":"audio/wav","weba":"audio/webm","webm":"video/webm","webp":"image/webp","woff":"font/woff","woff2":"font/woff2","xhtml":"application/xhtml+xml","xls":"application/vnd.ms-excel","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xml":"application/xml","xul":"application/vnd.mozilla.xul+xml","zip":"application/zip","3gp":"video/3gpp","3g2":"video/3gpp2","7z":"application/x-7z-compressed"}
 SERIAL_BAUD=9600
@@ -1448,115 +1448,7 @@ def _create_prog(type_,name,op=True,pr=True):
 
 
 
-class _WebSocketServer_handle(WebSocket):
-	def handleMessage(self):
-		threading.Thread(target=self._h_msg,args=(),kwargs={}).start()
-	def handleConnected(self):
-		pass
-	def handleClose(self):
-		global SERIAL_L
-		self.stop=True
-	def _h_msg(self):
-		global CMD_L,SERIAL_L
-		def _h_std(self):
-			global CMD_L
-			l={}
-			while (self._stop==False):
-				for k in list(CMD_L[self.h_nm]["l"].keys()):
-					if (k not in l.keys()):
-						l[k]=0
-					if (l[k]!=len(CMD_L[self.h_nm]["l"][k])):
-						self.sendMessage(b"dt:"+CMD_L[self.h_nm]["l"][k][l[k]:])
-						l[k]=len(CMD_L[self.h_nm]["l"][k][l[k]:])
-				time.sleep(1e-6)
-		t,msg=self.data[0],self.data[1:]
-		self.sendMessage("null")
-		if (t[0]=="0"):
-			if (msg=="cmdl"):
-				self.sendMessage("cmdl:"+"\x00".join(list(CMD_L.keys())))
-			elif (msg[:4]=="cmd:"):
-				if (msg[4:] not in list(CMD_L.keys())):
-					self.sendMessage("cmd:0")
-				else:
-					self._stop=True
-					self.h_nm=msg[4:]
-					self.sendMessage(f"cmd:1{self.h_nm}")
-					if (hasattr(self,"_thr")):
-						self._thr.join()
-					self._stop=False
-					self._thr=threading.Thread(target=_h_std,args=(self,),kwargs={})
-					self._thr.start()
-			elif (msg[:3]=="in:"):
-				if (hasattr(self,"h_nm")==False or self.h_nm==None):
-					return
-				CMD_L[self.h_nm]["h"].stdin.write(bytes(msg[3:],"utf-8"))
-				CMD_L[self.h_nm]["h"].stdin.flush()
-
-
-
-def _start_s(t):
-	def _h_request(cs,a,ip):
-		try:
-			_dt=cs.recv(65536)
-			if (len(_dt)==0):
-				_print(f"\x1b[38;2;200;40;20mEmpty Request From '{a[0]}:{a[1]}'.\x1b[0mSkipping\x1b[38;2;100;100;100m..")
-				return
-			(t,url,v),h,dt=str(_dt.split(b"\r\n")[0],"utf-8").split(" "),{str(e.split(b":")[0],"utf-8"):e[len(e.split(b":")[0])+2:] for e in _dt.split(b"\r\n\r\n")[0].split(b"\r\n")[1:] if len(e)!=0},_dt[len(_dt.split(b"\r\n\r\n")[0])+4:]
-			rc=-1
-			_print(f"Request Recived: (type='{t}', url='{url}', http_version='{v}', ip='{a[0]}:{a[1]}')")
-			if (t=="GET"):
-				_print("Inspecting IP and URL\x1b[38;2;100;100;100m...")
-				if (len(url)-len(url.replace("/",""))>=2):
-					if (url.split("?")[0].split("#")[0].endswith(".php")):
-						_print("Sending Request to PHP Server\x1b[38;2;100;100;100m...")
-						php_s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-						php_s.connect(("127.0.0.1",WORKSPACE_PHP_SERVER_PORT))
-						php_s.send(_dt)
-						_print("Redirecting Response\x1b[38;2;100;100;100m...")
-						php_s=(php_s.recv(65536),php_s.close())[0]
-						cs.send(php_s)
-						rc=int(php_s.split(b"\r\n")[0].split(b" ")[1])
-					else:
-						_print("Patching URL\x1b[38;2;100;100;100m...")
-						url=re.sub(r"\.+/",r"./",url.replace("\\","/"))
-						if (url.endswith("/")):
-							url+="index.html"
-						if (url=="/serial_ports"):
-							_print(f"Sending Serial Port List\x1b[38;2;100;100;100m...")
-							cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: text/json\r\nContent-Length: {len(json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()}))}\r\n\r\n{json.dumps({k:{sk:sv for sk,sv in v.items() if sk not in '_cs,in'.split(',')} for k,v in SERIAL_L.items()})}","utf-8"))
-							rc=200
-						else:
-							if (url[:10]=="/projects/"):
-								url=f"D:\\K\\Coding\\.{url}"
-							else:
-								url=f".{url}"
-							if (ntpath.isdir(url)):
-								url+="/index.html"
-							if (not ntpath.exists(url)):
-								_print(f"\x1b[38;2;200;40;20mFile '{ntpath.abspath(url)}' Doesn't Exist.\x1b[0m Sending Redirect\x1b[38;2;100;100;100m...")
-								cs.send(bytes(f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://{ip}:8020/\r\n\r\n","utf-8"))
-								rc=301
-							else:
-								mt=("text/plain" if url.split("?")[0].split("#")[0].split(".")[-1] not in list(MIME_TYPES.keys()) else MIME_TYPES[url.split("?")[0].split("#")[0].split(".")[-1]])
-								_print(f"Sending Content of '{ntpath.abspath(url)}' as '{mt}'\x1b[38;2;100;100;100m...")
-								f=open(ntpath.abspath(url),"rb")
-								cs.send(bytes(f"HTTP/1.1 200 OK\r\nContent-Type: {mt}\r\nContent-Length: {str(os.fstat(f.fileno())[6])}\r\n\r\n","utf-8")+f.read())
-								f.close()
-								rc=200
-				else:
-					_print(f"\x1b[38;2;200;40;20mUnauthorised Request From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
-					cs.send(bytes(f"HTTP/1.1 401 Unauthorised\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n","utf-8"))
-					rc=401
-			else:
-				_print(f"\x1b[38;2;200;40;20mUnimplemented Method '{t}'\x1b[38;2;200;40;20m Recived From '{a[0]}:{a[1]}'\x1b[38;2;200;40;20m for URL '{url}'\x1b[38;2;200;40;20m.\x1b[0m Discarding Request\x1b[38;2;100;100;100m...")
-				cs.send(b"HTTP/1.1 501 Not Implemented\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>501</h1><h3>Not Implemented</h3></body></html>")
-				rc=501
-			_print(f"Finished Processing Request with Response Code {rc}.")
-		except Exception as e:
-			_print("\x1b[38;2;200;40;20mError Occured During Procesing of Request.\x1b[0m (Finished Processing Request with Response Code 500)")
-			cs.send(b"HTTP/1.1 500 Internal Server Error\r\n\r\n<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"><title>Error</title></head><body><h1>500</h1><h3>Internal Server Error</h3></body></html>")
-			traceback.print_exception(None,e,e.__traceback__)
-		cs.close()
+def _start_s():
 	def _r_std_h(cs):
 		threading.current_thread()._df=True
 		bf=b""
@@ -1566,33 +1458,14 @@ def _start_s(t):
 				dt,bf=base64.b64decode(bf.split(b"\n")[0]),b"\n".join(bf.split(b"\n")[1:])
 				threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
 				_print(str(dt[len(b" ".join(dt.split(b"\x00")[:2]))+1:],"utf-8"))
-	if (t==0):
-		_print(f"Starting WebSocket Listener on IP '127.0.0.1:8021'\x1b[38;2;100;100;100m...")
-		ws_s=SimpleWebSocketServer("127.0.0.1",8021,_WebSocketServer_handle).serveforever()
-	if (t==1):
-		global WORKSPACE_PHP_PID
-		_print(f"Starting PHP Server on IP '127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}'\x1b[38;2;100;100;100m...")
-		p=subprocess.Popen(["C:/Program Files/PHP/php.exe","-S",f"127.0.0.1:{WORKSPACE_PHP_SERVER_PORT}"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd="D:\\K\\Coding\\")
-		WORKSPACE_PHP_PID=p.pid
-		_r_cmd("php_server",lambda:None,p)
-	elif (t==2):
-		_print("Starting Remote Std Listener on '127.0.0.1:8022'\x1b[38;2;100;100;100m...")
-		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-		s.bind(("127.0.0.1",8022))
-		s.listen(5)
-		while (True):
-			threading.Thread(target=_r_std_h,args=(s.accept()[0],),kwargs={}).start()
-		s.close()
-	else:
-		_print(f"Starting Server on IP '{('localhost' if t==3 else '127.0.0.1')}:8020'\x1b[38;2;100;100;100m...")
-		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-		s.bind((("localhost" if t==3 else "127.0.0.1"),8020))
-		s.listen(5)
-		while (True):
-			_h_request(*s.accept(),("localhost" if t==3 else "127.0.0.1"))
-		s.close()
+	_print("Starting Remote Std Listener on Port '127.0.0.1:8022'\x1b[38;2;100;100;100m...")
+	s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+	s.bind(("127.0.0.1",8022))
+	s.listen(5)
+	while (True):
+		threading.Thread(target=_r_std_h,args=(s.accept()[0],),kwargs={}).start()
+	s.close()
 
 
 
@@ -1695,16 +1568,8 @@ if (len(sys.argv)==1):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
-	_print("Starting WebSocket CMD Server\x1b[38;2;100;100;100m...")
-	_start_thr(_start_s,"__core__","cmdline_websocket_server",0)
-	_print("Starting PHP Server\x1b[38;2;100;100;100m...")
-	_start_thr(_start_s,"__core__","php_server",1)
-	_print(f"Startint Remote Std Listener\x1b[38;2;100;100;100m...")
-	_start_thr(_start_s,"__core__","remote_std_server",2)
-	_print("Starting Localhost Server\x1b[38;2;100;100;100m...")
-	_start_thr(_start_s,"__core__","localhost_server",3)
-	_print("Starting Local IP Server\x1b[38;2;100;100;100m...")
-	_start_thr(_start_s,"__core__","local_ip_server",4)
+	_print("Startint Remote Std Listener\x1b[38;2;100;100;100m...")
+	_start_thr(_start_s,"__core__","remote_std_server")
 	_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
 	try:
 		while (True):
