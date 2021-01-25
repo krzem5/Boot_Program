@@ -46,18 +46,12 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global BLK_PID,KB_PID,WORKSPACE_PHP_PID,SWAP_DATA,CMD_L,STDOUT_LOCK,NETWORK,R_STD_BUFFER
+global CMD_L,STDOUT_LOCK,R_STD_BUFFER
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-MIME_TYPES={"aac":"audio/aac","abw":"application/x-abiword","arc":"application/x-freearc","avi":"video/x-msvideo","azw":"application/vnd.amazon.ebook","bin":"application/octet-stream","bmp":"image/bmp","bz":"application/x-bzip","bz2":"application/x-bzip2","csh":"application/x-csh","css":"text/css","csv":"text/csv","doc":"application/msword","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","eot":"application/vnd.ms-fontobject","epub":"application/epub+zip","gz":"application/gzip","gif":"image/gif","htm":"text/html","html":"text/html","ico":"image/vnd.microsoft.icon","ics":"text/calendar","jar":"application/java-archive","jpeg":"image/jpeg","jpg":"image/jpeg","js":"text/javascript","json":"application/json","jsonld":"application/ld+json","mid":"audio/midi","midi":"audio/x-midi","mjs":"text/javascript","mp3":"audio/mpeg","mpeg":"video/mpeg","mpkg":"application/vnd.apple.installer+xml","odp":"application/vnd.oasis.opendocument.presentation","ods":"application/vnd.oasis.opendocument.spreadsheet","odt":"application/vnd.oasis.opendocument.text","oga":"audio/ogg","ogv":"video/ogg","ogx":"application/ogg","opus":"audio/opus","otf":"font/otf","png":"image/png","pdf":"application/pdf","php":"application/x-httpd-php","ppt":"application/vnd.ms-powerpoint","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","rar":"application/vnd.rar","rtf":"application/rtf","sh":"application/x-sh","svg":"image/svg+xml","swf":"application/x-shockwave-flash","tar":"application/x-tar","tif":"image/tiff","tiff":"image/tiff","ts":"video/mp2t","ttf":"font/ttf","txt":"text/plain","vsd":"application/vnd.visio","wav":"audio/wav","weba":"audio/webm","webm":"video/webm","webp":"image/webp","woff":"font/woff","woff2":"font/woff2","xhtml":"application/xhtml+xml","xls":"application/vnd.ms-excel","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xml":"application/xml","xul":"application/vnd.mozilla.xul+xml","zip":"application/zip","3gp":"video/3gpp","3g2":"video/3gpp2","7z":"application/x-7z-compressed"}
 SERIAL_BAUD=9600
 R_STD_BUFFER={"_s":None,"bf":[]}
-NETWORK=False
 STDOUT_LOCK=False
 CMD_L={}
-KB_PID=-1
-BLK_PID=-1
-WORKSPACE_PHP_SERVER_PORT=random.randint(9001,49151)
-WORKSPACE_WORKSPACE_PHP_PID=""
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
 GITHUB_TOKEN,CONTACT_EMAIL=f.replace("\r","").split("\n")[:2]
@@ -175,9 +169,9 @@ def _print(*a,end="\n"):
 			return
 	if (not hasattr(threading.current_thread(),"_dp") or threading.current_thread()._dp==False):
 		t=(datetime.datetime.now().strftime("\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
-		if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm]["l"].keys()):
-			CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]=b""
-		CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
+		if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm].keys()):
+			CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]=b""
+		CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
 	t=(datetime.datetime.now().strftime((f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")) if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	while (STDOUT_LOCK==True):
 		pass
@@ -191,15 +185,15 @@ def _start_thr(f,b_nm,nm,*a,**kw):
 	def _wr(f,a,kw):
 		global CMD_L
 		if (b_nm not in CMD_L.keys()):
-			CMD_L[b_nm]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{nm:b""}}
-		if (nm not in CMD_L[b_nm]["l"].keys()):
-			CMD_L[b_nm]["l"][nm]=b""
+			CMD_L[b_nm]={nm:b""}
+		if (nm not in CMD_L[b_nm].keys()):
+			CMD_L[b_nm][nm]=b""
 		try:
 			f(*a,**kw)
 		except Exception as e:
 			f=io.StringIO()
 			traceback.print_exception(None,e,e.__traceback__,file=f)
-			CMD_L[threading.current_thread()._b_nm]["l"][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
+			CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
 			print(f.getvalue(),file=sys.__stdout__,end="")
 	thr=threading.Thread(target=_wr,args=(f,a,kw),kwargs={},name=f"{b_nm} => {nm} Thread")
 	thr._b_nm=b_nm
@@ -215,19 +209,6 @@ def _open_app(p,file=False):
 		os.startfile(p)
 	else:
 		subprocess.Popen(p,creationflags=subprocess.CREATE_NEW_CONSOLE)
-
-
-
-def _r_cmd(nm,e,h):
-	global CMD_L
-	def _h_s(nm,s_nm):
-		global CMD_L
-		while (True):
-			CMD_L[nm]["l"]["__main__"]+=getattr(CMD_L[nm]["h"],"std"+s_nm).read1(1024).replace(b"\r\n",b"\n")
-			time.sleep(1e-6)
-	CMD_L[nm]={"_end":e,"h":h,"l":{"__main__":b""}}
-	_start_thr(_h_s,nm,"_stdout_redirect",nm,"out")
-	_start_thr(_h_s,nm,"_stderr_redirect",nm,"err")
 
 
 
@@ -285,7 +266,7 @@ def _is_bin(fp):
 
 
 
-def _update_repo(p,b_nm,msg):
+def _update_repo(p,b_nm):
 	def _request(m="get",**kw):
 		kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 		r=getattr(requests,m)(**kw)
@@ -335,7 +316,7 @@ def _update_repo(p,b_nm,msg):
 			_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-			return
+			return False
 	with open(ntpath.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r","").split("\n"):
@@ -354,9 +335,10 @@ def _update_repo(p,b_nm,msg):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
+	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	br=_request("get",url=f"https://api.github.com/repos/Krzem5/{nm}/branches")
 	if ("message" in br):
-		return
+		return True
 	br=[e["name"] for e in br]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
 	try:
@@ -424,18 +406,12 @@ def _update_repo(p,b_nm,msg):
 		with open("D:\\boot\\github-created.dt","w") as f:
 			f.write("\n".join(gr_dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
+	return True
 
 
 
 def _git_project_push(r=False,fr=False):
-	global NETWORK
-	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
-	_print(f"Starting Github Project Push Check with Commit Message '{msg}'\x1b[38;2;100;100;100m...")
-	if (NETWORK==False):
-		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Waiting\x1b[38;2;100;100;100m...")
-		while (NETWORK==False):
-			time.sleep(1e-6)
-		_print("Internet Connection Found\x1b[38;2;100;100;100m...")
+	_print(f"Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	if (r==True):
 		threading.current_thread()._dp=True
 		threading.current_thread()._r=1
@@ -456,7 +432,8 @@ def _git_project_push(r=False,fr=False):
 				f.flush()
 				continue
 			t[0]+=1
-			_update_repo(f"D:\\K\\Coding\\{p}",p,msg)
+			if (_update_repo(f"D:\\K\\Coding\\{p}",p)==False):
+				return
 			f.write(p+"\n")
 			f.flush()
 		if (fr==False and "Boot_Program" in b_dt[1:]):
@@ -465,7 +442,8 @@ def _git_project_push(r=False,fr=False):
 			f.flush()
 		else:
 			t[0]+=1
-			_update_repo("D:\\boot\\","Boot_Program",msg)
+			if (_update_repo("D:\\boot\\","Boot_Program")==False):
+				return
 			f.write("Boot_Program\n")
 			f.flush()
 	threading.current_thread()._df=False
@@ -1447,23 +1425,6 @@ def _start_s():
 
 
 
-def _net_loop():
-	global NETWORK
-	_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
-	while (True):
-		try:
-			socket.socket(socket.AF_INET,socket.SOCK_STREAM).connect(("8.8.8.8",53))
-			if (NETWORK==False):
-				NETWORK=True
-				_print("Internet Connection Found\x1b[38;2;100;100;100m...")
-		except socket.error:
-			if (NETWORK==True):
-				NETWORK=False
-				_print("Internet Connection Lost\x1b[38;2;100;100;100m...")
-		time.sleep(30)
-
-
-
 def _u_mcs(fp):
 	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
 	if (not ntpath.exists(fp)):
@@ -1508,32 +1469,24 @@ def _u_mcs(fp):
 
 
 def _end(a):
-	global CMD_L
-	print("Stopping all Servers\x1b[38;2;100;100;100m...")
-	for v in list(CMD_L.values())[:]:
-		v["_end"]()
-	subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe"]+a+["/f"])
+	subprocess.run(["C:\\Windows\\System32\\shutdown.exe"]+a+["/f"])
 
 
 
 if (len(sys.argv)==1):
 	os.system("cls")
 	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-	CMD_L["__core__"]={"_end":lambda:None,"h":type("VoidHandle",(object,),{"stdin":io.StringIO}),"l":{"__main__":b""}}
+	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
 	threading.current_thread()._nm="__main__"
-	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...\x1b[0m")
-	_print("Starting Arduino Cache\x1b[38;2;100;100;100m...")
-	_Arduino_Cache.init()
-	_print("Starting Internet Status Loop\x1b[38;2;100;100;100m...")
-	_start_thr(_net_loop,"__core__","network_status_loop")
+	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	_print("Registering Keyboard Hotkeys\x1b[38;2;100;100;100m...")
 	keyboard.add_hotkey("ctrl+alt+shift+z",lambda:_open_app("C:\\Windows\\System32\\charmap.exe"))
 	keyboard.add_hotkey("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
 	keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
 	keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
 	keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
-	keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["javaw","-jar","D:\\boot\\ScreenBlocker.jar"]))
+	keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["pythonw","D:\\boot\\boot.py","7"]))
 	keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_end(["/l"]))
 	keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
 	keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
@@ -2206,7 +2159,6 @@ else:
 			threading.current_thread()._nm="github_project_push_remote"
 			threading.current_thread()._dpt=True
 			threading.current_thread()._r=2
-			_start_thr(_net_loop,"__core__","github_project_push_remote_network_loop")
 			_git_project_push(r=True)
 		else:
 			if (sys.argv[2]=="*"):
@@ -2214,7 +2166,6 @@ else:
 				threading.current_thread()._nm="github_project_push_all"
 				threading.current_thread()._dpt=True
 				threading.current_thread()._r=2
-				_start_thr(_net_loop,"__core__","github_project_push_all_network_loop")
 				_git_project_push(r=True,fr=True)
 			else:
 				threading.current_thread()._b_nm="__core__"
@@ -2223,12 +2174,11 @@ else:
 				threading.current_thread()._r=2
 				nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:\\K\\Coding\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program")
 				dc=("None" if sys.argv[2].lower().startswith("d:\\k") else "'Boot Program'")
-				msg=datetime.datetime.now().strftime('Push Update %m/%d/%Y, %H:%M:%S')
-				_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc}, commit_message='{msg}')")
+				_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc})")
 				threading.current_thread()._dp=True
 				threading.current_thread()._df=True
 				threading.current_thread()._r=1
-				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:\\k\\coding\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"),msg)
+				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:\\k\\coding\\","").split("\\")[0]) if sys.argv[2].lower().startswith("d:\\k") else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._b_nm="__core__"
@@ -2493,3 +2443,20 @@ else:
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sz[8]+1])+"\x1b[0m")
 			time.sleep(0.01)
+	elif (v==7):
+		import tkinter as tk
+		import pynput.keyboard
+		import ctypes
+		r=tk.Tk()
+		r.bind("<FocusOut>",lambda _:r.focus_force())
+		r.attributes("-fullscreen",True)
+		r.attributes("-topmost",True)
+		r.configure(background="#000000")
+		r.resizable(False,False)
+		r.overrideredirect(True)
+		r.focus_force()
+		r.update_idletasks()
+		c=pynput.keyboard.Controller()
+		ctypes.windll.user32.ShowCursor(0)
+		with pynput.keyboard.Listener(on_press=lambda k:((r.destroy(),False) if k==pynput.keyboard.Key.esc else (c.release(k),None))[1]):
+			r.mainloop()
