@@ -37,6 +37,8 @@ import msvcrt
 import signal
 import yaml
 import regex
+import tkinter
+import pynput.keyboard
 
 
 
@@ -2444,10 +2446,7 @@ else:
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sz[8]+1])+"\x1b[0m")
 			time.sleep(0.01)
 	elif (v==7):
-		import tkinter as tk
-		import pynput.keyboard
-		import ctypes
-		r=tk.Tk()
+		r=tkinter.Tk()
 		r.bind("<FocusOut>",lambda _:r.focus_force())
 		r.attributes("-fullscreen",True)
 		r.attributes("-topmost",True)
