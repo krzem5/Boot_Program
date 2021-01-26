@@ -1233,42 +1233,37 @@ def _open_prog_w(p):
 				subprocess.Popen([p,fn])
 				op=True
 		if (op==False):
-			subprocess.Popen([p,glob.glob(f"{p2}**\\*.{e}",recursive=True)[0]])
-	type_=p.split("-")[0].lower()
-	_print(f"Opening Project: (name='{p[len(type_)+1:]}', type_='{type_}', path='D:\\K\\Coding\\{p}\\')\x1b[38;2;100;100;100m...")
-	p="D:\\K\\Coding\\"+p+"\\"
-	if (type_=="arduino"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}index.ino")
-	elif (type_=="c"):
-		subprocess.Popen(["	C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}main.c")
-	elif (type_=="cpp"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}index.cpp")
-	elif (type_=="css"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}index.html",f"{p}style.css")
-	elif (type_=="java"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}com\\krzem\\{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
-	elif (type_=="javascript"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
-	elif (type_=="php"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",p+"index.php")
-	elif (type_=="processing"):
-		os.system(f"start /min cmd /c \"{p}index\\index.pde\"")
-	elif (type_=="python"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}index.py")
-	elif (type_=="three"):
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}index.html",f"{p}index.js")
+			for r,_,fl in os.walk(p2):
+				for fn in fl:
+					if (fn.endswith(e)):
+						subprocess.Popen([p,ntpath.join(r,fn)])
+						return
+	t=p.split("-")[0].lower()
+	_print(f"Opening Project: (name='{p[len(t)+1:]}', type='{t}', path='D:\\K\\Coding\\{p}\\')\x1b[38;2;100;100;100m...")
+	p=f"D:\\K\\Coding\\{p}\\"
+	subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+	if (t=="arduino"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/index.ino")
+	elif (t=="c"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}src/main.c")
+	elif (t=="cpp"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}src/index.cpp",f"{p}index.cpp")
+	elif (t=="css"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}src/index.html",f"{p}src/style.css")
+	elif (t=="java"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}src/com/krzem/{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
+	elif (t=="javascript"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/index.js")
+	elif (t=="php"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",f"{p}src/index.php")
+	elif (t=="processing"):
+		os.system(f"start /min cmd /c \"{p}index/index.pde\"")
+	elif (t=="python"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}src/index.py")
+	elif (t=="three"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/index.js")
 	else:
 		_print("\x1b[38;2;200;40;20mUnknown type.\x1b[0m Defaulting to Editor\x1b[38;2;100;100;100m...")
-		subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 
 
 
@@ -1302,11 +1297,11 @@ def _create_prog(type_,name,op=True,pr=True):
 		with open(f"{p}README.md","x") as f:
 			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)\n""")
 	if (type_=="arduino"):
-		if (not ntpath.exists(f"{p}src/index.ino") and "ino" not in fel):
-			with open(f"{p}src/index.ino","x") as f:
+		if (not ntpath.exists(f"{p}src/main.ino") and "ino" not in fel):
+			with open(f"{p}src/main.ino","x") as f:
 				f.write("#include <arduino.h>\n\n\n\nvoid setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\npython D:\\boot\\boot.py 5 compile ./src ./build arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./build COM3 arduino:avr:uno\n")
 	elif (type_=="c"):
 		if (not ntpath.exists(f"{p}src/main.c") and "c" not in fel):
@@ -1315,17 +1310,17 @@ def _create_prog(type_,name,op=True,pr=True):
 			if (not ntpath.exists(f"{p}src/include")):
 				os.mkdir(f"{p}src/include")
 			with open(f"{p}src/main.c","x") as f:
-				f.write("int main(int argc,const char** argv){\n\treturn 0;\n}")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\"  /D \"_WINDOWS\" /D \"_USRDLL\" /D \"_WINDLL\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /D \"DLL1_EXPORTS\" /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_USRDLL\" /D \"_WINDLL\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /D \"DLL1_EXPORTS\" /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ../\nset INCLUDE=%_INCLUDE%")
+				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
+				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ..\nset INCLUDE=%_INCLUDE%")
 	elif (type_=="cpp"):
-		if (not ntpath.exists(f"{p}src/index.cpp") and "cpp" not in fel):
-			with open(f"{p}src/index.cpp","x") as f:
-				f.write("int main(void){\n\treturn 0;\n}")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\ndel *.obj&&del index.exe&&cl /EHsc *.cpp /link /OUT:index.exe&&del *.obj&&cls&&index.exe\nif exist index.exe (\n\trem del index.exe\n)")
+		if (not ntpath.exists(f"{p}src/main.cpp") and "cpp" not in fel):
+			with open(f"{p}src/main.cpp","x") as f:
+				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
+				f.write(f"@echo off\ncls\ndel *.obj&&del {name.lower()}.exe&&cl /EHsc *.cpp /link /OUT:{name.lower()}.exe&&del *.obj&&cls&&{name.lower()}.exe\n")
 	elif (type_=="css"):
 		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
@@ -1335,8 +1330,8 @@ def _create_prog(type_,name,op=True,pr=True):
 				os.mkdir(f"{p}src/css")
 			with open(f"{p}src/css/style.css","x") as f:
 				f.write("body {\n\twidth: 100%;\n\theight: 100%\n}\nbody, body * {\n\tmargin: 0;\n\tpadding: 0;\n}")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="java"):
 		if (not ntpath.exists(f"{p}src/com/krzem/{name.lower()}/Main.java") and "java" not in fel):
@@ -1351,55 +1346,55 @@ def _create_prog(type_,name,op=True,pr=True):
 		if (not ntpath.exists(f"{p}/manifest.mf")):
 			with open(p+"manifest.mf","x") as f:
 				f.write(f"Manifest-Version: 1.0\nCreated-By: Krzem\nMain-Class: com.krzem.{name.lower().replace(' ','_')}.Main\n")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(p+"index.bat","x") as f:
-				f.write(f"@echo off\ncls\nif exist build rmdir /s /q build\nmkdir build\ncd src\njavac -d ../build com/krzem/{name.lower().replace(' ','_')}/Main.java&&jar cvmf ../manifest.mf ../build/{name.lower().replace(' ','_')}.ja\n -C ../build *&&goto run\ncd ..\ngoto end\n:run\ncd ..\npushd \"build\"\nfor /D %%D in (\"*\") do (\n\trd /S /Q \"%%~D\"\n)\nfor %%F in (\"*\") do (\n\tif /I not \"%%~nxF\"==\"{name.lower().replace(' ','_')}.jar\" del \"%%~F\"\n)\npopd\njava -jar build/{name.lower().replace(' ','_')}.jar\n:end\n")
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(p+"build.bat","x") as f:
+				f.write(f"@echo off\ncls\nif exist build rmdir /s /q build\nmkdir build\ncd src\njavac -d ../build com/krzem/{name.lower().replace(' ','_')}/Main.java&&jar cvmf ../manifest.mf ../build/{name.lower().replace(' ','_')}.jar\n -C ../build *&&goto run\ncd ..\ngoto end\n:run\ncd ..\npushd \"build\"\nfor /D %%D in (\"*\") do (\n\trd /S /Q \"%%~D\"\n)\nfor %%F in (\"*\") do (\n\tif /I not \"%%~nxF\"==\"{name.lower().replace(' ','_')}.jar\" del \"%%~F\"\n)\npopd\njava -jar build/{name.lower().replace(' ','_')}.jar\n:end\n")
 	elif (type_=="javascript"):
 		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
-				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"js/index.js\"></script>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}src/js/index.js") and "js" not in fel):
+				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"js/main.js\"></script>\n\t</head>\n\t<body>\n\t</body>\n</html>")
+		if (not ntpath.exists(f"{p}src/js/main.js") and "js" not in fel):
 			if (not ntpath.exists(f"{p}src/js/")):
 				os.mkdir(f"{p}src/js/")
-			with open(f"{p}src/js/index.js","x") as f:
+			with open(f"{p}src/js/main.js","x") as f:
 				f.write("function init(){\n\t\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="php"):
 		if (not ntpath.exists(f"{p}src/index.php") and "php" not in fel):
 			with open(f"{p}src/index.php","x") as f:
 				f.write("<?php\n\n?>")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}src/index.php")
 	elif (type_=="processing"):
-		if (not ntpath.exists(f"{p}index\\")):
-			os.mkdir(f"{p}index\\")
-		if (not ntpath.exists(f"{p}index\\index.pde")):
-			with open(f"{p}index\\index.pde","x") as f:
+		if (not ntpath.exists(f"{p}main/")):
+			os.mkdir(f"{p}main/")
+		if (not ntpath.exists(f"{p}main/main.pde")):
+			with open(f"{p}main/main.pde","x") as f:
 				f.write("void setup(){\n\t\n}\n\nvoid draw(){\n\t\n}")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\nstart /min cmd /c \"{p}index\\index.pde\"")
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
+				f.write(f"@echo off\ncls\nstart /min cmd /c \"{p}main/main.pde\"")
 	elif (type_=="python"):
-		if (not ntpath.exists(f"{p}src/index.py") and "py" not in fel):
-			with open(f"{p}src/index.py","x") as f:
+		if (not ntpath.exists(f"{p}src/main.py") and "py" not in fel):
+			with open(f"{p}src/main.py","x") as f:
 				f.write("")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
-				f.write(f"@echo off\ncls\npython src/index.py")
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
+				f.write(f"@echo off\ncls\npython src/main.py")
 	elif (type_=="three"):
 		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
-				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/104/three.min.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"https://threejs.org/js/controls/OrbitControls.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"js/index.js\"></script>\n\t\t<style type=\"text/css\">\n\t\t\tbody {{\n\t\t\t\tmargin: 0;\n\t\t\t\tpadding: 0;\n\t\t\t}}\n\t\t\tcanvas {{\n\t\t\t\twidth: 100%%;\n\t\t\t\theight: 100%%;\n\t\t\t}}\n\t\t</style>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}src/js/index.js") and "js" not in fel):
+				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/104/three.min.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"https://threejs.org/js/controls/OrbitControls.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"js/main.js\"></script>\n\t\t<style type=\"text/css\">\n\t\t\tbody {{\n\t\t\t\tmargin: 0;\n\t\t\t\tpadding: 0;\n\t\t\t}}\n\t\t\tcanvas {{\n\t\t\t\twidth: 100%%;\n\t\t\t\theight: 100%%;\n\t\t\t}}\n\t\t</style>\n\t</head>\n\t<body>\n\t</body>\n</html>")
+		if (not ntpath.exists(f"{p}src/js/main.js") and "js" not in fel):
 			if (not ntpath.exists(f"{p}src/js/")):
 				os.mkdir(f"{p}src/js/")
-			with open(f"{p}src/js/index.js","x") as f:
+			with open(f"{p}src/js/main.js","x") as f:
 				f.write("var scene,cam,renderer,controls\nfunction init(){\n\tscene=new THREE.Scene()\n\tcam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100000)\n\tcam.position.set(0,2000,0)\n\tcam.enablePan=false\n\tcam.lookAt(new THREE.Vector3(0,0,0))\n\trenderer=new THREE.WebGLRenderer({antialias:true})\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n\tscene.background=new THREE.Color().setHSL(1,1,1)\n\tdocument.body.appendChild(renderer.domElement)\n\tambient=new THREE.AmbientLight(0xffffff,1)\n\tscene.add(ambient)\n\trenderer.render(scene,cam)\n\tcontrols=new THREE.OrbitControls(cam,renderer.domElement)\n\tcontrols.target=new THREE.Vector3(0,0,0)\n\twindow.addEventListener(\"resize\",resize,false)\n\twindow.addEventListener(\"keypress\",onkeypress)\n\trequestAnimationFrame(render)\n}\nfunction render(){\n\trenderer.render(scene,cam)\n\trequestAnimationFrame(render)\n}\nfunction resize(){\n\tcam.aspect=window.innerWidth/window.innerHeight\n\tcam.updateProjectionMatrix()\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n}\nfunction onkeypress(e){\n\tswitch (e.keyCode){\n\t\t//\n\t}\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
-		if (not ntpath.exists(f"{p}index.bat")):
-			with open(f"{p}index.bat","x") as f:
+		if (not ntpath.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	if (op==True):
 		_open_prog_w(type_.title()+"-"+name)
@@ -1488,7 +1483,7 @@ if (len(sys.argv)==1):
 	keyboard.add_hotkey("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
 	keyboard.add_hotkey("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
 	keyboard.add_hotkey("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
-	keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["pythonw","D:\\boot\\boot.py","7"]))
+	keyboard.add_hotkey("ctrl+alt+shift+r",lambda:_open_app(["pythonw","D:\\boot\\boot.py","0"]))
 	keyboard.add_hotkey("ctrl+alt+shift+home",lambda:_end(["/l"]))
 	keyboard.add_hotkey("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
 	keyboard.add_hotkey("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
@@ -1513,105 +1508,19 @@ if (len(sys.argv)==1):
 else:
 	v=int(sys.argv[1])
 	if (v==0):
-		threading.current_thread()._b_nm="__core__"
-		threading.current_thread()._nm="__core__"
-		threading.current_thread()._r=2
-		threading.current_thread()._dpt=True
-		threading.current_thread()._dp=True
-		_print("Starting Prettifying in Directory 'D:\\'\x1b[38;2;100;100;100m...")
-		threading.current_thread()._df=True
-		threading.current_thread()._r=0
-		for fn in glob.iglob("D:\\**\\*.json",recursive=True):
-			try:
-				_print(fn)
-				data={}
-				with open(fn,"r") as f:
-					data=json.loads(f.read())
-				_save_f(fn,json.dumps(data,indent=4,sort_keys=True).replace("    ","\t"))
-			except:
-				_print("Skipping: "+fn)
-		for fn in glob.iglob("D:\\**\\*.java",recursive=True):
-			try:
-				with open(fn,"r") as f:
-					txt=f.read().split("\n")
-				i=0
-				imp=[]
-				imps=[]
-				sl=-1
-				ch=False
-				_print(fn)
-				while (i<len(txt)):
-					if (txt[i]=="" or txt[i][0]=="\t" or txt[i][0]==" "  or txt[i].startswith("//") or txt[i].startswith("/*") or txt[i].startswith("*/")):
-						i+=1
-						continue
-					ln=txt[i]
-					if (ln.startswith("package ")):
-						p=ln.replace("package ","")[:-1].split(".")
-						if (p.count("krzem")>0):
-							rp=fn[fn.index("com\\krzem\\")+len("com\\krzem\\"):fn.rfind("\\")].replace("\\",".")
-							if (".".join(p[2:])!=rp):
-								txt[i]=f"package com.krzem.{rp};\n\n\n"
-								ch=True
-								sl=1
-						pass
-					elif (ln.startswith("import static ")):
-						if (sl==-1):
-							sl=i+0
-						imps+=[ln]
-					elif (ln.startswith("import ")):
-						if (sl==-1):
-							sl=i+0
-						imp+=[ln]
-					else:
-						break
-					i+=1
-				if (len(imp)==0 and len(imps)==0 and ch==False):
-					continue
-				imp.sort()
-				imps.sort()
-				txt=txt[:sl]+imp+imps+(["","",""] if len(imp)+len(imps)>0 else [])+txt[i:]
-				_save_f(fn,"\n".join(txt))
-			except:
-				_print("Skipping: "+fn)
-		for fn in glob.iglob("D:\\**\\*.py",recursive=True):
-			try:
-				with open(fn,"r") as f:
-					txt=f.read().split("\n")
-				i=0
-				imp=[]
-				sl=-1
-				_print(fn)
-				while (i<len(txt)):
-					if (txt[i]==""):
-						i+=1
-						continue
-					ln=txt[i]
-					if (ln.startswith("#")):
-						pass
-					if (ln.startswith("from ") or ln.startswith("import ")):
-						if (sl==-1):
-							sl=i+0
-						imp+=[ln]
-					else:
-						break
-					i+=1
-				if (len(imp)==0):
-					continue
-				imp.sort()
-				cimp=[]
-				for k in imp:
-					if (k.startswith("from")):
-						k=k.replace("import*","import *").replace(", ",",").replace(",",", ")
-						cimp+=[k]
-					else:
-						for m in k.replace("import ","").split(","):
-							cimp+=["import "+m.strip()]
-				txt=txt[:sl]+cimp+["","",""]+txt[i:]
-				_save_f(fn,"\n".join(txt))
-			except:
-				_print("Skipping: "+fn)
-		threading.current_thread()._df=False
-		_rec_rm_pycache("D:\\")
+		r=tkinter.Tk()
+		r.bind("<FocusOut>",lambda _:r.focus_force())
+		r.attributes("-fullscreen",True)
+		r.attributes("-topmost",True)
+		r.configure(background="#000000")
+		r.resizable(False,False)
+		r.overrideredirect(True)
+		r.focus_force()
+		r.update_idletasks()
+		c=pynput.keyboard.Controller()
+		ctypes.windll.user32.ShowCursor(0)
+		with pynput.keyboard.Listener(on_press=lambda k:((r.destroy(),False) if k==pynput.keyboard.Key.esc else (c.release(k),None))[1]):
+			r.mainloop()
 	elif (v==1):
 		while (True):
 			p=input("> ").lower().strip()
@@ -2445,17 +2354,3 @@ else:
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sz[8]+1])+"\x1b[0m")
 			time.sleep(0.01)
-	elif (v==7):
-		r=tkinter.Tk()
-		r.bind("<FocusOut>",lambda _:r.focus_force())
-		r.attributes("-fullscreen",True)
-		r.attributes("-topmost",True)
-		r.configure(background="#000000")
-		r.resizable(False,False)
-		r.overrideredirect(True)
-		r.focus_force()
-		r.update_idletasks()
-		c=pynput.keyboard.Controller()
-		ctypes.windll.user32.ShowCursor(0)
-		with pynput.keyboard.Listener(on_press=lambda k:((r.destroy(),False) if k==pynput.keyboard.Key.esc else (c.release(k),None))[1]):
-			r.mainloop()
