@@ -55,7 +55,7 @@
 - RSRC:
   - [ ] world
   - [ ] mekorama
-  *More?*
+  - *More?*
 
 - VIEW:
   - [ ] tessaract
