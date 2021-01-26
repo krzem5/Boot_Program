@@ -1260,8 +1260,6 @@ def _open_prog_w(p):
 		os.system(f"start /min cmd /c \"{p}index/index.pde\"")
 	elif (t=="python"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}src/index.py")
-	elif (t=="three"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/index.js")
 	else:
 		_print("\x1b[38;2;200;40;20mUnknown type.\x1b[0m Defaulting to Editor\x1b[38;2;100;100;100m...")
 
@@ -1271,7 +1269,7 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (pr==True):
 		_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
 	type_=type_.lower()
-	if (type_ not in "arduino,assembly,c,chromeext,cpp,css,java,js,javascript,php,processing,python,three,websocket".split(",")):
+	if (type_ not in "arduino,assembly,c,cpp,css,java,js,javascript,php,processing,python".split(",")):
 		_print(f"Unknown Prog Type: {type_}")
 		return
 	if (type_=="js"):
@@ -1384,15 +1382,6 @@ def _create_prog(type_,name,op=True,pr=True):
 		if (not ntpath.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\npython src/main.py")
-	elif (type_=="three"):
-		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
-			with open(f"{p}src/index.html","x") as f:
-				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/104/three.min.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"https://threejs.org/js/controls/OrbitControls.js\"></script>\n\t\t<script type=\"text/javascript\" src=\"js/main.js\"></script>\n\t\t<style type=\"text/css\">\n\t\t\tbody {{\n\t\t\t\tmargin: 0;\n\t\t\t\tpadding: 0;\n\t\t\t}}\n\t\t\tcanvas {{\n\t\t\t\twidth: 100%%;\n\t\t\t\theight: 100%%;\n\t\t\t}}\n\t\t</style>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}src/js/main.js") and "js" not in fel):
-			if (not ntpath.exists(f"{p}src/js/")):
-				os.mkdir(f"{p}src/js/")
-			with open(f"{p}src/js/main.js","x") as f:
-				f.write("var scene,cam,renderer,controls\nfunction init(){\n\tscene=new THREE.Scene()\n\tcam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100000)\n\tcam.position.set(0,2000,0)\n\tcam.enablePan=false\n\tcam.lookAt(new THREE.Vector3(0,0,0))\n\trenderer=new THREE.WebGLRenderer({antialias:true})\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n\tscene.background=new THREE.Color().setHSL(1,1,1)\n\tdocument.body.appendChild(renderer.domElement)\n\tambient=new THREE.AmbientLight(0xffffff,1)\n\tscene.add(ambient)\n\trenderer.render(scene,cam)\n\tcontrols=new THREE.OrbitControls(cam,renderer.domElement)\n\tcontrols.target=new THREE.Vector3(0,0,0)\n\twindow.addEventListener(\"resize\",resize,false)\n\twindow.addEventListener(\"keypress\",onkeypress)\n\trequestAnimationFrame(render)\n}\nfunction render(){\n\trenderer.render(scene,cam)\n\trequestAnimationFrame(render)\n}\nfunction resize(){\n\tcam.aspect=window.innerWidth/window.innerHeight\n\tcam.updateProjectionMatrix()\n\trenderer.setSize(window.innerWidth,window.innerHeight)\n}\nfunction onkeypress(e){\n\tswitch (e.keyCode){\n\t\t//\n\t}\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
 		if (not ntpath.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
