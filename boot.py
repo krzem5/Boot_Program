@@ -6,7 +6,6 @@ import ctypes
 import sys
 import json
 import glob
-import ntpath
 import threading
 import tarfile
 import zipfile
@@ -26,7 +25,6 @@ import datetime
 import io
 import random
 import hashlib
-import chardet
 import serial
 import serial.tools.list_ports
 import shlex
@@ -216,7 +214,7 @@ def _open_app(p,file=False):
 
 def _gitigonre_match(gdt,fp):
 	def _pattern(p,fp):
-		fnm=ntpath.normpath(fp).replace(os.sep,"/").split("/")
+		fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
 		if (len(fnm)<len(p[1].split("/"))):
 			return False
 		if (len(p[1].split("/")[0])==0):
@@ -253,14 +251,12 @@ def _is_bin(fp):
 	r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
 	if (r1>0.90 and r2>0.9):
 		return True
-	enc=chardet.detect(dt)
 	enc_u=False
-	if (enc["confidence"]>0.9 and enc["encoding"]!="ascii"):
-		try:
-			dt.decode(encoding=enc["encoding"])
-			enc_u=True
-		except:
-			pass
+	try:
+		dt.decode(encoding="utf-8")
+		enc_u=True
+	except:
+		pass
 	if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
 		return (False if enc_u==True else True)
 	else:
@@ -319,7 +315,7 @@ def _update_repo(p,b_nm):
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			return False
-	with open(ntpath.join(p,".gitignore"),"r") as f:
+	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r","").split("\n"):
 			if (ln.endswith("\n")):
@@ -353,32 +349,32 @@ def _update_repo(p,b_nm):
 	cnt=[0,0,0,0]
 	for r,_,fl in os.walk(p):
 		for f in fl:
-			fp=ntpath.join(r,f).replace(p,"")[(1 if not p.endswith("\\") else 0):].replace("\\","/")
+			fp=os.path.join(r,f).replace(p,"")[(1 if not p.endswith("\\") else 0):].replace("\\","/")
 			if (_gitigonre_match(gdt,fp)==True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
-			if (fp in list(r_t.keys()) and _match_f(ntpath.join(r,f),r_t[fp])==True):
+			if (fp in list(r_t.keys()) and _match_f(os.path.join(r,f),r_t[fp])==True):
 				cnt[1]+=1
 				bl+=[[fp,None]]
 				_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 				continue
 			cnt[0]+=1
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
-			dt=f"File too Large (size = {os.stat(ntpath.join(r,f)).st_size} b)"
+			dt=f"File too Large (size = {os.stat(os.path.join(r,f)).st_size} b)"
 			b_sha=False
-			if (os.stat(ntpath.join(r,f)).st_size<=50*1024*1024):
+			if (os.stat(os.path.join(r,f)).st_size<=50*1024*1024):
 				b64=True
-				if (_is_bin(ntpath.join(r,f))==False):
+				if (_is_bin(os.path.join(r,f))==False):
 					try:
-						with open(ntpath.join(r,f),"r",encoding="utf-8") as rbf:
+						with open(os.path.join(r,f),"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
 						b64=False
 					except:
 						pass
 				if (b64==True):
 					b_sha=True
-					with open(ntpath.join(r,f),"rb") as rbf:
+					with open(os.path.join(r,f),"rb") as rbf:
 						dt=str(base64.b64encode(rbf.read()),"utf-8")
 					if (len(dt)>50*1024*1024):
 						b_sha=False
@@ -498,7 +494,7 @@ def _repo_file_tokenize(dt,el=None):
 
 
 def _repo_stats_detect_file(r,fn,ll,hdt,db):
-	if (os.stat(ntpath.join(r,fn)).st_size==0 or _is_bin(ntpath.join(r,fn))==True or fn=="LICENSE"):
+	if (os.stat(os.path.join(r,fn)).st_size==0 or _is_bin(os.path.join(r,fn))==True or fn=="LICENSE"):
 		return None
 	o=list(ll.keys())
 	c=[]
@@ -524,7 +520,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 		return o[0]
 	dt=None
 	try:
-		with open(ntpath.join(r,fn),"rb") as f:
+		with open(os.path.join(r,fn),"rb") as f:
 			dt=f.read().decode("utf-8",errors="replace")
 	except PermissionError:
 		return None
@@ -582,7 +578,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 
 def _repo_stats(fp,ll,hdt,db,el):
 	gdt=[]
-	with open(ntpath.join(fp,".gitignore"),"r") as f:
+	with open(os.path.join(fp,".gitignore"),"r") as f:
 		for ln in f.read().replace("\r","").split("\n"):
 			if (ln.endswith("\n")):
 				ln=ln[:-1]
@@ -608,8 +604,8 @@ def _repo_stats(fp,ll,hdt,db,el):
 			for f in fl:
 				if (el["__e__"]==1):
 					return
-				el["__cf__"]=ntpath.join(r,f)
-				if (el["__ig__"]==True and _gitigonre_match(gdt,ntpath.join(r,f)[len(fp):])==True):
+				el["__cf__"]=os.path.join(r,f)
+				if (el["__ig__"]==True and _gitigonre_match(gdt,os.path.join(r,f)[len(fp):])==True):
 					continue
 				l=_repo_stats_detect_file(r,f,ll,hdt,db)
 				if (el["__e__"]==1):
@@ -618,8 +614,8 @@ def _repo_stats(fp,ll,hdt,db,el):
 					continue
 				if (l not in el):
 					el[l]=0
-				el[l]+=os.stat(ntpath.join(r,f)).st_size
-				el["__tcnt__"]+=os.stat(ntpath.join(r,f)).st_size
+				el[l]+=os.stat(os.path.join(r,f)).st_size
+				el["__tcnt__"]+=os.stat(os.path.join(r,f)).st_size
 
 
 
@@ -670,9 +666,9 @@ def _arduino_clone_f(url,fp,sz):
 class _Arduino_Cache:
 	def init():
 		_print("Initialising Cache\x1b[38;2;100;100;100m...")
-		if (not ntpath.exists(f"D:/boot/arduino/cache")):
+		if (not os.path.exists(f"D:/boot/arduino/cache")):
 			os.mkdir(f"D:/boot/arduino/cache")
-		if (not ntpath.exists(f"D:/boot/arduino/cache/index")):
+		if (not os.path.exists(f"D:/boot/arduino/cache/index")):
 			with open(f"D:/boot/arduino/cache/index","w"):
 				_Arduino_Cache._dt={}
 		else:
@@ -681,8 +677,8 @@ class _Arduino_Cache:
 		u=False
 		_print("Reading Cache Index\x1b[38;2;100;100;100m...")
 		for k in list(_Arduino_Cache._dt.keys()):
-			if (_Arduino_Cache._dt[k]<time.time() or not ntpath.exists(f"D:/boot/arduino/cache/{k}")):
-				if (ntpath.exists(f"D:/boot/arduino/cache/{k}")):
+			if (_Arduino_Cache._dt[k]<time.time() or not os.path.exists(f"D:/boot/arduino/cache/{k}")):
+				if (os.path.exists(f"D:/boot/arduino/cache/{k}")):
 					os.remove(f"D:/boot/arduino/cache/{k}")
 				del _Arduino_Cache._dt[k]
 				u=True
@@ -739,7 +735,7 @@ def _install_ard_pkg(b,force=False):
 	if (type(b)==str):
 		_print(f"Searching For Package '{b}'\x1b[38;2;100;100;100m...")
 		i_pkg=[]
-		if (ntpath.exists(f"D:/boot/arduino/packages/index")):
+		if (os.path.exists(f"D:/boot/arduino/packages/index")):
 			with open(f"D:/boot/arduino/packages/index","r") as f:
 				i_pkg=f.read().replace("\r","").split("\n")
 		_print(f"Querying 'https://api.github.com/repos/arduino/{b}/releases/latest' for Package Metadata\x1b[38;2;100;100;100m...")
@@ -762,7 +758,7 @@ def _install_ard_pkg(b,force=False):
 						off=len(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
 						for fp in glob.iglob(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/**/*.*",recursive=True):
-							os.makedirs(ntpath.dirname(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
+							os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
 							try:
 								with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
 									wf.write(rf.read())
@@ -812,10 +808,10 @@ def _install_ard_pkg(b,force=False):
 			dl+=[{"pkg":k["packager"],"name":k["name"],"ver":k["version"]} for k in e[1]["toolsDependencies"]]
 		else:
 			o+=[(d["pkg"],(d["arch"] if "arch" in list(d.keys()) else d["name"]),e[1]["version"],k["url"],k["archiveFileName"],"tools",k["size"]) for k in e[1]["systems"] if k["host"]==ARDUINO_HOST_SYSTEM]
-	if (not ntpath.exists(f"D:/boot/arduino/packages")):
+	if (not os.path.exists(f"D:/boot/arduino/packages")):
 		os.mkdir(f"D:/boot/arduino/packages")
 	i_pkg=[]
-	if (ntpath.exists(f"D:/boot/arduino/packages/index")):
+	if (os.path.exists(f"D:/boot/arduino/packages/index")):
 		with open(f"D:/boot/arduino/packages/index","r") as f:
 			i_pkg=f.read().replace("\r","").split("\n")
 	else:
@@ -825,13 +821,13 @@ def _install_ard_pkg(b,force=False):
 		if (force==False and f"{k[0]}-{k[1]}-{k[2]}" in i_pkg):
 			_print(f"\x1b[38;2;200;40;20mPackage '{k[0]}:{k[1]}:{k[2]}' already Installed.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 			continue
-		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}")):
+		if (not os.path.exists(f"D:/boot/arduino/packages/{k[0]}")):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}")
-		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}")):
+		if (not os.path.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}")):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}")
-		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
+		if (not os.path.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")
-		if (not ntpath.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
+		if (not os.path.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print(f"Cloning to File '{tempfile.gettempdir()}/{k[4]}' ...")
 		_arduino_clone_f(k[3],tempfile.gettempdir()+"/"+k[4],k[6])
@@ -843,7 +839,7 @@ def _install_ard_pkg(b,force=False):
 				off=len(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
 				_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
 				for fp in glob.iglob(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/**/*.*",recursive=True):
-					os.makedirs(ntpath.dirname(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
+					os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
 					try:
 						with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
 							wf.write(rf.read())
@@ -895,18 +891,18 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		for r,_,fl in os.walk(i_fp):
 			for f in fl:
 				if (f.lower().endswith(".s")):
-					l[0]+=[ntpath.join(r,f)]
+					l[0]+=[os.path.join(r,f)]
 				elif (f.lower().endswith(".c")):
-					l[1]+=[ntpath.join(r,f)]
+					l[1]+=[os.path.join(r,f)]
 				elif (f.lower().endswith(".cpp")):
-					l[2]+=[ntpath.join(r,f)]
+					l[2]+=[os.path.join(r,f)]
 			if (rc==False):
 				break
 		o=[]
 		for i in range(0,3):
 			for f in l[i]:
 				c_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+("."+ARDUINO_CUSTOM_WARNING_LEVEL if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"" for e in inc_l]),"source_file":f,"object_file":o_fp+f[len(i_fp):]+".o"}
-				if (not ntpath.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
+				if (not os.path.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
 					os.makedirs(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))
 				_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
 				o+=[o_fp+f[len(i_fp):]+".o"]
@@ -920,33 +916,33 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			dt=dt[:i+m.start(0)]+b"#include <"+m.group(1)[1:-1].replace(b"\\",b"/").replace(b"/",b"$")+b">"+dt[i+m.end(0)-1:]
 			i+=m.end(0)
 	fqbn=fqbn.split(":")
-	s_fp=ntpath.abspath(s_fp).replace("\\","/")
+	s_fp=os.path.abspath(s_fp).replace("\\","/")
 	if (s_fp[-1]!="/"):
 		s_fp+="/"
-	o_fp=ntpath.abspath(o_fp).replace("\\","/")
+	o_fp=os.path.abspath(o_fp).replace("\\","/")
 	if (o_fp[-1]!="/"):
 		o_fp+="/"
-	if (not ntpath.exists(s_fp)):
+	if (not os.path.exists(s_fp)):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
-	if (not ntpath.isdir(s_fp)):
+	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
 	b_fp=f"{tempfile.gettempdir()}/arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(b_fp)):
+	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
 	m_fp=None
 	_print("Searching For Main File\x1b[38;2;100;100;100m...")
 	for k in ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS:
-		if (ntpath.exists(f"{s_fp}index{k}")==True and ntpath.isdir(f"{s_fp}index{k}")==False):
+		if (os.path.exists(f"{s_fp}main{k}")==True and os.path.isdir(f"{s_fp}main{k}")==False):
 			if (m_fp!=None):
 				raise RuntimeError("Sketch Contains Multiple Main Programs.")
-			m_fp=f"{s_fp}index{k}"
+			m_fp=f"{s_fp}main{k}"
 	if (m_fp==None):
 		raise RuntimeError("Sketch doesn't Contain a Main Program.")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not os.path.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=os.path.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
@@ -963,7 +959,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
 	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":re.sub(r"/$","",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
-	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":"D:/boot/","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
+	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",os.path.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":"D:/boot/","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
 	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.debug"]
@@ -972,13 +968,13 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.release"]
 	_print("Loading Tools\x1b[38;2;100;100;100m...")
 	for pkg in os.listdir(f"D:/boot/arduino/packages/"):
-		if (ntpath.exists(f"D:/boot/arduino/packages/{pkg}/tools/")):
+		if (os.path.exists(f"D:/boot/arduino/packages/{pkg}/tools/")):
 			for t in os.listdir(f"D:/boot/arduino/packages/{pkg}/tools/"):
 				for v in os.listdir(f"D:/boot/arduino/packages/{pkg}/tools/{t}/"):
 					bp[f"runtime.tools.{t}-{v}.path"]=_step_dir(f"D:/boot/arduino/packages/{pkg}/tools/{t}/{v}/")
 				bp[f"runtime.tools.{t}.path"]=_step_dir(f"D:/boot/arduino/packages/{pkg}/tools/{t}/{v}/")
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
-	if (ntpath.exists(f"{b_fp}build-properties.md5")):
+	if (os.path.exists(f"{b_fp}build-properties.md5")):
 		with open(f"{b_fp}build-properties.md5","r") as f:
 			md5=f.read()
 		if (md5[:32]!=hashlib.new("md5",bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")).hexdigest()):
@@ -998,31 +994,31 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		for r,_,fl in os.walk(s_fp):
 			for fp in fl:
 				if ("."+fp.split(".")[-1].lower() in ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS):
-					_print(f"Found Main Sketch File '{ntpath.join(r,fp)}'\x1b[38;2;100;100;100m...")
-					with open(ntpath.join(r,fp),"rb") as f:
+					_print(f"Found Main Sketch File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
+					with open(os.path.join(r,fp),"rb") as f:
 						dt=f.read().replace(b"\r\n",b"\n")
 						if (nh_inc==False and re.search(br"""(?m)^\s*#\s*include\s*[<\"]Arduino\.h[>\"]""",dt)==None):
 							bf.write(b"#include <arduino.h>\n")
 							l_off+=1
 						nh_inc=True
 						src+=dt+b"\n"
-						bf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(r,fp))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
-						l_off+=(1 if ntpath.join(r,fp)==m_fp else 0)
-		dl=[(e[0].replace("\\","/"),e[1].replace("\\","/")+("/" if e[1][-1] not in "\\/" else "")) for e in [(s_fp,s_fp)]+[(ntpath.join(r,d),r) for r,dl,_ in os.walk(s_fp) for d in dl]+[(e,e) for e in inc_l]]
+						bf.write(bytes(f"#line 1 \"{_quote_fp(os.path.join(r,fp))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
+						l_off+=(1 if os.path.join(r,fp)==m_fp else 0)
+		dl=[(e[0].replace("\\","/"),e[1].replace("\\","/")+("/" if e[1][-1] not in "\\/" else "")) for e in [(s_fp,s_fp)]+[(os.path.join(r,d),r) for r,dl,_ in os.walk(s_fp) for d in dl]+[(e,e) for e in inc_l]]
 		l=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(src,"utf-8").lower()) if e!="arduino.h"]
 		r_dl=[]
 		for k in l:
 			if (k[-2:]==".h"):
 				l+=[k[:-2]+".cpp",k[:-2]+".c",k[:-2]+".s",k.split("/")[-1][:-2]+".cpp",k.split("/")[-1][:-2]+".c",k.split("/")[-1][:-2]+".s"]
 			for d in dl:
-				if (ntpath.exists(ntpath.join(d[0],k))):
-					_print(f"Found Included Sketch File '{ntpath.join(d[0],k)}'\x1b[38;2;100;100;100m...")
-					with open(b_fp+"/"+ntpath.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(ntpath.join(d[0],k),"rb") as rf:
+				if (os.path.exists(os.path.join(d[0],k))):
+					_print(f"Found Included Sketch File '{os.path.join(d[0],k)}'\x1b[38;2;100;100;100m...")
+					with open(b_fp+"/"+os.path.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(os.path.join(d[0],k),"rb") as rf:
 						dt=rf.read().replace(b"\r\n",b"\n")
 						l+=[e for e in re.findall(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(dt,"utf-8").lower(),re.M) if e!="arduino.h" and e not in l]
-						wf.write(bytes(f"#line 1 \"{_quote_fp(ntpath.join(d[0],k))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
+						wf.write(bytes(f"#line 1 \"{_quote_fp(os.path.join(d[0],k))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
 					for e in inc_l:
-						if (ntpath.join(d[0],k).replace("\\","/").startswith(e.replace("\\","/"))):
+						if (os.path.join(d[0],k).replace("\\","/").startswith(e.replace("\\","/"))):
 							if (e not in r_dl):
 								r_dl+=[e]
 							break
@@ -1042,14 +1038,14 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
 	_print("Compiling Files\x1b[38;2;100;100;100m...")
-	s_of=_compile_files(bp,b_fp,b_fp,inc_l,False)+(_compile_files(bp,f"{b_fp}src/",f"{b_fp}src/",inc_l,True) if ntpath.exists(f"{b_fp}src/") else [])
+	s_of=_compile_files(bp,b_fp,b_fp,inc_l,False)+(_compile_files(bp,f"{b_fp}src/",f"{b_fp}src/",inc_l,True) if os.path.exists(f"{b_fp}src/") else [])
 	_print("Running Recipe 'recipe.hooks.sketch.postbuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.sketch.postbuild",".pattern")
 	_print("Running Recipe 'recipe.hooks.core.prebuild'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.core.prebuild",".pattern")
 	c_inc_l=[bp["build.core.path"]]+([bp["build.variant.path"]] if bp["build.variant.path"]!="" else [])
 	_print("Buliding Core\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(f"{b_fp}core/")):
+	if (not os.path.exists(f"{b_fp}core/")):
 		_print("\x1b[38;2;200;40;20mPrebuild Core not Found.\x1b[0m Rebuilding\x1b[38;2;100;100;100m...")
 		os.mkdir(f"{b_fp}core/")
 		_print("Compiling Core Variant Files\x1b[38;2;100;100;100m...")
@@ -1099,7 +1095,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			_print(f"Global variables use {sz[1]} bytes ({sz[1]*100//int(bp['upload.maximum_data_size'])}%) of dynamic memory, leaving {int(bp['upload.maximum_data_size'])-sz[1]} bytes for local variables. Maximum is {bp['upload.maximum_data_size']} bytes.")
 		else:
 			_print(f"Global variables use {sz[1]} bytes of dynamic memory.")
-	if (ntpath.exists(o_fp)):
+	if (os.path.exists(o_fp)):
 		shutil.rmtree(o_fp,ignore_errors=True)
 	os.mkdir(o_fp)
 	for k in os.listdir(b_fp):
@@ -1129,17 +1125,17 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 				return s
 			s=ns
 	fqbn=fqbn.split(":")
-	b_fp=ntpath.abspath(b_fp).replace("\\","/")
+	b_fp=os.path.abspath(b_fp).replace("\\","/")
 	if (b_fp[-1]!="/"):
 		b_fp+="/"
 	_print("Searching For Build Directory\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(b_fp)):
+	if (not os.path.exists(b_fp)):
 		_print("\x1b[38;2;200;40;20mSketch Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not os.path.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=ntpath.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=os.path.abspath(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
@@ -1217,7 +1213,7 @@ def _save_f(fn,txt):
 		if (i<2):
 			i+=1
 			continue
-		if (not ntpath.exists(p)):
+		if (not os.path.exists(p)):
 			os.mkdir(p)
 		i+=1
 	with open(fn,"w") as f:
@@ -1229,37 +1225,39 @@ def _open_prog_w(p):
 	def _open_prog_w_f(p,p2,e,*f):
 		op=False
 		for fn in f:
-			if (ntpath.isfile(fn)):
+			if (os.path.isfile(fn)):
 				subprocess.Popen([p,fn])
 				op=True
 		if (op==False):
 			for r,_,fl in os.walk(p2):
 				for fn in fl:
 					if (fn.endswith(e)):
-						subprocess.Popen([p,ntpath.join(r,fn)])
+						subprocess.Popen([p,os.path.join(r,fn)])
 						return
 	t=p.split("-")[0].lower()
 	_print(f"Opening Project: (name='{p[len(t)+1:]}', type='{t}', path='D:\\K\\Coding\\{p}\\')\x1b[38;2;100;100;100m...")
 	p=f"D:\\K\\Coding\\{p}\\"
 	subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
 	if (t=="arduino"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/index.ino")
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/main.ino")
+	if (t=="assembly"):
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/main.asm")
 	elif (t=="c"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}src/main.c")
 	elif (t=="cpp"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}src/index.cpp",f"{p}index.cpp")
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}src/main.cpp")
 	elif (t=="css"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}src/index.html",f"{p}src/style.css")
 	elif (t=="java"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}src/com/krzem/{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
 	elif (t=="javascript"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/index.js")
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/main.js")
 	elif (t=="php"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",f"{p}src/index.php")
 	elif (t=="processing"):
-		os.system(f"start /min cmd /c \"{p}index/index.pde\"")
+		os.system(f"start /min cmd /c \"{p}main/main.pde\"")
 	elif (t=="python"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}src/index.py")
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}src/main.py")
 	else:
 		_print("\x1b[38;2;200;40;20mUnknown type.\x1b[0m Defaulting to Editor\x1b[38;2;100;100;100m...")
 
@@ -1279,110 +1277,114 @@ def _create_prog(type_,name,op=True,pr=True):
 	fel=[]
 	for r,_,fl in os.walk(p):
 		for f in fl:
-			fel+=[ntpath.join(r,f).split(".")[-1]]
-	if (not ntpath.exists(p)):
+			fel+=[os.path.join(r,f).split(".")[-1]]
+	if (not os.path.exists(p)):
 		os.mkdir(p)
-	if (not ntpath.exists(f"{p}src")):
+	if (not os.path.exists(f"{p}src")):
 		os.mkdir(f"{p}src")
-	if (not ntpath.exists(f"{p}.gitignore")):
+	if (not os.path.exists(f"{p}.gitignore")):
 		with open(f"{p}.gitignore","x") as f:
 			f.write("build\n")
 		os.system(f"cd /d {p}&&attrib +h .gitignore")
-	if (not ntpath.exists(f"{p}LICENSE.txt")):
+	if (not os.path.exists(f"{p}LICENSE.txt")):
 		with open(f"{p}LICENSE.txt","x") as f:
 			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
-	if (not ntpath.exists(f"{p}README.md")):
+	if (not os.path.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
 			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)\n""")
 	if (type_=="arduino"):
-		if (not ntpath.exists(f"{p}src/main.ino") and "ino" not in fel):
+		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
 				f.write("#include <arduino.h>\n\n\n\nvoid setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\npython D:\\boot\\boot.py 5 compile ./src ./build arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./build COM3 arduino:avr:uno\n")
+	elif (type_=="assembly"):
+		if (not os.path.exists(f"{p}build.bat")):
+			with open(f"{p}build.bat","x") as f:
+				f.write(f"@echo off\ncls\n")
 	elif (type_=="c"):
-		if (not ntpath.exists(f"{p}src/main.c") and "c" not in fel):
-			if (not ntpath.exists(f"{p}src/{name.lower()}")):
+		if (not os.path.exists(f"{p}src/main.c") and "c" not in fel):
+			if (not os.path.exists(f"{p}src/{name.lower()}")):
 				os.mkdir(f"{p}src/{name.lower()}")
-			if (not ntpath.exists(f"{p}src/include")):
+			if (not os.path.exists(f"{p}src/include")):
 				os.mkdir(f"{p}src/include")
 			with open(f"{p}src/main.c","x") as f:
 				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ..\nset INCLUDE=%_INCLUDE%")
 	elif (type_=="cpp"):
-		if (not ntpath.exists(f"{p}src/main.cpp") and "cpp" not in fel):
+		if (not os.path.exists(f"{p}src/main.cpp") and "cpp" not in fel):
 			with open(f"{p}src/main.cpp","x") as f:
 				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\ndel *.obj&&del {name.lower()}.exe&&cl /EHsc *.cpp /link /OUT:{name.lower()}.exe&&del *.obj&&cls&&{name.lower()}.exe\n")
 	elif (type_=="css"):
-		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
+		if (not os.path.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
 				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<link href=\"css/style.css\" rel=\"stylesheet\" type=\"text/css\">\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}src/css/style.css") and "css" not in fel):
-			if (not ntpath.exists(f"{p}src/css")):
+		if (not os.path.exists(f"{p}src/css/style.css") and "css" not in fel):
+			if (not os.path.exists(f"{p}src/css")):
 				os.mkdir(f"{p}src/css")
 			with open(f"{p}src/css/style.css","x") as f:
 				f.write("body {\n\twidth: 100%;\n\theight: 100%\n}\nbody, body * {\n\tmargin: 0;\n\tpadding: 0;\n}")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="java"):
-		if (not ntpath.exists(f"{p}src/com/krzem/{name.lower()}/Main.java") and "java" not in fel):
-			if (not ntpath.exists(f"{p}src/com/")):
+		if (not os.path.exists(f"{p}src/com/krzem/{name.lower()}/Main.java") and "java" not in fel):
+			if (not os.path.exists(f"{p}src/com/")):
 				os.mkdir(f"{p}src/com/")
-			if (not ntpath.exists(f"{p}src/com/krzem/")):
+			if (not os.path.exists(f"{p}src/com/krzem/")):
 				os.mkdir(f"{p}src/com/krzem/")
-			if (not ntpath.exists(f"{p}src/com/krzem/{name.lower()}/")):
+			if (not os.path.exists(f"{p}src/com/krzem/{name.lower()}/")):
 				os.mkdir(f"{p}src/com/krzem/{name.lower()}/")
 			with open(f"{p}src/com/krzem/{name.lower()}/Main.java","x") as f:
 				f.write("package com.krzem."+name.lower()+";\n\n\n\npublic class Main{\n\tpublic static void main(String[] args){\n\t\tnew Main();\n\t}\n\n\n\n\tpublic Main(){\n\t\t\n\t}\n}")
-		if (not ntpath.exists(f"{p}/manifest.mf")):
+		if (not os.path.exists(f"{p}/manifest.mf")):
 			with open(p+"manifest.mf","x") as f:
 				f.write(f"Manifest-Version: 1.0\nCreated-By: Krzem\nMain-Class: com.krzem.{name.lower().replace(' ','_')}.Main\n")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(p+"build.bat","x") as f:
 				f.write(f"@echo off\ncls\nif exist build rmdir /s /q build\nmkdir build\ncd src\njavac -d ../build com/krzem/{name.lower().replace(' ','_')}/Main.java&&jar cvmf ../manifest.mf ../build/{name.lower().replace(' ','_')}.jar\n -C ../build *&&goto run\ncd ..\ngoto end\n:run\ncd ..\npushd \"build\"\nfor /D %%D in (\"*\") do (\n\trd /S /Q \"%%~D\"\n)\nfor %%F in (\"*\") do (\n\tif /I not \"%%~nxF\"==\"{name.lower().replace(' ','_')}.jar\" del \"%%~F\"\n)\npopd\njava -jar build/{name.lower().replace(' ','_')}.jar\n:end\n")
 	elif (type_=="javascript"):
-		if (not ntpath.exists(f"{p}src/index.html") and "html" not in fel):
+		if (not os.path.exists(f"{p}src/index.html") and "html" not in fel):
 			with open(f"{p}src/index.html","x") as f:
 				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"js/main.js\"></script>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not ntpath.exists(f"{p}src/js/main.js") and "js" not in fel):
-			if (not ntpath.exists(f"{p}src/js/")):
+		if (not os.path.exists(f"{p}src/js/main.js") and "js" not in fel):
+			if (not os.path.exists(f"{p}src/js/")):
 				os.mkdir(f"{p}src/js/")
 			with open(f"{p}src/js/main.js","x") as f:
 				f.write("function init(){\n\t\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	elif (type_=="php"):
-		if (not ntpath.exists(f"{p}src/index.php") and "php" not in fel):
+		if (not os.path.exists(f"{p}src/index.php") and "php" not in fel):
 			with open(f"{p}src/index.php","x") as f:
 				f.write("<?php\n\n?>")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}src/index.php")
 	elif (type_=="processing"):
-		if (not ntpath.exists(f"{p}main/")):
+		if (not os.path.exists(f"{p}main/")):
 			os.mkdir(f"{p}main/")
-		if (not ntpath.exists(f"{p}main/main.pde")):
+		if (not os.path.exists(f"{p}main/main.pde")):
 			with open(f"{p}main/main.pde","x") as f:
 				f.write("void setup(){\n\t\n}\n\nvoid draw(){\n\t\n}")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\nstart /min cmd /c \"{p}main/main.pde\"")
 	elif (type_=="python"):
-		if (not ntpath.exists(f"{p}src/main.py") and "py" not in fel):
+		if (not os.path.exists(f"{p}src/main.py") and "py" not in fel):
 			with open(f"{p}src/main.py","x") as f:
 				f.write("")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\npython src/main.py")
-		if (not ntpath.exists(f"{p}build.bat")):
+		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	if (op==True):
@@ -1413,12 +1415,12 @@ def _start_s():
 
 def _u_mcs(fp):
 	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
-	if (not ntpath.exists(fp)):
+	if (not os.path.exists(fp)):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
 	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
-	if (ntpath.exists(f"{fp}\\server.jar")):
+	if (os.path.exists(f"{fp}\\server.jar")):
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
 		with open(f"{fp}\\server.jar","rb") as f:
@@ -1429,21 +1431,21 @@ def _u_mcs(fp):
 		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
 		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
 			_print(f"Creating Backup\x1b[38;2;100;100;100m...")
-			if (not ntpath.exists(f"{fp}\\world-backup_{json['id']}")):
+			if (not os.path.exists(f"{fp}\\world-backup_{json['id']}")):
 				os.mkdir(f"{fp}\\world-backup_{json['id']}")
 			for r,dl,fl in os.walk(f"{fp}\\world"):
 				nr=f"{fp}\\world-backup_{json['id']}"+r[len(f"{fp}\\world"):]
 				for d in dl:
-					if (not ntpath.exists(ntpath.join(nr,d))):
-						os.mkdir(ntpath.join(nr,d))
+					if (not os.path.exists(os.path.join(nr,d))):
+						os.mkdir(os.path.join(nr,d))
 				for f in fl:
-					if (not ntpath.exists(ntpath.join(nr,f))):
+					if (not os.path.exists(os.path.join(nr,f))):
 						try:
-							with open(ntpath.join(r,f),"rb") as rf,open(ntpath.join(nr,f),"wb") as wf:
+							with open(os.path.join(r,f),"rb") as rf,open(os.path.join(nr,f),"wb") as wf:
 								wf.write(rf.read())
 						except PermissionError:
-							if (ntpath.exists(ntpath.join(nr,f))):
-								os.remove(ntpath.join(nr,f))
+							if (os.path.exists(os.path.join(nr,f))):
+								os.remove(os.path.join(nr,f))
 							pass
 			_print(f"Downloading Server For {json['id']}\x1b[38;2;100;100;100m...")
 			urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
@@ -1545,7 +1547,7 @@ else:
 				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"])
 			elif (p=="cad"):
 				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
-			elif (ntpath.exists(p)):
+			elif (os.path.exists(p)):
 				_open_app(p,file=True)
 			elif (GIT_CLONE_REGEX.match(p)!=None):
 				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
@@ -2086,7 +2088,7 @@ else:
 		threading.current_thread()._dpt=True
 		threading.current_thread()._dp=True
 		threading.current_thread()._r=1
-		if (not ntpath.exists(f"D:/boot/arduino")):
+		if (not os.path.exists(f"D:/boot/arduino")):
 			os.mkdir(f"D:/boot/arduino")
 		_Arduino_Cache.init()
 		if (len(sys.argv)<3):
@@ -2136,7 +2138,7 @@ else:
 		ll=None
 		hdt=None
 		db=None
-		if (not ntpath.exists("D:\\boot\\git-languages.json") or not ntpath.exists("D:\\boot\\git-languages-h.json") or not ntpath.exists("D:\\boot\\git-languages-db.json")):
+		if (not os.path.exists("D:\\boot\\git-languages.json") or not os.path.exists("D:\\boot\\git-languages-h.json") or not os.path.exists("D:\\boot\\git-languages-db.json")):
 			ll={}
 			l_id_m={}
 			for k,v in yaml.load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.Loader).items():
