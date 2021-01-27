@@ -15,9 +15,7 @@ import re
 import urllib
 import urllib.request
 import urllib.parse
-import clipboard
 import traceback
-import struct
 import base64
 import requests
 import fnmatch
@@ -36,7 +34,6 @@ import signal
 import yaml
 import regex
 import tkinter
-import pynput.keyboard
 
 
 
@@ -49,7 +46,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 global CMD_L,STDOUT_LOCK,R_STD_BUFFER
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 SERIAL_BAUD=9600
-R_STD_BUFFER={"_s":None,"bf":[]}
+R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 STDOUT_LOCK=False
 CMD_L={}
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
@@ -75,6 +72,58 @@ REPO_STATS_MAX_TOKEN_LEN=32
 REPO_STATS_LOG_ZERO_TOKENS=None
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
+
+
+
+WH_KEYBOARD_LL=13
+PM_REMOVE=1
+
+
+
+ctypes.wintypes.ULONG_PTR=ctypes.POINTER(ctypes.wintypes.DWORD)
+ctypes.wintypes.LRESULT=ctypes.c_int
+ctypes.wintypes.LowLevelKeyboardProc=ctypes.WINFUNCTYPE(ctypes.c_int,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+ctypes.wintypes.CONSOLE_CURSOR_INFO=type("CONSOLE_CURSOR_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes.DWORD),("bVisible",ctypes.wintypes.BOOL)]})
+ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO=type("CONSOLE_SCREEN_BUFFER_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes._COORD),("dwCursorPosition",ctypes.wintypes._COORD),("wAttributes",ctypes.wintypes.WORD),("srWindow",ctypes.wintypes.SMALL_RECT),("dwMaximumWindowSize",ctypes.wintypes._COORD)]})
+ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vk_code",ctypes.wintypes.DWORD),("scan_code",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
+ctypes.windll.kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
+ctypes.windll.kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
+ctypes.windll.kernel32.FillConsoleOutputCharacterA.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO))
+ctypes.windll.kernel32.GetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
+ctypes.windll.kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO))
+ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
+ctypes.windll.kernel32.GetModuleHandleW.restype=ctypes.wintypes.HMODULE
+ctypes.windll.kernel32.GetStdHandle.argtypes=(ctypes.wintypes.DWORD,)
+ctypes.windll.kernel32.GetStdHandle.restype=ctypes.wintypes.HANDLE
+ctypes.windll.kernel32.SetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO))
+ctypes.windll.kernel32.SetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetConsoleCursorPosition.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
+ctypes.windll.kernel32.SetConsoleCursorPosition.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+ctypes.windll.kernel32.SetConsoleMode.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
+ctypes.windll.kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
+# ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.SMALL_RECT)
+# ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.user32.CallNextHookEx.argtypes=(ctypes.POINTER(ctypes.wintypes.HHOOK),ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+ctypes.windll.user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
+ctypes.windll.user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
+ctypes.windll.user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
+ctypes.windll.user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
+ctypes.windll.user32.PeekMessageW.restype=ctypes.wintypes.BOOL
+ctypes.windll.user32.SetWindowsHookExW.argtypes=(ctypes.c_int,ctypes.wintypes.LowLevelKeyboardProc,ctypes.wintypes.HINSTANCE,ctypes.wintypes.DWORD)
+ctypes.windll.user32.SetWindowsHookExW.restype=ctypes.wintypes.HHOOK
+ctypes.windll.user32.ShowCursor.argtypes=(ctypes.wintypes.BOOL,)
+ctypes.windll.user32.ShowCursor.restype=ctypes.c_int
+ctypes.windll.user32.TranslateMessage.argtypes=(ctypes.wintypes.LPMSG,)
+ctypes.windll.user32.TranslateMessage.restype=ctypes.wintypes.BOOL
+ctypes.windll.user32.UnhookWindowsHookEx.argtypes=(ctypes.wintypes.HHOOK,)
+ctypes.windll.user32.UnhookWindowsHookEx.restype=ctypes.wintypes.BOOL
 
 
 
@@ -125,7 +174,6 @@ def _print(*a,end="\n"):
 				i+=4
 			else:
 				o+="\x1b[38;2;48;109;206m"
-				print(m[i:])
 				while (m[i] in "0123456789.-"):
 					o+=m[i]
 					i+=1
@@ -140,7 +188,7 @@ def _print(*a,end="\n"):
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	def _r_std_thr():
 		global R_STD_BUFFER
-		while (len(R_STD_BUFFER["bf"])>0):
+		while (R_STD_BUFFER["_e"]==False):
 			if (len(R_STD_BUFFER["bf"])>0):
 				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
@@ -163,7 +211,7 @@ def _print(*a,end="\n"):
 			thr=threading.Thread(target=_r_std_thr,args=(),kwargs={})
 			thr.daemon=True
 			thr.start()
-			atexit.register(lambda:[R_STD_BUFFER["_s"].sendall(base64.b64encode(e)+b"\n") for e in R_STD_BUFFER["bf"]])
+			atexit.register(lambda:(R_STD_BUFFER.__setitem__("_e",True),[R_STD_BUFFER["_s"].sendall(base64.b64encode(e)+b"\n") for e in R_STD_BUFFER["bf"]]))
 		R_STD_BUFFER["bf"]+=[bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8")]
 		if (threading.current_thread()._r>=2):
 			return
@@ -1396,8 +1444,12 @@ def _start_s():
 	def _r_std_h(cs):
 		threading.current_thread()._df=True
 		bf=b""
-		while (True):
-			bf+=cs.recv(1024)
+		e=False
+		while (e==False):
+			try:
+				bf+=cs.recv(1024)
+			except ConnectionResetError:
+				e=True
 			if (b"\n" in bf):
 				dt,bf=base64.b64decode(bf.split(b"\n")[0]),b"\n".join(bf.split(b"\n")[1:])
 				threading.current_thread()._b_nm,threading.current_thread()._nm=str(dt,"utf-8").split("\x00")[:2]
@@ -1461,6 +1513,7 @@ def _end(a):
 
 
 
+ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 if (len(sys.argv)==1):
 	os.system("cls")
 	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
@@ -1499,6 +1552,21 @@ if (len(sys.argv)==1):
 else:
 	v=int(sys.argv[1])
 	if (v==0):
+		def _handle(c,wp,lp):
+			try:
+				dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
+				if (dt.vk_code==0x1b):
+					_handle._r.destroy()
+				else:
+					return -1
+			except Exception as e:
+				traceback.print_exception(None,e,e.__traceback__)
+			return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
+		def _loop(r):
+			if (ctypes.windll.user32.PeekMessageW(_loop._msg,None,0,0,PM_REMOVE)!=0):
+				ctypes.windll.user32.TranslateMessage(_loop._msg)
+				ctypes.windll.user32.DispatchMessageW(_loop._msg)
+			r.after(1000//60,_loop,r)
 		r=tkinter.Tk()
 		r.bind("<FocusOut>",lambda _:r.focus_force())
 		r.attributes("-fullscreen",True)
@@ -1508,10 +1576,15 @@ else:
 		r.overrideredirect(True)
 		r.focus_force()
 		r.update_idletasks()
-		c=pynput.keyboard.Controller()
+		_handle._ig_alt=False
+		_handle._r=r
+		_loop._msg=ctypes.wintypes.LPMSG()
+		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_handle)
+		ctypes.windll.user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,ctypes.windll.kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+		atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
 		ctypes.windll.user32.ShowCursor(0)
-		with pynput.keyboard.Listener(on_press=lambda k:((r.destroy(),False) if k==pynput.keyboard.Key.esc else (c.release(k),None))[1]):
-			r.mainloop()
+		r.after(0,_loop,r)
+		r.mainloop()
 	elif (v==1):
 		while (True):
 			p=input("> ").lower().strip()
@@ -1567,20 +1640,22 @@ else:
 		inp_cm=ctypes.wintypes.DWORD(0)
 		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
-		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.byref(out_cm))
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=ctypes.windll.kernel32.GetStdHandle(-11)
+		ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
-		sbi=ctypes.create_string_buffer(22)
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
-		sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
-		ci=ctypes.create_string_buffer(5)
+		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		try:
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+			nci.dwSize=ci.dwSize
+			nci.bVisible=0
+			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			rl=[e.split("-")[:2] for e in os.listdir("D:\\K\\Coding")]
 			tl=[]
 			for k in rl:
@@ -1591,8 +1666,8 @@ else:
 				if (k[0].lower() not in list(l.keys())):
 					l[k[0].lower()]=[]
 				l[k[0].lower()]+=[k[1].replace("_"," ").title().replace(" ","_")]
-			w=sz[9]+1
-			h=sz[10]
+			w=sbi.dwMaximumWindowSize.X+1
+			h=sbi.dwMaximumWindowSize.Y
 			bf=["",""]
 			ll=0
 			pr=["",""]
@@ -1676,22 +1751,24 @@ else:
 								pr[1]=l[k][0]
 								break
 					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
-					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sz[9]+1)))
+					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
 					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 					sys.__stdout__.flush()
 					ll=ln
 					u=False
 				time.sleep(0.01)
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
+			while (True):
+				pass
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),out_cm)
+		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
 		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(*sz[:2]))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,sbi.dwSize)
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 	elif (v==3):
 		class _UI:
 			def __init__(self,sz):
@@ -2027,35 +2104,32 @@ else:
 		threading.current_thread()._nm="arduino_serial_terminal"
 		threading.current_thread()._r=2
 		_Arduino_Cache.init()
-		inp_cm=ctypes.wintypes.DWORD(0)
-		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
-		out_cm=ctypes.wintypes.DWORD(0)
-		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.byref(out_cm))
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=ctypes.windll.kernel32.GetStdHandle(-11)
 		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
-		sbi=ctypes.create_string_buffer(22)
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
-		sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
-		ci=ctypes.create_string_buffer(5)
+		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		PATCH_HEIGHT=11
-		ui=_UI((sz[9]+1,sz[10]-PATCH_HEIGHT))
+		ui=_UI((sbi.dwMaximumWindowSize.X+1,sbi.dwMaximumWindowSize.Y-PATCH_HEIGHT))
 		try:
-			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-			ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[9],sz[10]-PATCH_HEIGHT-1))
-			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+			ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.dwMaximumWindowSize.X,sbi.dwMaximumWindowSize.Y-PATCH_HEIGHT-1))
+			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+			nci.dwSize=ci.dwSize
+			nci.bVisible=0
+			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			ui.loop()
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 			while (True):
 				pass
 	elif (v==4):
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 		if (len(sys.argv)==2):
 			threading.current_thread()._b_nm="__core__"
 			threading.current_thread()._nm="github_project_push_remote"
@@ -2226,20 +2300,22 @@ else:
 			with open("D:\\boot\\git-languages-db.json","r") as f:
 				db=json.loads(f.read(),strict=False)
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
-		sbi=ctypes.create_string_buffer(22)
+		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		ho=ctypes.windll.kernel32.GetStdHandle(-11)
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,sbi)
-		sz=struct.unpack("hhhhHhhhhhh",sbi.raw)
-		ci=ctypes.create_string_buffer(5)
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sz[7]+1,sz[8]+1))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(ctypes.wintypes.SMALL_RECT(*sz[5:9])))
-		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sz[0]*sz[1],ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.srWindow.Right+1,sbi.srWindow.Bottom+1))
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ctypes.create_string_buffer(ci.raw[:4]+b"\x00")))
+		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		nci.dwSize=ci.dwSize
+		nci.bVisible=0
+		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
 		thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
 		thr.daemon=True
@@ -2293,16 +2369,16 @@ else:
 					pl={k:(v,v*10000//pt/100) for k,v in sorted(pl.items(),key=lambda e:-e[1])}
 					pvl=max([len(str(int(e[1]))) for e in pl.values()])
 					ptvl=max([len(str(e[0])) for e in pl.values()])
-					o0=[f"\x1b[48;2;18;18;18m{' '*sz[9]}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sz[9]-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
+					o0=[f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
 					np=0
 					po=False
-					ln=sz[9]-10
+					ln=sbi.dwMaximumWindowSize.X-10
 					mv=0
 					si=None
 					for k,v in pl.items():
 						if (mv==0):
 							mv=v[0]
-						bw=round(v[0]*(sz[9]-10)*2/pt)/2-np/2
+						bw=round(v[0]*(sbi.dwMaximumWindowSize.X-10)*2/pt)/2-np/2
 						if (bw<0):
 							bw=0
 						o0[2]+=(f"\x1b[48;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
@@ -2323,25 +2399,25 @@ else:
 								pass
 						o0[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
 					o0[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
-					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sz[9]-8)}╣   "]
-					bs=int((sz[9]-pkl-pvl-ptvl-22)*pt/mv)*2/pt
+					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sbi.dwMaximumWindowSize.X-8)}╣   "]
+					bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
 					for k,v in pl.items():
 						bw=round(v[0]*bs)/2
 						cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
-						o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sz[9]-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   "]
-					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sz[9]-8)}╝   "]
+						o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   "]
+					o0+=[f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sbi.dwMaximumWindowSize.X-8)}╝   "]
 					elcf=-1
-					elcf_sz=max(len(pl)+6,sz[8]+1)-len(pl)-5
+					elcf_sz=max(len(pl)+6,sbi.srWindow.Bottom+1)-len(pl)-5
 			if (el["__cf__"]!=elcf):
 				elcf=el["__cf__"]
 				ud=True
-				lc=(math.ceil(len(elcf)/sz[9]) if elcf!=None else 0)
-				o1=[" "*sz[9] for i in range(0,max(elcf_sz,lc))]
+				lc=(math.ceil(len(elcf)/sbi.dwMaximumWindowSize.X) if elcf!=None else 0)
+				o1=[" "*sbi.dwMaximumWindowSize.X for i in range(0,max(elcf_sz,lc))]
 				if (elcf!=None):
 					for i in range(0,lc):
-						o1[-lc+i]="\x1b[38;2;200;200;200m"+elcf[i*sz[9]:(i+1)*sz[9]]+(" "*(sz[9]-len(elcf)%sz[9]) if i==lc-1 else "")
-			vs=min(vs,max(len(o0)+len(o1)-sz[8]-1,0))
+						o1[-lc+i]="\x1b[38;2;200;200;200m"+elcf[i*sbi.dwMaximumWindowSize.X:(i+1)*sbi.dwMaximumWindowSize.X]+(" "*(sbi.dwMaximumWindowSize.X-len(elcf)%sbi.dwMaximumWindowSize.X) if i==lc-1 else "")
+			vs=min(vs,max(len(o0)+len(o1)-sbi.srWindow.Bottom-1,0))
 			if (ud==True):
 				ud=False
-				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sz[8]+1])+"\x1b[0m")
+				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
 			time.sleep(0.01)
