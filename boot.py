@@ -3,7 +3,6 @@ import base64
 import ctypes
 import datetime
 import fnmatch
-import glob
 import hashlib
 import io
 import json
@@ -16,8 +15,6 @@ import regex
 import requests
 import serial
 import serial.tools.list_ports
-import shlex
-import shutil
 import signal
 import socket
 import subprocess
@@ -724,6 +721,14 @@ def _arduino_clone_f(url,fp,sz):
 
 
 
+def _rm_dir(fp):
+	for r,_,fl in os.walk(fp):
+		for f in fl:
+			os.remove(os.path.join(r,f))
+	os.rmdir(fp)
+
+
+
 class _Arduino_Cache:
 	def init():
 		_print("Initialising Cache\x1b[38;2;100;100;100m...")
@@ -818,15 +823,17 @@ def _install_ard_pkg(b,force=False):
 						tf.extractall(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 						off=len(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-						for fp in glob.iglob(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/**/*.*",recursive=True):
-							os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
-							try:
-								with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
-									wf.write(rf.read())
-							except Exception as e:
-								traceback.print_exception(None,e,e.__traceback__)
-								_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-						shutil.rmtree(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}",ignore_errors=True)
+						for r,_,fl in os.walk(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"):
+							for f in fl:
+								fp=os.path.join(r,f)
+								os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
+								try:
+									with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
+										wf.write(rf.read())
+								except Exception as e:
+									traceback.print_exception(None,e,e.__traceback__)
+									_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
+						_rm_dir(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}")
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
@@ -899,15 +906,17 @@ def _install_ard_pkg(b,force=False):
 				tf.extractall(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 				off=len(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
 				_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-				for fp in glob.iglob(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/**/*.*",recursive=True):
-					os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
-					try:
-						with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
-							wf.write(rf.read())
-					except Exception as e:
-						traceback.print_exception(None,e,e.__traceback__)
-						_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-				shutil.rmtree(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}",ignore_errors=True)
+				for r,_,fl in os.walk(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"):
+					for f in fl:
+						fp=os.path.join(r,f)
+						os.makedirs(os.path.dirname(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
+						try:
+							with open(fp,"rb") as rf,open(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
+								wf.write(rf.read())
+						except Exception as e:
+							traceback.print_exception(None,e,e.__traceback__)
+							_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to 'D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
+				_rm_dir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}")
 		elif (k[4].endswith(".zip")):
 			_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
@@ -918,6 +927,31 @@ def _install_ard_pkg(b,force=False):
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
 		with open(f"D:/boot/arduino/packages/index","a") as f:
 			f.write(f"{k[0]}-{k[1]}-{k[2]}\n")
+
+
+
+def _split(cmd):
+	o=[""]
+	i=0
+	while (i<len(cmd)):
+		if (cmd[i] in " \t\n\r\v\f"):
+			if (len(o[-1])>0):
+				o+=[""]
+			i+=1
+			continue
+		elif (cmd[i] in "'\""):
+			if (len(o[-1])>0):
+				o+=[""]
+			i+=1
+			while (cmd[i] not in "'\""):
+				o[-1]+=cmd[i]
+				i+=1
+		else:
+			o[-1]+=cmd[i]
+		i+=1
+	if (len(o[-1])==0):
+		o=o[:-1]
+	return o
 
 
 
@@ -940,7 +974,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 				return s
 			s=ns
 	def _prepare_cmd(cmd):
-		return [e for e in shlex.split(cmd) if len(e)>0]
+		return [e for e in _split(cmd) if len(e)>0]
 	def _run_recipe(bp,pfx,sfx):
 		l=[]
 		for k in bp.keys():
@@ -1040,7 +1074,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			md5=f.read()
 		if (md5[:32]!=hashlib.new("md5",bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")).hexdigest()):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
-			shutil.rmtree(b_fp)
+			_rm_dir(b_fp)
 			os.mkdir(b_fp)
 	_print("Writing New Hash\x1b[38;2;100;100;100m...")
 	with open(f"{b_fp}build-properties.md5","w") as f:
@@ -1157,7 +1191,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		else:
 			_print(f"Global variables use {sz[1]} bytes of dynamic memory.")
 	if (os.path.exists(o_fp)):
-		shutil.rmtree(o_fp,ignore_errors=True)
+		_rm_dir(o_fp)
 	os.mkdir(o_fp)
 	for k in os.listdir(b_fp):
 		if (k==f"{m_fp[len(s_fp):]}.hex"):
@@ -1242,12 +1276,12 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 			p=b["location"]
 			up.update({"serial.port":p,"serial.port.file":p})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
 	else:
 		_print("Erasing Board\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
 		_print("Burning Bootloader to Board\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in shlex.split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
 	_print("Upload Finished.")
 
 
@@ -1258,7 +1292,7 @@ def _rec_rm_pycache(bd):
 		if (sd.is_dir()==False or "\\Python38" in sd.path or "\\Python37" in sd.path or "\\Windows" in sd.path):
 			continue
 		if ("__pycache__" in sd.path):
-			shutil.rmtree(sd.path,ignore_error=True)
+			_rm_dir(sd.path)
 		try:
 			_rec_rm_pycache(sd.path)
 		except:
@@ -1525,11 +1559,11 @@ def _hotkey_handler(c,wp,lp):
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 		if (dt.vk_code!=VK_PACKET and dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN)!=LLKHF_INJECTED|LLKHF_ALTDOWN):
-			if (dt.vk_code==0xa5 and _handle._ig_alt):
-				_handle._ig_alt=False
+			if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
+				_hotkey_handler._ig_alt=False
 			else:
 				if (dt.scan_code==0x21d and dt.vk_code==0xa2):
-					_handle._ig_alt=True
+					_hotkey_handler._ig_alt=True
 				if (dt.vk_code in VK_SAME_KEYS):
 					dt.vk_code=VK_SAME_KEYS[dt.vk_code]
 				if (dt.vk_code in VK_KEYS.values()):
