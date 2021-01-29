@@ -15,7 +15,6 @@ import regex
 import requests
 import serial
 import serial.tools.list_ports
-import signal
 import socket
 import subprocess
 import sys
