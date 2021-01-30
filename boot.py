@@ -1,6 +1,7 @@
 import atexit
 import base64
 import ctypes
+import ctypes.wintypes
 import datetime
 import fnmatch
 import hashlib
@@ -13,7 +14,6 @@ import random
 import re
 import regex
 import requests
-import serial
 import socket
 import subprocess
 import sys
@@ -37,92 +37,154 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global CMD_L,STDOUT_LOCK,R_STD_BUFFER
-GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-SERIAL_BAUD=9600
-R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
-STDOUT_LOCK=False
+global CMD_L,R_STD_BUFFER,STDOUT_LOCK
+ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
+ARDUINO_CUSTOM_WARNING_LEVEL=""
+ARDUINO_HOST_SYSTEM="i686-mingw32"
+ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
+ARDUINO_OPTIMIZE_FOR_DEBUG=False
+ARDUINO_OS_TYPE="windows"
+ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
 CMD_L={}
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
-URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
+GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN,CONTACT_EMAIL=f.replace("\r","").split("\n")[:2]
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5"]
-ARDUINO_HOST_SYSTEM="i686-mingw32"
-ARDUINO_OS_TYPE="windows"
-ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
-ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
-ARDUINO_OPTIMIZE_FOR_DEBUG=False
-ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
-ARDUINO_CUSTOM_WARNING_LEVEL=""
-REPO_STATS_MAX_READ=65536
+R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
+REPO_STATS_BAR_WIDTH=60
+REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
+REPO_STATS_DEFAULT_COLOR=(240,240,240)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""(?://|#|%).*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|0[bB][0-1]+|0[oO][0-7]+|0[xX][0-9a-f]+|(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][\+\-]?[0-9]+)?""",re.M|re.S)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
-REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ \t\v\n\r])",re.M|re.S)
-REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
-REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
-REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
-REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
-REPO_STATS_MAX_TOKEN_LEN=32
 REPO_STATS_LOG_ZERO_TOKENS=None
-REPO_STATS_BAR_WIDTH=60
-REPO_STATS_DEFAULT_COLOR=(240,240,240)
+REPO_STATS_MAX_READ=65536
+REPO_STATS_MAX_TOKEN_LEN=32
+REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ \t\v\n\r])",re.M|re.S)
+REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
+REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
+REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
+SERIAL_BAUD=9600
+STDOUT_LOCK=False
+URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"0":0x60,"1":0x61,"2":0x62,"3":0x63,"4":0x64,"5":0x65,"6":0x66,"7":0x67,"8":0x68,"9":0x69,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,"+":0xbb,",":0xbc,"-":0xbd,".":0xbe,"/":0xbf,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa1:0x10,0xa2:0x11,0xa2:0x11,0xa4:0x12,0xa5:0x12}
-for k,v in VK_KEYS.items():
-	if (v in VK_SAME_KEYS):
-		VK_KEYS[k]=VK_SAME_KEYS[v]
 
 
 
 DICS_FLAG_GLOBAL=1
 DIGCF_PRESENT=2
 DIREG_DEV=1
-KEY_READ=131097
-LLKHF_ALTDOWN=32
-LLKHF_INJECTED=16
+DTR_CONTROL_DISABLE=0
+DTR_CONTROL_ENABLE=1
+DTR_CONTROL_HANDSHAKE=2
+ERROR_INVALID_USER_BUFFER=0x6f8
+ERROR_IO_INCOMPLETE=0x3e4
+ERROR_IO_PENDING=0x3e5
+ERROR_NOT_ENOUGH_MEMORY=8
+ERROR_OPERATION_ABORTED=0x3e3
+ERROR_SUCCESS=0
+EV_ERR=0x80
+FILE_ATTRIBUTE_NORMAL=0x80
+FILE_FLAG_OVERLAPPED=0x40000000
+GENERIC_READ=0x80000000
+GENERIC_WRITE=0x40000000
+INVALID_HANDLE_VALUE=ctypes.wintypes.HANDLE(-1).value
+KEY_READ=0x20019
+LLKHF_ALTDOWN=0x20
+LLKHF_INJECTED=0x10
+MAXDWORD=0xffffffff
+NOPARITY=0
+ONESTOPBIT=0
+OPEN_EXISTING=3
 PM_REMOVE=1
+PURGE_RXABORT=2
+PURGE_RXCLEAR=8
+PURGE_TXABORT=1
+PURGE_TXCLEAR=4
+RTS_CONTROL_ENABLE=1
 SPDRP_HARDWAREID=1
-VK_PACKET=231
+VK_PACKET=0xe7
 WH_KEYBOARD_LL=13
-WM_KEYDOWN=256
-WM_SYSKEYDOWN=260
+WM_KEYDOWN=0x100
+WM_SYSKEYDOWN=0x104
 
 
 
-ctypes.wintypes.ULONG_PTR=ctypes.POINTER(ctypes.wintypes.DWORD)
-ctypes.wintypes.LRESULT=ctypes.c_int
 ctypes.wintypes.HDEVINFO=ctypes.c_void_p
+ctypes.wintypes.LRESULT=ctypes.c_int
 ctypes.wintypes.PCWSTR=ctypes.c_wchar_p
-ctypes.wintypes.LowLevelKeyboardProc=ctypes.WINFUNCTYPE(ctypes.c_int,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
-ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
-ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
+ctypes.wintypes.ULONG_PTR=ctypes.POINTER(ctypes.wintypes.DWORD)
+ctypes.wintypes.COMMTIMEOUTS=type("COMMTIMEOUTS",(ctypes.Structure,),{"_fields_":[("ReadIntervalTimeout",ctypes.wintypes.DWORD),("ReadTotalTimeoutMultiplier",ctypes.wintypes.DWORD),("ReadTotalTimeoutConstant",ctypes.wintypes.DWORD),("WriteTotalTimeoutMultiplier",ctypes.wintypes.DWORD),("WriteTotalTimeoutConstant",ctypes.wintypes.DWORD)]})
+ctypes.wintypes.COMSTAT=type("COMSTAT",(ctypes.Structure,),{"_fields_":[("fCtsHold",ctypes.wintypes.DWORD,1),("fDsrHold",ctypes.wintypes.DWORD,1),("fRlsdHold",ctypes.wintypes.DWORD,1),("fXoffHold",ctypes.wintypes.DWORD,1),("fXoffSent",ctypes.wintypes.DWORD,1),("fEof",ctypes.wintypes.DWORD,1),("fTxim",ctypes.wintypes.DWORD,1),("fReserved",ctypes.wintypes.DWORD,25),("cbInQue",ctypes.wintypes.DWORD),("cbOutQue",ctypes.wintypes.DWORD)]})
 ctypes.wintypes.CONSOLE_CURSOR_INFO=type("CONSOLE_CURSOR_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes.DWORD),("bVisible",ctypes.wintypes.BOOL)]})
-ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO)
 ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO=type("CONSOLE_SCREEN_BUFFER_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes._COORD),("dwCursorPosition",ctypes.wintypes._COORD),("wAttributes",ctypes.wintypes.WORD),("srWindow",ctypes.wintypes.SMALL_RECT),("dwMaximumWindowSize",ctypes.wintypes._COORD)]})
-ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO)
-ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vk_code",ctypes.wintypes.DWORD),("scan_code",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.DCB=type("DCB",(ctypes.Structure,),{"_fields_":[("DCBlength",ctypes.wintypes.DWORD),("BaudRate",ctypes.wintypes.DWORD),("fBinary",ctypes.wintypes.DWORD,1),("fParity",ctypes.wintypes.DWORD,1),("fOutxCtsFlow",ctypes.wintypes.DWORD,1),("fOutxDsrFlow",ctypes.wintypes.DWORD,1),("fDtrControl",ctypes.wintypes.DWORD,2),("fDsrSensitivity",ctypes.wintypes.DWORD,1),("fTXContinueOnXoff",ctypes.wintypes.DWORD,1),("fOutX",ctypes.wintypes.DWORD,1),("fInX",ctypes.wintypes.DWORD,1),("fErrorChar",ctypes.wintypes.DWORD,1),("fNull",ctypes.wintypes.DWORD,1),("fRtsControl",ctypes.wintypes.DWORD,2),("fAbortOnError",ctypes.wintypes.DWORD,1),("fDummy2",ctypes.wintypes.DWORD,17),("wReserved",ctypes.wintypes.WORD),("XonLim",ctypes.wintypes.WORD),("XoffLim",ctypes.wintypes.WORD),("ByteSize",ctypes.wintypes.BYTE),("Parity",ctypes.wintypes.BYTE),("StopBits",ctypes.wintypes.BYTE),("XonChar",ctypes.c_char),("XoffChar",ctypes.c_char),("ErrorChar",ctypes.c_char),("EofChar",ctypes.c_char),("EvtChar",ctypes.c_char),("wReserved1",ctypes.wintypes.WORD)]})
 ctypes.wintypes.GUID=type("GUID",(ctypes.Structure,),{"_fields_":[("Data1",ctypes.wintypes.DWORD),("Data2",ctypes.wintypes.WORD),("Data3",ctypes.wintypes.WORD),("Data4",ctypes.wintypes.BYTE*8)]})
-ctypes.wintypes.PGUID=ctypes.POINTER(ctypes.wintypes.GUID)
+ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vk_code",ctypes.wintypes.DWORD),("scan_code",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME=type("OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME",(ctypes.Structure,),{"_fields_":[("Offset",ctypes.wintypes.DWORD),("OffsetHigh",ctypes.wintypes.DWORD)]})
+ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME=type("OVERLAPPED_DUMMYUNIONNAME",(ctypes.Union,),{"_fields_":[("_0",ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME),("Pointer",ctypes.wintypes.LPVOID)],"_anonymous_":["_0"]})
+ctypes.wintypes.OVERLAPPED=type("OVERLAPPED",(ctypes.Structure,),{"_fields_":[("Internal",ctypes.wintypes.ULONG_PTR),("InternalHigh",ctypes.wintypes.ULONG_PTR),("_0",ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME),("hEvent",ctypes.wintypes.HANDLE)],"_anonymous_":["_0"]})
 ctypes.wintypes.SP_DEVINFO_DATA=type("SP_DEVINFO_DATA",(ctypes.Structure,),{"_fields_":[("cbSize",ctypes.wintypes.DWORD),("ClassGuid",ctypes.wintypes.GUID),("DevInst",ctypes.wintypes.DWORD),("Reserved",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.LowLevelKeyboardProc=ctypes.WINFUNCTYPE(ctypes.c_int,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+ctypes.wintypes.LPCOMMTIMEOUTS=ctypes.POINTER(ctypes.wintypes.COMMTIMEOUTS)
+ctypes.wintypes.LPCOMSTAT=ctypes.POINTER(ctypes.wintypes.COMSTAT)
+ctypes.wintypes.LPDCB=ctypes.POINTER(ctypes.wintypes.DCB)
+ctypes.wintypes.LPOVERLAPPED=ctypes.POINTER(ctypes.wintypes.OVERLAPPED)
+ctypes.wintypes.LPSECURITY_ATTRIBUTES=ctypes.c_void_p
+ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO)
+ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO)
+ctypes.wintypes.PGUID=ctypes.POINTER(ctypes.wintypes.GUID)
+ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
+ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
 ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 ctypes.windll.advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
 ctypes.windll.advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
 ctypes.windll.advapi32.RegQueryValueExW.argtypes=(ctypes.wintypes.HKEY,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPDWORD,ctypes.c_void_p,ctypes.wintypes.LPDWORD)
 ctypes.windll.advapi32.RegQueryValueExW.restype=ctypes.wintypes.LONG
+ctypes.windll.kernel32.CancelIoEx.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED)
+ctypes.windll.kernel32.CancelIoEx.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.ClearCommError.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPCOMSTAT)
+ctypes.windll.kernel32.ClearCommError.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.CloseHandle.argtypes=(ctypes.wintypes.HANDLE,)
+ctypes.windll.kernel32.CloseHandle.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.BOOL,ctypes.wintypes.LPCWSTR)
+ctypes.windll.kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
+ctypes.windll.kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
+ctypes.windll.kernel32.CreateFileW.restype=ctypes.wintypes.HANDLE
 ctypes.windll.kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
 ctypes.windll.kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
 ctypes.windll.kernel32.FillConsoleOutputCharacterA.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
+ctypes.windll.kernel32.GetCommState.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
+ctypes.windll.kernel32.GetCommTimeouts.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.GetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
 ctypes.windll.kernel32.GetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
 ctypes.windll.kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO)
 ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetLastError.argtypes=tuple()
+ctypes.windll.kernel32.GetLastError.restype=ctypes.wintypes.DWORD
 ctypes.windll.kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
 ctypes.windll.kernel32.GetModuleHandleW.restype=ctypes.wintypes.HMODULE
+ctypes.windll.kernel32.GetOverlappedResult.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED,ctypes.wintypes.LPDWORD,ctypes.wintypes.BOOL)
+ctypes.windll.kernel32.GetOverlappedResult.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.GetStdHandle.argtypes=(ctypes.wintypes.DWORD,)
 ctypes.windll.kernel32.GetStdHandle.restype=ctypes.wintypes.HANDLE
+ctypes.windll.kernel32.PurgeComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+ctypes.windll.kernel32.PurgeComm.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.ReadFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
+ctypes.windll.kernel32.ReadFile.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.ResetEvent.argtypes=(ctypes.wintypes.HANDLE,)
+ctypes.windll.kernel32.ResetEvent.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetCommMask.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+ctypes.windll.kernel32.SetCommMask.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
+ctypes.windll.kernel32.SetCommState.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
+ctypes.windll.kernel32.SetCommTimeouts.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
 ctypes.windll.kernel32.SetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleCursorPosition.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
@@ -133,6 +195,10 @@ ctypes.windll.kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HAND
 ctypes.windll.kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
 ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
+ctypes.windll.kernel32.SetupComm.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
+ctypes.windll.kernel32.WriteFile.restype=ctypes.wintypes.BOOL
 ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.argtypes=(ctypes.wintypes.PCWSTR,ctypes.wintypes.PGUID,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
 ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.restype=ctypes.wintypes.BOOL
 ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList.argtypes=(ctypes.wintypes.HDEVINFO,)
@@ -1949,7 +2015,14 @@ else:
 							if (self._m==0):
 								break
 							elif (self._m==1):
-								self._p_s.close()
+								ctypes.windll.kernel32.SetCommTimeouts(self._p_s[0],self._p_s[1])
+								if (not ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(ctypes.wintypes.DWORD()),False) and ctypes.windll.kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
+									ctypes.windll.kernel32.CancelIoEx(self._p_s[0],self._p_s[2])
+								ctypes.windll.kernel32.CloseHandle(self._p_s[2].hEvent)
+								if (not ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[3]),ctypes.byref(ctypes.wintypes.DWORD()),False) and ctypes.windll.kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
+									ctypes.windll.kernel32.CancelIoEx(self._p_s[0],self._p_s[3])
+								ctypes.windll.kernel32.CloseHandle(self._p_s[3].hEvent)
+								ctypes.windll.kernel32.CloseHandle(self._p_s[0])
 								self._m=0
 								self._t=0
 								self._pl=None
@@ -1988,26 +2061,63 @@ else:
 							if (len(self._pl)>0):
 								ud=True
 								self._p=self._pl[self._pi]
-								self._p_s=serial.Serial(self._p["location"],SERIAL_BAUD,timeout=5)
-								while (self._p_s.is_open==False):
-									time.sleep(1e-4)
-								self._m=1
+								SERIAL_TIMEOUT=5000
+								h=ctypes.windll.kernel32.CreateFileW(f"\\\\.\\{self._p['location']}",GENERIC_READ|GENERIC_WRITE,0,None,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0)
+								if (h!=INVALID_HANDLE_VALUE):
+									ctypes.windll.kernel32.SetupComm(h,4096,4096)
+									o_tm=ctypes.wintypes.COMMTIMEOUTS()
+									ctypes.windll.kernel32.GetCommTimeouts(h,ctypes.byref(o_tm))
+									n_tm=ctypes.wintypes.COMMTIMEOUTS()
+									n_tm.ReadTotalTimeoutConstant=max(SERIAL_TIMEOUT,1)
+									ctypes.windll.kernel32.SetCommTimeouts(h,ctypes.byref(n_tm))
+									ctypes.windll.kernel32.SetCommMask(h,EV_ERR)
+									comDCB=ctypes.wintypes.DCB()
+									ctypes.windll.kernel32.GetCommState(h,ctypes.byref(comDCB))
+									comDCB.BaudRate=SERIAL_BAUD
+									comDCB.ByteSize=8
+									comDCB.Parity=NOPARITY
+									comDCB.StopBits=ONESTOPBIT
+									comDCB.fBinary=1
+									comDCB.fRtsControl=RTS_CONTROL_ENABLE
+									comDCB.fOutxCtsFlow=False
+									comDCB.fDtrControl=DTR_CONTROL_ENABLE
+									comDCB.fOutxDsrFlow=False
+									comDCB.fOutX=False
+									comDCB.fInX=False
+									comDCB.fNull=0
+									comDCB.fErrorChar=0
+									comDCB.fAbortOnError=0
+									comDCB.XonChar=b"\x11"
+									comDCB.XoffChar=b"\x13"
+									if (not ctypes.windll.kernel32.SetCommState(h,ctypes.byref(comDCB))):
+										ctypes.windll.kernel32.SetCommTimeouts(h,o_tm)
+										ctypes.windll.kernel32.CloseHandle(h)
+									else:
+										ctypes.windll.kernel32.PurgeComm(h,PURGE_TXCLEAR|PURGE_TXABORT|PURGE_RXCLEAR|PURGE_RXABORT)
+										self._p_s=(h,o_tm,ctypes.wintypes.OVERLAPPED(),ctypes.wintypes.OVERLAPPED())
+										self._p_s[2].hEvent=ctypes.windll.kernel32.CreateEventW(None,1,0,None)
+										self._p_s[3].hEvent=ctypes.windll.kernel32.CreateEventW(None,0,0,None)
+										self._m=1
 						self._draw_table({"name":("Name","#8ae8c6"),"arch":("Arch","#dbdf0c"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
 					elif (self._m==1):
 						n_dt=False
 						inp_ch=False
 						if (self._k[0]==b"\r"):
-							if (self._inp_bf in self._mem):
-								self._mem.remove(self._inp_bf)
-							self._mem=self._mem[:-1]+[self._inp_bf,""]
-							self._mem_i=len(self._mem)-1
-							self._extend(1,self._inp_bf+"\n")
-							self._p_s.write(bytes(self._inp_bf,"utf-8"))
-							self._inp_bf=""
-							self._off[1]=0
-							n_dt=True
-							inp_ch=True
-							ud=True
+							if (len(self._inp_bf)>0):
+								dt=bytes(self._inp_bf,"utf-8")
+								c=ctypes.wintypes.DWORD()
+								if (ctypes.windll.kernel32.WriteFile(self._p_s[0],dt,len(dt),ctypes.byref(c),self._p_s[3]) or ctypes.windll.kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)):
+									ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],self._p_s[3],ctypes.byref(c),True)
+									if (self._inp_bf in self._mem):
+										self._mem.remove(self._inp_bf)
+									self._mem=self._mem[:-1]+[self._inp_bf,""]
+									self._mem_i=len(self._mem)-1
+									self._extend(1,self._inp_bf+"\n")
+									self._inp_bf=""
+									self._off[1]=0
+									n_dt=True
+									inp_ch=True
+									ud=True
 						elif (self._k[0]==b"\xe0" and self._k[1]==b"\x8d"):
 							self._a_s=False
 							self._off[0]=max(0,self._off[0]-1)
@@ -2085,10 +2195,17 @@ else:
 							self._off[1]+=len(repr(self._k[0])[2:-1])
 							inp_ch=True
 							ud=True
-						if (self._p_s.in_waiting>0):
-							self._extend(0,re.sub(r"\r(\n|$)",r"\1",str(self._p_s.read(self._p_s.in_waiting),"utf-8")).replace("\t","    "))
-							n_dt=True
-							ud=True
+						ql=ctypes.wintypes.COMSTAT()
+						if (not ctypes.windll.kernel32.ClearCommError(self._p_s[0],ctypes.byref(ctypes.wintypes.DWORD()),ctypes.byref(ql))):
+							ql.cbInQue=0
+						if (ql.cbInQue>0):
+							ctypes.windll.kernel32.ResetEvent(self._p_s[2].hEvent)
+							bf=ctypes.create_string_buffer(ql.cbInQue)
+							bf_l=ctypes.wintypes.DWORD()
+							if ((ctypes.windll.kernel32.ReadFile(self._p_s[0],bf,ql.cbInQue,ctypes.byref(bf_l),ctypes.byref(self._p_s[2])) or ctypes.windll.kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)) and (ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(bf_l),True) or ctypes.windll.kernel32.GetLastError()==ERROR_OPERATION_ABORTED)):
+								self._extend(0,re.sub(r"\r(\n|$)",r"\1",str(bf.raw[:bf_l.value],"utf-8")).replace("\t","    "))
+								n_dt=True
+								ud=True
 						if (self._a_s==True and n_dt==True):
 							self._dt=self._dt[-1000:]
 							self._off[0]=max(0,sum([len(e[1])-(1 if None in e[1] else 0) for e in self._dt])-(self._sz[1]-9))
