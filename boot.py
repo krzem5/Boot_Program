@@ -18,13 +18,10 @@ import socket
 import subprocess
 import sys
 import tarfile
-import tempfile
 import threading
 import time
 import tkinter
 import traceback
-import urllib
-import urllib.parse
 import urllib.request
 import yaml
 import zipfile
@@ -47,7 +44,7 @@ ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runti
 CMD_L={}
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-GITHUB_TOKEN,CONTACT_EMAIL=f.replace("\r","").split("\n")[:2]
+GITHUB_TOKEN=f.strip()
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
@@ -63,10 +60,12 @@ REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)
 REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
 REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
 SERIAL_BAUD=9600
+SERIAL_TIMEOUT=5000
 STDOUT_LOCK=False
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"0":0x60,"1":0x61,"2":0x62,"3":0x63,"4":0x64,"5":0x65,"6":0x66,"7":0x67,"8":0x68,"9":0x69,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,"+":0xbb,",":0xbc,"-":0xbd,".":0xbe,"/":0xbf,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa1:0x10,0xa2:0x11,0xa2:0x11,0xa4:0x12,0xa5:0x12}
+TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/")
 
 
 
@@ -152,8 +151,6 @@ ctypes.windll.kernel32.ClearCommError.argtypes=(ctypes.wintypes.HANDLE,ctypes.wi
 ctypes.windll.kernel32.ClearCommError.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.CloseHandle.argtypes=(ctypes.wintypes.HANDLE,)
 ctypes.windll.kernel32.CloseHandle.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
-ctypes.windll.kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.BOOL,ctypes.wintypes.LPCWSTR)
 ctypes.windll.kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
 ctypes.windll.kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
@@ -172,6 +169,8 @@ ctypes.windll.kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wi
 ctypes.windll.kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO)
 ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.GetConsoleWindow.argtypes=tuple()
+ctypes.windll.kernel32.GetConsoleWindow.restype=ctypes.wintypes.HWND
 ctypes.windll.kernel32.GetLastError.argtypes=tuple()
 ctypes.windll.kernel32.GetLastError.restype=ctypes.wintypes.DWORD
 ctypes.windll.kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
@@ -200,6 +199,8 @@ ctypes.windll.kernel32.SetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wi
 ctypes.windll.kernel32.SetConsoleMode.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
 ctypes.windll.kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
+ctypes.windll.kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
 ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
@@ -222,8 +223,12 @@ ctypes.windll.user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_in
 ctypes.windll.user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
 ctypes.windll.user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
 ctypes.windll.user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
+ctypes.windll.user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
+ctypes.windll.user32.LoadImageW.restype=ctypes.wintypes.HANDLE
 ctypes.windll.user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
 ctypes.windll.user32.PeekMessageW.restype=ctypes.wintypes.BOOL
+ctypes.windll.user32.SendMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.c_uint,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+ctypes.windll.user32.SendMessageW.restype=ctypes.wintypes.LRESULT
 ctypes.windll.user32.SetWindowsHookExW.argtypes=(ctypes.c_int,ctypes.wintypes.LowLevelKeyboardProc,ctypes.wintypes.HINSTANCE,ctypes.wintypes.DWORD)
 ctypes.windll.user32.SetWindowsHookExW.restype=ctypes.wintypes.HHOOK
 ctypes.windll.user32.ShowCursor.argtypes=(ctypes.wintypes.BOOL,)
@@ -934,14 +939,14 @@ def _install_ard_pkg(b,force=False):
 		_print(f"Searching for '{ARDUINO_OS_TYPE}' Release\x1b[38;2;100;100;100m...")
 		for k in dt["assets"]:
 			if (k["name"].startswith(b+"-") and (k["name"].endswith(".zip") or k["name"].endswith(".tar.bz2")) and "mingw32" in re.sub(r"(\.zip|\.tar\.bz2)$","",k["name"][len(b)+1:])):
-				_print(f"Found Release '{k['name']}'.\nCloning to File '{tempfile.gettempdir()}/{k['name']}' ...")
-				_arduino_clone_f(k["browser_download_url"],f"{tempfile.gettempdir()}/{k['name']}",k["size"])
-				with open(f"{tempfile.gettempdir()}/{k['name']}","wb") as f:
+				_print(f"Found Release '{k['name']}'.\nCloning to File '{TEMP_DIR}/{k['name']}' ...")
+				_arduino_clone_f(k["browser_download_url"],f"{TEMP_DIR}/{k['name']}",k["size"])
+				with open(f"{TEMP_DIR}/{k['name']}","wb") as f:
 					f.write(requests.get(k["browser_download_url"]).content)
 				if (k["name"].endswith(".tar.bz2")):
 					_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
-					with tarfile.open(f"{tempfile.gettempdir()}/{k['name']}","r:bz2") as tf:
+					with tarfile.open(f"{TEMP_DIR}/{k['name']}","r:bz2") as tf:
 						tf.extractall(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 						off=len(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
@@ -959,13 +964,13 @@ def _install_ard_pkg(b,force=False):
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
-					with zipfile.ZipFile(f"{tempfile.gettempdir()}/{k['name']}","r") as zf:
+					with zipfile.ZipFile(f"{TEMP_DIR}/{k['name']}","r") as zf:
 						zf.extractall(f"D:/boot/arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 					raise RuntimeError(f"Unknown File Extension '{k['name'][len(k['name'].split('.')[0]):]}'.")
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
-				os.remove(f"{tempfile.gettempdir()}/{k['name']}")
+				os.remove(f"{TEMP_DIR}/{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
 		with open(f"D:/boot/arduino/packages/index","a") as f:
 			f.write(f"arduino-{b}-{dt['tag_name']}\n")
@@ -1019,12 +1024,12 @@ def _install_ard_pkg(b,force=False):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}")
 		if (not os.path.exists(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
 			os.mkdir(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
-		_print(f"Cloning to File '{tempfile.gettempdir()}/{k[4]}' ...")
-		_arduino_clone_f(k[3],tempfile.gettempdir()+"/"+k[4],k[6])
+		_print(f"Cloning to File '{TEMP_DIR}/{k[4]}' ...")
+		_arduino_clone_f(k[3],TEMP_DIR+"/"+k[4],k[6])
 		if (k[4].endswith(".tar.bz2")):
 			_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
-			with tarfile.open(tempfile.gettempdir()+"/"+k[4],"r:bz2") as tf:
+			with tarfile.open(TEMP_DIR+"/"+k[4],"r:bz2") as tf:
 				tf.extractall(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 				off=len(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
 				_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
@@ -1042,10 +1047,10 @@ def _install_ard_pkg(b,force=False):
 		elif (k[4].endswith(".zip")):
 			_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
-			with zipfile.ZipFile(tempfile.gettempdir()+"/"+k[4],"r") as zf:
+			with zipfile.ZipFile(TEMP_DIR+"/"+k[4],"r") as zf:
 				zf.extractall(f"D:/boot/arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print("Removing Archive\x1b[38;2;100;100;100m...")
-		os.remove(tempfile.gettempdir()+"/"+k[4])
+		os.remove(TEMP_DIR+"/"+k[4])
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
 		with open(f"D:/boot/arduino/packages/index","a") as f:
 			f.write(f"{k[0]}-{k[1]}-{k[2]}\n")
@@ -1143,7 +1148,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
 	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
-	b_fp=f"{tempfile.gettempdir()}/arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
+	b_fp=f"{TEMP_DIR}/arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
@@ -1641,7 +1646,9 @@ def _u_mcs(fp):
 		return
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
 	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
+	dw=True
 	if (os.path.exists(f"{fp}\\server.jar")):
+		dw=False
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
 		with open(f"{fp}\\server.jar","rb") as f:
@@ -1668,12 +1675,12 @@ def _u_mcs(fp):
 							if (os.path.exists(os.path.join(nr,f))):
 								os.remove(os.path.join(nr,f))
 							pass
-			_print(f"Downloading Server For {json['id']}\x1b[38;2;100;100;100m...")
-			urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
-	else:
+			dw=True
+	if (dw==True):
+		_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
 		urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	p=subprocess.Popen(["vdesk","on:3","noswitch:true","run:cmd","/c","java -Xms4G -Xmx4G -jar server.jar --nogui"],cwd=fp,creationflags=subprocess.CREATE_NEW_CONSOLE)
+	p=subprocess.Popen(["vdesk","on:3","noswitch:true","run:cmd","/c","java -Xms8G -Xmx8G -jar server.jar --nogui"],cwd=fp,creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
@@ -2070,7 +2077,6 @@ else:
 							if (len(self._pl)>0):
 								ud=True
 								self._p=self._pl[self._pi]
-								SERIAL_TIMEOUT=5000
 								h=ctypes.windll.kernel32.CreateFileW(f"\\\\.\\{self._p['location']}",GENERIC_READ|GENERIC_WRITE,0,None,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0)
 								if (h!=INVALID_HANDLE_VALUE):
 									ctypes.windll.kernel32.SetupComm(h,4096,4096)
