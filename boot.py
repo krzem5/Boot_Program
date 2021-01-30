@@ -14,7 +14,6 @@ import re
 import regex
 import requests
 import serial
-import serial.tools.list_ports
 import socket
 import subprocess
 import sys
@@ -75,18 +74,25 @@ for k,v in VK_KEYS.items():
 
 
 
-WM_KEYDOWN=0x0100
-WM_SYSKEYDOWN=0x0104
-WH_KEYBOARD_LL=13
-VK_PACKET=0xe7
-LLKHF_INJECTED=0x10
-LLKHF_ALTDOWN=0x20
+DICS_FLAG_GLOBAL=1
+DIGCF_PRESENT=2
+DIREG_DEV=1
+KEY_READ=131097
+LLKHF_ALTDOWN=32
+LLKHF_INJECTED=16
 PM_REMOVE=1
+SPDRP_HARDWAREID=1
+VK_PACKET=231
+WH_KEYBOARD_LL=13
+WM_KEYDOWN=256
+WM_SYSKEYDOWN=260
 
 
 
 ctypes.wintypes.ULONG_PTR=ctypes.POINTER(ctypes.wintypes.DWORD)
 ctypes.wintypes.LRESULT=ctypes.c_int
+ctypes.wintypes.HDEVINFO=ctypes.c_void_p
+ctypes.wintypes.PCWSTR=ctypes.c_wchar_p
 ctypes.wintypes.LowLevelKeyboardProc=ctypes.WINFUNCTYPE(ctypes.c_int,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
 ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
 ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
@@ -95,6 +101,14 @@ ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURS
 ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO=type("CONSOLE_SCREEN_BUFFER_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes._COORD),("dwCursorPosition",ctypes.wintypes._COORD),("wAttributes",ctypes.wintypes.WORD),("srWindow",ctypes.wintypes.SMALL_RECT),("dwMaximumWindowSize",ctypes.wintypes._COORD)]})
 ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO)
 ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vk_code",ctypes.wintypes.DWORD),("scan_code",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.GUID=type("GUID",(ctypes.Structure,),{"_fields_":[("Data1",ctypes.wintypes.DWORD),("Data2",ctypes.wintypes.WORD),("Data3",ctypes.wintypes.WORD),("Data4",ctypes.wintypes.BYTE*8)]})
+ctypes.wintypes.PGUID=ctypes.POINTER(ctypes.wintypes.GUID)
+ctypes.wintypes.SP_DEVINFO_DATA=type("SP_DEVINFO_DATA",(ctypes.Structure,),{"_fields_":[("cbSize",ctypes.wintypes.DWORD),("ClassGuid",ctypes.wintypes.GUID),("DevInst",ctypes.wintypes.DWORD),("Reserved",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
+ctypes.windll.advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
+ctypes.windll.advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
+ctypes.windll.advapi32.RegQueryValueExW.argtypes=(ctypes.wintypes.HKEY,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPDWORD,ctypes.c_void_p,ctypes.wintypes.LPDWORD)
+ctypes.windll.advapi32.RegQueryValueExW.restype=ctypes.wintypes.LONG
 ctypes.windll.kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
 ctypes.windll.kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
@@ -119,6 +133,18 @@ ctypes.windll.kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HAND
 ctypes.windll.kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
 ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.argtypes=(ctypes.wintypes.PCWSTR,ctypes.wintypes.PGUID,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
+ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.restype=ctypes.wintypes.BOOL
+ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList.argtypes=(ctypes.wintypes.HDEVINFO,)
+ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList.restype=ctypes.wintypes.BOOL
+ctypes.windll.setupapi.SetupDiEnumDeviceInfo.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.DWORD,ctypes.wintypes.PSP_DEVINFO_DATA)
+ctypes.windll.setupapi.SetupDiEnumDeviceInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.setupapi.SetupDiGetClassDevsW.argtypes=(ctypes.wintypes.PGUID,ctypes.wintypes.PCWSTR,ctypes.wintypes.HWND,ctypes.wintypes.DWORD)
+ctypes.windll.setupapi.SetupDiGetClassDevsW.restype=ctypes.wintypes.HDEVINFO
+ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD,ctypes.c_void_p,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
+ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW.restype=ctypes.wintypes.BOOL
+ctypes.windll.setupapi.SetupDiOpenDevRegKey.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
+ctypes.windll.setupapi.SetupDiOpenDevRegKey.restype=ctypes.wintypes.HKEY
 ctypes.windll.user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
 ctypes.windll.user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
 ctypes.windll.user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
@@ -781,17 +807,41 @@ class _Arduino_Cache:
 def _l_ard_boards(p=True):
 	if (p==True):
 		_print("Listing Arduino Boards Attached to the System\x1b[38;2;100;100;100m...")
+	pg=(ctypes.wintypes.GUID*8)()
+	pg_l=ctypes.wintypes.DWORD()
+	ctypes.windll.setupapi.SetupDiClassGuidsFromNameW("Ports",pg,ctypes.sizeof(pg),ctypes.byref(pg_l))
+	mg=(ctypes.wintypes.GUID*8)()
+	mg_l=ctypes.wintypes.DWORD()
+	ctypes.windll.setupapi.SetupDiClassGuidsFromNameW("Modem",mg,ctypes.sizeof(mg),ctypes.byref(mg_l))
 	o=[]
-	pl=list(serial.tools.list_ports.comports())
-	for p in pl:
-		r=_Arduino_Cache.get(f"vid_pid-0x{hex(p.vid)[2:].rjust(4,'0')}-0x{hex(p.pid)[2:].rjust(4,'0')}.json")
-		if (r==None):
-			r=requests.get(f"https://builder.arduino.cc/v3/boards/byVidPid/0x{hex(p.vid)[2:].rjust(4,'0')}/0x{hex(p.pid)[2:].rjust(4,'0')}",headers={"Content-Type":"application/json"}).text
-			_Arduino_Cache.set(f"vid_pid-0x{hex(p.vid)[2:].rjust(4,'0')}-0x{hex(p.pid)[2:].rjust(4,'0')}.json",bytes(r,"utf-8"))
-		if (len(r)==0):
-			continue
-		r=json.loads(r)
-		o+=[{"arch":r["architecture"],"fqbn":r["fqbn"],"name":r["name"],"location":(p.name if p.name!=None else p.device)}]
+	for k in (pg[:pg_l.value]+mg[:mg_l.value]):
+		di_g=ctypes.windll.setupapi.SetupDiGetClassDevsW(ctypes.byref(k),None,0,DIGCF_PRESENT)
+		di=ctypes.wintypes.SP_DEVINFO_DATA()
+		di.cbSize=ctypes.sizeof(di)
+		i=0
+		while (ctypes.windll.setupapi.SetupDiEnumDeviceInfo(di_g,i,ctypes.byref(di))!=0):
+			i+=1
+			hkey=ctypes.windll.setupapi.SetupDiOpenDevRegKey(di_g,ctypes.byref(di),DICS_FLAG_GLOBAL,0,DIREG_DEV,KEY_READ)
+			nm=ctypes.create_unicode_buffer(256)
+			ctypes.windll.advapi32.RegQueryValueExW(hkey,"PortName",None,None,ctypes.byref(nm),ctypes.byref(ctypes.wintypes.ULONG(ctypes.sizeof(nm))))
+			ctypes.windll.advapi32.RegCloseKey(hkey)
+			if (nm.value[:3]=="LPT"):
+				continue
+			hw_id=ctypes.create_unicode_buffer(250)
+			ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
+			m=re.search((r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})" if hw_id.value[:3]=="USB" else r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})"),hw_id.value,re.I)
+			if (m is not None):
+				r=_Arduino_Cache.get(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
+				if (r==None):
+					r=requests.get(f"https://builder.arduino.cc/v3/boards/byVidPid/0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}/0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}",headers={"Content-Type":"application/json"}).text
+					_Arduino_Cache.set(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json",bytes(r,"utf-8"))
+				if (len(r)==0):
+					continue
+				r=json.loads(r)
+				o+=[{"arch":r["architecture"],"fqbn":r["fqbn"],"name":r["name"],"location":nm.value.replace("\\","/").split("/")[-1]}]
+			else:
+				continue
+		ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList(di_g)
 	return o
 
 
@@ -1194,7 +1244,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	os.mkdir(o_fp)
 	for k in os.listdir(b_fp):
 		if (k==f"{m_fp[len(s_fp):]}.hex"):
-			with open(f"{o_fp}{m_fp[len(s_fp):]}.hex","wb") as wf,open(f"{b_fp}{k}","rb") as rf:
+			with open(f"{o_fp}{m_fp[len(s_fp):].split('.')[0]}.hex","wb") as wf,open(f"{b_fp}{k}","rb") as rf:
 				wf.write(rf.read())
 		if (k not in ["core","build-properties.md5"]):
 			os.remove(f"{b_fp}{k}")
