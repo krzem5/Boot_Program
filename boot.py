@@ -5,7 +5,6 @@ import ctypes.wintypes
 import datetime
 import fnmatch
 import hashlib
-import io
 import json
 import math
 import msvcrt
@@ -22,7 +21,6 @@ import threading
 import time
 import tkinter
 import traceback
-import urllib.request
 import yaml
 import zipfile
 
@@ -118,6 +116,8 @@ ctypes.wintypes.HDEVINFO=ctypes.c_void_p
 ctypes.wintypes.LRESULT=ctypes.c_int
 ctypes.wintypes.PCWSTR=ctypes.c_wchar_p
 ctypes.wintypes.ULONG_PTR=ctypes.POINTER(ctypes.wintypes.DWORD)
+ctypes.wintypes.CHAR_INFO_Char=type("CHAR_INFO_Char",(ctypes.Union,),{"_fields_":[("UnicodeChar",ctypes.wintypes.WCHAR),("AsciiChar",ctypes.wintypes.CHAR)]})
+ctypes.wintypes.CHAR_INFO=type("CHAR_INFO",(ctypes.Structure,),{"_fields_":[("Char",ctypes.wintypes.CHAR_INFO_Char),("Attributes",ctypes.wintypes.WORD)],"_anonymous_":("Char",)})
 ctypes.wintypes.COMMTIMEOUTS=type("COMMTIMEOUTS",(ctypes.Structure,),{"_fields_":[("ReadIntervalTimeout",ctypes.wintypes.DWORD),("ReadTotalTimeoutMultiplier",ctypes.wintypes.DWORD),("ReadTotalTimeoutConstant",ctypes.wintypes.DWORD),("WriteTotalTimeoutMultiplier",ctypes.wintypes.DWORD),("WriteTotalTimeoutConstant",ctypes.wintypes.DWORD)]})
 ctypes.wintypes.COMSTAT=type("COMSTAT",(ctypes.Structure,),{"_fields_":[("fCtsHold",ctypes.wintypes.DWORD,1),("fDsrHold",ctypes.wintypes.DWORD,1),("fRlsdHold",ctypes.wintypes.DWORD,1),("fXoffHold",ctypes.wintypes.DWORD,1),("fXoffSent",ctypes.wintypes.DWORD,1),("fEof",ctypes.wintypes.DWORD,1),("fTxim",ctypes.wintypes.DWORD,1),("fReserved",ctypes.wintypes.DWORD,25),("cbInQue",ctypes.wintypes.DWORD),("cbOutQue",ctypes.wintypes.DWORD)]})
 ctypes.wintypes.CONSOLE_CURSOR_INFO=type("CONSOLE_CURSOR_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes.DWORD),("bVisible",ctypes.wintypes.BOOL)]})
@@ -135,11 +135,13 @@ ctypes.wintypes.LPCOMSTAT=ctypes.POINTER(ctypes.wintypes.COMSTAT)
 ctypes.wintypes.LPDCB=ctypes.POINTER(ctypes.wintypes.DCB)
 ctypes.wintypes.LPOVERLAPPED=ctypes.POINTER(ctypes.wintypes.OVERLAPPED)
 ctypes.wintypes.LPSECURITY_ATTRIBUTES=ctypes.c_void_p
+ctypes.wintypes.PCHAR_INFO=ctypes.POINTER(ctypes.wintypes.CHAR_INFO)
 ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO)
 ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO)
 ctypes.wintypes.PGUID=ctypes.POINTER(ctypes.wintypes.GUID)
 ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
 ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
+ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 ctypes.windll.advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
 ctypes.windll.advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
@@ -185,6 +187,8 @@ ctypes.windll.kernel32.ReadFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes
 ctypes.windll.kernel32.ReadFile.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.ResetEvent.argtypes=(ctypes.wintypes.HANDLE,)
 ctypes.windll.kernel32.ResetEvent.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.ScrollConsoleScreenBufferW.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PSMALL_RECT,ctypes.wintypes.OPT_PSMALL_RECT,ctypes.wintypes._COORD,ctypes.wintypes.PCHAR_INFO)
+ctypes.windll.kernel32.ScrollConsoleScreenBufferW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetCommMask.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
 ctypes.windll.kernel32.SetCommMask.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
@@ -352,10 +356,7 @@ def _start_thr(f,b_nm,nm,*a,**kw):
 		try:
 			f(*a,**kw)
 		except Exception as e:
-			f=io.StringIO()
-			traceback.print_exception(None,e,e.__traceback__,file=f)
-			CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]+=bytes("\x1b[38;2;200;40;20m"+f.getvalue(),"utf-8")
-			print(f.getvalue(),file=sys.__stdout__,end="")
+			traceback.print_exception(None,e,e.__traceback__)
 	thr=threading.Thread(target=_wr,args=(f,a,kw),kwargs={},name=f"{b_nm} => {nm} Thread")
 	thr._b_nm=b_nm
 	thr._nm=nm
@@ -1678,9 +1679,17 @@ def _u_mcs(fp):
 			dw=True
 	if (dw==True):
 		_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
-		urllib.request.urlretrieve(json["downloads"]["server"]["url"],f"{fp}\\server.jar")
+		r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
+		with open(f"{fp}\\server.jar","wb") as f:
+			while (True):
+				dt=r.read(4096)
+				f.write(dt)
+				if (len(dt)<4096):
+					break
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	p=subprocess.Popen(["vdesk","on:3","noswitch:true","run:cmd","/c","java -Xms8G -Xmx8G -jar server.jar --nogui"],cwd=fp,creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.Popen(["vdesk","on:3","run:cmd","/c","java -Xms8G -Xmx8G -jar server.jar --nogui"],cwd=fp)
+	time.sleep(1)
+	subprocess.Popen(["vdesk","on:1","run:cmd","/c","echo"])
 
 
 
@@ -1731,8 +1740,18 @@ def _end(a):
 ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 ctypes.windll.kernel32.SetConsoleTitleW("")
 hwnd=ctypes.windll.kernel32.GetConsoleWindow()
-ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,ctypes.windll.user32.LoadImageW(NULL,"D:/boot/rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
-ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,ctypes.windll.user32.LoadImageW(NULL,"D:/boot/rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
+ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,ctypes.windll.user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
+ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,ctypes.windll.user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
+ho=ctypes.windll.kernel32.GetStdHandle(-11)
+csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
+ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
+fc=ctypes.wintypes.CHAR_INFO()
+fc.Char.UnicodeChar=" "
+fc.Attributes=csbi.wAttributes
+csbi.dwCursorPosition.X=0
+csbi.dwCursorPosition.Y=0
+ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
+ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 if (len(sys.argv)==1):
 	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
