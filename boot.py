@@ -31,7 +31,6 @@ import zipfile
 
 
 
-os.system("title  ")
 with open("D:\\boot\\secret.dt","r") as f:
 	f=f.read()
 
@@ -88,12 +87,17 @@ FILE_ATTRIBUTE_NORMAL=0x80
 FILE_FLAG_OVERLAPPED=0x40000000
 GENERIC_READ=0x80000000
 GENERIC_WRITE=0x40000000
+ICON_BIG=1
+ICON_SMALL=0
+IMAGE_ICON=1
 INVALID_HANDLE_VALUE=ctypes.wintypes.HANDLE(-1).value
 KEY_READ=0x20019
 LLKHF_ALTDOWN=0x20
 LLKHF_INJECTED=0x10
+LR_LOADFROMFILE=0x10
 MAXDWORD=0xffffffff
 NOPARITY=0
+NULL=0
 ONESTOPBIT=0
 OPEN_EXISTING=3
 PM_REMOVE=1
@@ -106,6 +110,7 @@ SPDRP_HARDWAREID=1
 VK_PACKET=0xe7
 WH_KEYBOARD_LL=13
 WM_KEYDOWN=0x100
+WM_SETICON=0x80
 WM_SYSKEYDOWN=0x104
 
 
@@ -147,6 +152,8 @@ ctypes.windll.kernel32.ClearCommError.argtypes=(ctypes.wintypes.HANDLE,ctypes.wi
 ctypes.windll.kernel32.ClearCommError.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.CloseHandle.argtypes=(ctypes.wintypes.HANDLE,)
 ctypes.windll.kernel32.CloseHandle.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
+ctypes.windll.kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.BOOL,ctypes.wintypes.LPCWSTR)
 ctypes.windll.kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
 ctypes.windll.kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
@@ -1715,9 +1722,11 @@ def _end(a):
 
 
 ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+ctypes.windll.kernel32.SetConsoleTitleW("")
+hwnd=ctypes.windll.kernel32.GetConsoleWindow()
+ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,ctypes.windll.user32.LoadImageW(NULL,"D:/boot/rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
+ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,ctypes.windll.user32.LoadImageW(NULL,"D:/boot/rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
 if (len(sys.argv)==1):
-	os.system("cls")
-	ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
 	threading.current_thread()._nm="__main__"
