@@ -2562,7 +2562,7 @@ else:
 						nm=k["path"].split("/")[0]
 						if (nm not in l_id_m):
 							continue
-						print(k["path"])
+						print(f"Downloading: {k['path']}")
 						tl=_repo_file_tokenize(requests.get(k["url"],headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content.decode("utf-8",errors="replace"))
 						if (len(tl)==0):
 							continue
