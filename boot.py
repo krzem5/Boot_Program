@@ -656,7 +656,7 @@ def _repo_file_tokenize(dt,el=None):
 
 
 def _repo_stats_detect_file(r,fn,ll,hdt,db):
-	if (os.stat(os.path.join(r,fn)).st_size==0 or _is_bin(os.path.join(r,fn))==True or fn=="LICENSE"):
+	if (os.stat(os.path.join(r,fn)).st_size==0 or _is_bin(os.path.join(r,fn))==True):
 		return None
 	o=list(ll.keys())
 	c=[]
