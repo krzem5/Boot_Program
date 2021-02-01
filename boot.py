@@ -366,14 +366,6 @@ def _start_thr(f,b_nm,nm,*a,**kw):
 
 
 
-def _open_app(p,file=False):
-	if (file==True):
-		os.startfile(p)
-	else:
-		subprocess.Popen(p,creationflags=subprocess.CREATE_NEW_CONSOLE)
-
-
-
 def _gitigonre_match(gdt,fp):
 	def _pattern(p,fp):
 		fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
@@ -1706,34 +1698,17 @@ def _hotkey_handler(c,wp,lp):
 					dt.vk_code=VK_SAME_KEYS[dt.vk_code]
 				if (dt.vk_code in VK_KEYS.values()):
 					_hotkey_handler._kb[dt.vk_code]=(wp in (WM_KEYDOWN,WM_SYSKEYDOWN))
-					if (_hotkey_handler._kb[dt.vk_code]):
-						for k,v in _hotkey_handler._hk:
-							if (dt.vk_code in k):
-								for e in k:
-									if (not _hotkey_handler._kb[e]):
-										v=None
-										break
-								if (v is not None):
-									v()
-									return -1
+					if (_hotkey_handler._kb[dt.vk_code] and dt.vk_code in _hotkey_handler._hk and _hotkey_handler._kb[VK_KEYS["ctrl"]] and _hotkey_handler._kb[VK_KEYS["shift"]] and _hotkey_handler._kb[VK_KEYS["alt"]]):
+						_hotkey_handler._hk[dt.vk_code]()
+						return -1
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
 	return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
 
 
 
-def _register_hk(hk,cb):
-	o=[]
-	for e in hk.lower().split("+"):
-		if (e not in VK_KEYS):
-			raise RuntimeError(f"Unknown Key '{e}'!")
-		o+=[VK_KEYS[e]]
-	_hotkey_handler._hk+=[(tuple(o),cb)]
-
-
-
-def _end(a):
-	subprocess.run(["C:\\Windows\\System32\\shutdown.exe"]+a+["/f"])
+def _register_hk(e,cb):
+	_hotkey_handler._hk[VK_KEYS[e]]=cb
 
 
 
@@ -1758,23 +1733,22 @@ if (len(sys.argv)==1):
 	threading.current_thread()._nm="__main__"
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	_print("Registering Hotkey Handler\x1b[38;2;100;100;100m...")
-	_hotkey_handler._hk=[]
+	_hotkey_handler._hk={}
 	_hotkey_handler._kb={e:False for e in VK_KEYS.values()}
 	_hotkey_handler._ig_alt=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 	ctypes.windll.user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,ctypes.windll.kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 	atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
-	_register_hk("ctrl+alt+shift+e",lambda:_open_app("C:\\Windows\\System32\\control.exe"))
-	_register_hk("ctrl+alt+shift+c",lambda:_open_app(["python","D:\\boot\\boot.py","0"]))
-	_register_hk("ctrl+alt+shift+q",lambda:_open_app(["python","D:\\boot\\boot.py","1"]))
-	_register_hk("ctrl+alt+shift+a",lambda:_open_app("D:\\K",file=True))
-	_register_hk("ctrl+alt+shift+r",lambda:_open_app(["pythonw","D:\\boot\\boot.py","0"]))
-	_register_hk("ctrl+alt+shift+home",lambda:_end(["/l"]))
-	_register_hk("ctrl+alt+shift+end",lambda:_end(["/s","/t","0"]))
-	_register_hk("ctrl+alt+shift+w",lambda:_open_app("D:\\boot",file=True))
-	_register_hk("ctrl+alt+shift+d",lambda:_open_app("C:\\Windows\\System32\\Taskmgr.exe"))
-	_register_hk("ctrl+alt+shift+v",lambda:_open_app(["python","D:\\boot\\boot.py","2"]))
+	_register_hk("e",lambda:subprocess.run("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("c",lambda:subprocess.run(["python","D:\\boot\\boot.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("q",lambda:subprocess.run(["python","D:\\boot\\boot.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("a",lambda:os.startfile("D:\\K"))
+	_register_hk("r",lambda:subprocess.run(["pythonw","D:\\boot\\boot.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("home",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
+	_register_hk("end",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
+	_register_hk("d",lambda:subprocess.run("C:\\Windows\\System32\\Taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("v",lambda:subprocess.run(["python","D:\\boot\\boot.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
 	_print("Registering All Projects\x1b[38;2;100;100;100m...")
@@ -1833,45 +1807,33 @@ else:
 	elif (v==1):
 		while (True):
 			p=input("> ").lower().strip()
-			if (p=="list"):
-				os.system("cls")
-				_print("list, chrome, python, python37, processing, sublime, minecraft, vm, github, blender, print, serial, stats, cad, <any file path>, <git clone url>, <any url>")
-				continue
-			elif (p=="chrome"):
-				_open_app("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe")
-			elif (p=="python"):
-				_open_app(f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Programs\\Python\\Python38\\python.exe")
-			elif (p=="python37"):
-				_open_app(f"C:\\Users\\{os.getlogin()}\\AppData\\Local\\Programs\\Python\\Python37\\python.exe")
+			if (p=="chrome"):
+				subprocess.run("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="processing"):
-				_open_app("C:\\Program Files\\Processing\\processing.exe")
+				subprocess.run("C:\\Program Files\\Processing\\processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="sublime"):
-				_open_app("C:\\Program Files\\Sublime Text 3\\sublime_text.exe")
+				subprocess.run("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="minecraft"):
-				_open_app("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe")
+				subprocess.run("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="vm"):
-				_open_app("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe")
+				subprocess.run("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="github"):
-				_open_app("C:\\Users\\aleks\\AppData\\Local\\GitHubDesktop\\GitHubDesktop.exe")
+				subprocess.run("github.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="blender"):
-				_open_app("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe")
+				subprocess.run("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="work"):
-				_open_app(["python","D:\\boot\\boot.py","2"])
+				subprocess.run(["python","D:\\boot\\boot.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="serial"):
-				_open_app(["python","D:\\boot\\boot.py","3"])
+				subprocess.run(["python","D:\\boot\\boot.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="stats"):
-				_open_app(["python","D:\\boot\\boot.py","6"])
+				subprocess.run(["python","D:\\boot\\boot.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="docs"):
-				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"])
+				subprocess.run(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="cad"):
-				_open_app("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe")
-			elif (os.path.exists(p)):
-				_open_app(p,file=True)
+				subprocess.run("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (GIT_CLONE_REGEX.match(p)!=None):
 				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
-				_open_app("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1],file=True)
-			elif (URL_REGEX.match(p)!=None):
-				_open_app(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",p])
+				os.startfile("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1])
 			elif (p=="" or p=="exit"):
 				break
 			else:
@@ -1995,11 +1957,12 @@ else:
 							if (k.lower()==bf[0].lower()):
 								pr[1]=l[k][0]
 								break
-					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
-					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
-					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
-					sys.__stdout__.flush()
-					ll=ln
+					if (len(bf[1])>0):
+						o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
+						ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
+						sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+						sys.__stdout__.flush()
+						ll=ln
 					u=False
 				time.sleep(0.01)
 			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
