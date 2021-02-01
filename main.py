@@ -87,7 +87,7 @@ GENERIC_WRITE=0x40000000
 ICON_BIG=1
 ICON_SMALL=0
 IMAGE_ICON=1
-INVALID_HANDLE_VALUE=ctypes.wintypes.HANDLE(-1).value
+INVALID_HANDLE_VALUE=0xffffffffffffffff
 KEY_READ=0x20019
 LLKHF_ALTDOWN=0x20
 LLKHF_INJECTED=0x10
@@ -1513,7 +1513,7 @@ def _create_prog(type_,name,op=True,pr=True):
 				f.write("#include <arduino.h>\n\n\n\nvoid setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\npython D:\\boot\\boot.py 5 compile ./src ./build arduino:avr:uno&&python D:\\boot\\boot.py 5 upload ./build COM3 arduino:avr:uno\n")
+				f.write(f"@echo off\ncls\npython D:\\boot\\main.py 5 compile ./src ./build arduino:avr:uno&&python D:\\boot\\main.py 5 upload ./build COM3 arduino:avr:uno\n")
 	elif (type_=="assembly"):
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
@@ -1741,14 +1741,14 @@ if (len(sys.argv)==1):
 	atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
 	_register_hk("e",lambda:subprocess.run("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("c",lambda:subprocess.run(["python","D:\\boot\\boot.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("q",lambda:subprocess.run(["python","D:\\boot\\boot.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("c",lambda:subprocess.run(["python","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("q",lambda:subprocess.run(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("a",lambda:os.startfile("D:\\K"))
-	_register_hk("r",lambda:subprocess.run(["pythonw","D:\\boot\\boot.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("r",lambda:subprocess.run(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("home",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
 	_register_hk("end",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
 	_register_hk("d",lambda:subprocess.run("C:\\Windows\\System32\\Taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("v",lambda:subprocess.run(["python","D:\\boot\\boot.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("v",lambda:subprocess.run(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
 	_print("Registering All Projects\x1b[38;2;100;100;100m...")
@@ -1822,11 +1822,11 @@ else:
 			elif (p=="blender"):
 				subprocess.run("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="work"):
-				subprocess.run(["python","D:\\boot\\boot.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+				subprocess.run(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="serial"):
-				subprocess.run(["python","D:\\boot\\boot.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+				subprocess.run(["python","D:\\boot\\main.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="stats"):
-				subprocess.run(["python","D:\\boot\\boot.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+				subprocess.run(["python","D:\\boot\\main.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="docs"):
 				subprocess.run(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 			elif (p=="cad"):
