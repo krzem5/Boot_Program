@@ -227,6 +227,8 @@ ctypes.windll.user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_in
 ctypes.windll.user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
 ctypes.windll.user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
 ctypes.windll.user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
+ctypes.windll.user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
+ctypes.windll.user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
 ctypes.windll.user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
 ctypes.windll.user32.LoadImageW.restype=ctypes.wintypes.HANDLE
 ctypes.windll.user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
@@ -1696,18 +1698,18 @@ def _hotkey_handler(c,wp,lp):
 					_hotkey_handler._ig_alt=True
 				if (dt.vk_code in VK_SAME_KEYS):
 					dt.vk_code=VK_SAME_KEYS[dt.vk_code]
-				if (dt.vk_code in VK_KEYS.values()):
-					_hotkey_handler._kb[dt.vk_code]=(wp in (WM_KEYDOWN,WM_SYSKEYDOWN))
-					if (_hotkey_handler._kb[dt.vk_code] and dt.vk_code in _hotkey_handler._hk and _hotkey_handler._kb[VK_KEYS["ctrl"]] and _hotkey_handler._kb[VK_KEYS["shift"]] and _hotkey_handler._kb[VK_KEYS["alt"]]):
+				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and dt.vk_code in _hotkey_handler._hk and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
 						_hotkey_handler._hk[dt.vk_code]()
-						return -1
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
 	return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
 
 
 
+
 def _register_hk(e,cb):
+	if (e not in VK_KEYS):
+		raise RuntimeError(f"Unknown Key '{e}'!")
 	_hotkey_handler._hk[VK_KEYS[e]]=cb
 
 
@@ -1734,21 +1736,20 @@ if (len(sys.argv)==1):
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	_print("Registering Hotkey Handler\x1b[38;2;100;100;100m...")
 	_hotkey_handler._hk={}
-	_hotkey_handler._kb={e:False for e in VK_KEYS.values()}
 	_hotkey_handler._ig_alt=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 	ctypes.windll.user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,ctypes.windll.kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 	atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
-	_register_hk("e",lambda:subprocess.run("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("c",lambda:subprocess.run(["python","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("q",lambda:subprocess.run(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("c",lambda:subprocess.Popen(["python","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("a",lambda:os.startfile("D:\\K"))
-	_register_hk("r",lambda:subprocess.run(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("home",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
-	_register_hk("end",lambda:subprocess.run(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
-	_register_hk("d",lambda:subprocess.run("C:\\Windows\\System32\\Taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("v",lambda:subprocess.run(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
+	_register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
+	_register_hk("d",lambda:subprocess.Popen("C:\\Windows\\System32\\taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("v",lambda:subprocess.Popen(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
 	_print("Registering All Projects\x1b[38;2;100;100;100m...")
@@ -1759,15 +1760,11 @@ if (len(sys.argv)==1):
 	_print("Startint Remote Std Listener\x1b[38;2;100;100;100m...")
 	_start_thr(_start_s,"__core__","remote_std_server")
 	_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
-	try:
-		msg=ctypes.wintypes.LPMSG()
-		while (True):
-			if (ctypes.windll.user32.PeekMessageW(msg,None,0,0,PM_REMOVE)!=0):
-				ctypes.windll.user32.TranslateMessage(msg)
-				ctypes.windll.user32.DispatchMessageW(msg)
-	except:
-		pass
-	os.system(f"taskkill /pid {os.getpid()} /f")
+	msg=ctypes.wintypes.LPMSG()
+	while (True):
+		if (ctypes.windll.user32.GetMessageW(msg,None,0,0)!=0):
+			ctypes.windll.user32.TranslateMessage(msg)
+			ctypes.windll.user32.DispatchMessageW(msg)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -1805,45 +1802,107 @@ else:
 		r.after(0,_loop,r)
 		r.mainloop()
 	elif (v==1):
-		while (True):
-			p=input("> ").lower().strip()
-			if (p=="chrome"):
-				subprocess.run("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="processing"):
-				subprocess.run("C:\\Program Files\\Processing\\processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="sublime"):
-				subprocess.run("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="minecraft"):
-				subprocess.run("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="vm"):
-				subprocess.run("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="github"):
-				subprocess.run("github.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="blender"):
-				subprocess.run("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="work"):
-				subprocess.run(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="serial"):
-				subprocess.run(["python","D:\\boot\\main.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="stats"):
-				subprocess.run(["python","D:\\boot\\main.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="docs"):
-				subprocess.run(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (p=="cad"):
-				subprocess.run("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-			elif (GIT_CLONE_REGEX.match(p)!=None):
-				os.system(f"cd /d D:\\K\\Downloads\\&&git clone {p}")
-				os.startfile("D:\\K\\Downloads\\"+p.split(".git")[0].split("/")[-1])
-			elif (p=="" or p=="exit"):
-				break
-			else:
-				os.system("cls")
-				continue
-			break
+		inp_cm=ctypes.wintypes.DWORD(0)
+		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
+		out_cm=ctypes.wintypes.DWORD(0)
+		ho=ctypes.windll.kernel32.GetStdHandle(-11)
+		ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
+		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		try:
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+			nci.dwSize=ci.dwSize
+			nci.bVisible=0
+			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+			bf=""
+			u=True
+			ll=0
+			while (True):
+				if (msvcrt.kbhit()==True):
+					k=msvcrt.getch()
+					if (k==b"\xe0"):
+						msvcrt.getch()
+					elif (k==b"\x03"):
+						break
+					elif (k==b"\x08"):
+						bf=bf[:-1]
+						u=True
+					elif (k==b"\r"):
+						if (bf=="chrome"):
+							subprocess.Popen("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="processing"):
+							subprocess.Popen("C:\\Program Files\\Processing\\processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="sublime"):
+							subprocess.Popen("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="minecraft"):
+							subprocess.Popen("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="vm"):
+							subprocess.Popen("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="github"):
+							subprocess.Popen("github.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="blender"):
+							subprocess.Popen("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="work"):
+							subprocess.Popen(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="serial"):
+							subprocess.Popen(["python","D:\\boot\\main.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="stats"):
+							subprocess.Popen(["python","D:\\boot\\main.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="docs"):
+							subprocess.Popen(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (bf=="cad"):
+							subprocess.Popen("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							break
+						elif (GIT_CLONE_REGEX.match(bf)!=None):
+							os.system(f"cd /d D:\\K\\Downloads\\&&git clone {bf}")
+							os.startfile("D:\\K\\Downloads\\"+bf.split(".git")[0].split("/")[-1])
+							break
+						elif (bf=="" or bf=="exit"):
+							break
+						bf=""
+						u=True
+					elif (ord(k)>31 and ord(k)<127):
+						bf+=str(k,"utf-8")
+						u=True
+				if (u==True):
+					u=False
+					o=f"> {bf}"
+					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
+					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+					sys.__stdout__.flush()
+					ll=ln
+				time.sleep(0.01)
+			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		except Exception as e:
+			traceback.print_exception(None,e,e.__traceback__)
+			while (True):
+				pass
+		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
+		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
+		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
+		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,sbi.dwSize)
+		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 	elif (v==2):
-		threading.current_thread()._b_nm="__core__"
-		threading.current_thread()._nm="work_terminal"
-		threading.current_thread()._r=2
 		inp_cm=ctypes.wintypes.DWORD(0)
 		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
