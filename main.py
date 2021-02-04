@@ -31,8 +31,9 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global CMD_L,R_STD_BUFFER,STDOUT_LOCK
+global ARDUINO_CACHE,CMD_L,R_STD_BUFFER,STDOUT_LOCK
 ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
+ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
@@ -827,53 +828,52 @@ def _rm_dir(fp):
 
 
 
-class _Arduino_Cache:
-	def init():
-		_print("Initialising Cache\x1b[38;2;100;100;100m...")
-		if (not os.path.exists(f"D:/boot/arduino/cache")):
-			os.mkdir(f"D:/boot/arduino/cache")
-		if (not os.path.exists(f"D:/boot/arduino/cache/index")):
-			with open(f"D:/boot/arduino/cache/index","w"):
-				_Arduino_Cache._dt={}
-		else:
-			with open(f"D:/boot/arduino/cache/index","r") as f:
-				_Arduino_Cache._dt={k.split(":")[0]:float(k.split(":")[1]) for k in f.read().replace("\r","").split("\n") if len(k)>0}
-		u=False
-		_print("Reading Cache Index\x1b[38;2;100;100;100m...")
-		for k in list(_Arduino_Cache._dt.keys()):
-			if (_Arduino_Cache._dt[k]<time.time() or not os.path.exists(f"D:/boot/arduino/cache/{k}")):
-				if (os.path.exists(f"D:/boot/arduino/cache/{k}")):
-					os.remove(f"D:/boot/arduino/cache/{k}")
-				del _Arduino_Cache._dt[k]
-				u=True
-		_print("Removing Old Cache\x1b[38;2;100;100;100m...")
-		for k in os.listdir(f"D:/boot/arduino/cache/"):
-			if (k=="index" or k in list(_Arduino_Cache._dt.keys())):
-				continue
-			os.remove(f"D:/boot/arduino/cache/{k}")
-		if (u==True):
-			with open(f"D:/boot/arduino/cache/index","w") as f:
-				f.write("\n".join([f"{e[0]}:{e[1]}" for e in _Arduino_Cache._dt.items()]))
-
-
-
-	@staticmethod
-	def get(k):
-		t=_Arduino_Cache._dt.get(k,0)
-		if (t==0):
-			return None
-		with open(f"D:/boot/arduino/cache/{k}","rb") as f:
-			return f.read()
-
-
-
-	@staticmethod
-	def set(k,v,t=2592000):
-		_Arduino_Cache._dt[k]=time.time()+t
+def _init_arduino_cache():
+	global ARDUINO_CACHE
+	_print("Initialising Cache\x1b[38;2;100;100;100m...")
+	if (not os.path.exists(f"D:/boot/arduino/cache")):
+		os.mkdir(f"D:/boot/arduino/cache")
+	if (not os.path.exists(f"D:/boot/arduino/cache/index")):
+		with open(f"D:/boot/arduino/cache/index","w"):
+			ARDUINO_CACHE={}
+	else:
+		with open(f"D:/boot/arduino/cache/index","r") as f:
+			ARDUINO_CACHE={k.split(":")[0]:float(k.split(":")[1]) for k in f.read().replace("\r","").split("\n") if len(k)>0}
+	u=False
+	_print("Reading Cache Index\x1b[38;2;100;100;100m...")
+	for k in list(ARDUINO_CACHE.keys()):
+		if (ARDUINO_CACHE[k]<time.time() or not os.path.exists(f"D:/boot/arduino/cache/{k}")):
+			if (os.path.exists(f"D:/boot/arduino/cache/{k}")):
+				os.remove(f"D:/boot/arduino/cache/{k}")
+			del ARDUINO_CACHE[k]
+			u=True
+	_print("Removing Old Cache\x1b[38;2;100;100;100m...")
+	for k in os.listdir(f"D:/boot/arduino/cache/"):
+		if (k=="index" or k in list(ARDUINO_CACHE.keys())):
+			continue
+		os.remove(f"D:/boot/arduino/cache/{k}")
+	if (u==True):
 		with open(f"D:/boot/arduino/cache/index","w") as f:
-			f.write("\n".join([f"{e[0]}:{e[1]}" for e in _Arduino_Cache._dt.items()]))
-		with open(f"D:/boot/arduino/cache/{k}","wb") as f:
-			f.write(v)
+			f.write("\n".join([f"{e[0]}:{e[1]}" for e in ARDUINO_CACHE.items()]))
+
+
+
+def _get_arduino_cache(k):
+	t=ARDUINO_CACHE.get(k,0)
+	if (t==0):
+		return None
+	with open(f"D:/boot/arduino/cache/{k}","rb") as f:
+		return f.read()
+
+
+
+def _set_arduino_cache(k,v,t=2592000):
+	global ARDUINO_CACHE
+	ARDUINO_CACHE[k]=time.time()+t
+	with open(f"D:/boot/arduino/cache/index","w") as f:
+		f.write("\n".join([f"{e[0]}:{e[1]}" for e in ARDUINO_CACHE.items()]))
+	with open(f"D:/boot/arduino/cache/{k}","wb") as f:
+		f.write(v)
 
 
 
@@ -904,10 +904,10 @@ def _l_ard_boards(p=True):
 			ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
 			m=re.search((r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})" if hw_id.value[:3]=="USB" else r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})"),hw_id.value,re.I)
 			if (m is not None):
-				r=_Arduino_Cache.get(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
+				r=_get_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
 				if (r==None):
 					r=requests.get(f"https://builder.arduino.cc/v3/boards/byVidPid/0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}/0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}",headers={"Content-Type":"application/json"}).text
-					_Arduino_Cache.set(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json",bytes(r,"utf-8"))
+					_set_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json",bytes(r,"utf-8"))
 				if (len(r)==0):
 					continue
 				r=json.loads(r)
@@ -972,11 +972,11 @@ def _install_ard_pkg(b,force=False):
 		return
 	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver']!=None else '')}'...")
 	_print("Reading Package Index Cache\x1b[38;2;100;100;100m...")
-	dt=_Arduino_Cache.get("package_index.json")
+	dt=_get_arduino_cache("package_index.json")
 	if (dt==None):
 		_print("\x1b[38;2;200;40;20mPackage Index Cache not Found.\x1b[0m Downloaing It\x1b[38;2;100;100;100m...")
 		dt=requests.get("https://downloads.arduino.cc/packages/package_index.json",headers={"Content-Type":"application/json"}).text
-		_Arduino_Cache.set("package_index.json",bytes(dt,"utf-8"))
+		_set_arduino_cache("package_index.json",bytes(dt,"utf-8"))
 	p={e["name"]:e for e in json.loads(dt)["packages"]}
 	dl=[b]
 	o=[]
@@ -1078,8 +1078,8 @@ def _split(cmd):
 
 
 def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
-	def _run_cmd(*a,**kw):
-		o=subprocess.run(*a,**kw)
+	def _run_cmd(cmd):
+		o=subprocess.run(cmd)
 		if (o.returncode!=0):
 			sys.exit(o.returncode)
 		return o
@@ -1326,8 +1326,8 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 
 
 def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
-	def _run_cmd(*a,**kw):
-		o=subprocess.run(*a,**kw)
+	def _run_cmd(cmd):
+		o=subprocess.run(cmd)
 		if (o.returncode!=0):
 			sys.exit(o.returncode)
 		return o
@@ -2420,7 +2420,7 @@ else:
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="arduino_serial_terminal"
 		threading.current_thread()._r=2
-		_Arduino_Cache.init()
+		_init_arduino_cache()
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=ctypes.windll.kernel32.GetStdHandle(-11)
 		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
@@ -2481,7 +2481,7 @@ else:
 		threading.current_thread()._r=1
 		if (not os.path.exists(f"D:/boot/arduino")):
 			os.mkdir(f"D:/boot/arduino")
-		_Arduino_Cache.init()
+		_init_arduino_cache()
 		if (len(sys.argv)<3):
 			_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)
