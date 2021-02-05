@@ -1301,7 +1301,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		sz_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")}
 		out=str(_run_cmd(_prepare_cmd(_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"])),stdout=subprocess.PIPE).stdout,"utf-8")
 		for i,r in enumerate(("recipe.size.regex","recipe.size.regex.data")):
-			for k in re.findall(r"(?m)"+bp[r],out):
+			for k in re.findall(bp[r],out,re.M):
 				sz[i]+=int(k)
 		if (sz[0]>int(bp["upload.maximum_size"])):
 			raise RuntimeError(f"Sketch Uses {sz[0]} bytes out of {int(bp['upload.maximum_size'])} bytes of storage space.")
@@ -1700,6 +1700,7 @@ def _hotkey_handler(c,wp,lp):
 					dt.vk_code=VK_SAME_KEYS[dt.vk_code]
 				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and dt.vk_code in _hotkey_handler._hk and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
 						_hotkey_handler._hk[dt.vk_code]()
+						return -1
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
 	return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
@@ -1984,7 +1985,7 @@ else:
 							pri_s=""
 							u=True
 					elif (k==b"\r"):
-						if (bf[0].lower() in list(l.keys())):
+						if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
 							e=False
 							for k in l.get(bf[0].lower(),[]):
 								if (k.lower()==bf[1].lower()):
@@ -2016,12 +2017,11 @@ else:
 							if (k.lower()==bf[0].lower()):
 								pr[1]=l[k][0]
 								break
-					if (len(bf[1])>0):
-						o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
-						ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
-						sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
-						sys.__stdout__.flush()
-						ll=ln
+					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
+					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
+					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+					sys.__stdout__.flush()
+					ll=ln
 					u=False
 				time.sleep(0.01)
 			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
