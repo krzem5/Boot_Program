@@ -9,7 +9,6 @@ import json
 import math
 import msvcrt
 import os
-import random
 import re
 import regex
 import requests
@@ -62,8 +61,8 @@ SERIAL_BAUD=9600
 SERIAL_TIMEOUT=5000
 STDOUT_LOCK=False
 URL_REGEX=re.compile(r"^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\xffff]{2,})))(?::\d{2,5})?(?:/[^\s]*)?$",re.I|re.S)
-VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"0":0x60,"1":0x61,"2":0x62,"3":0x63,"4":0x64,"5":0x65,"6":0x66,"7":0x67,"8":0x68,"9":0x69,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,"+":0xbb,",":0xbc,"-":0xbd,".":0xbe,"/":0xbf,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
-VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa1:0x10,0xa2:0x11,0xa2:0x11,0xa4:0x12,0xa5:0x12}
+VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
+VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/")
 
 
@@ -325,7 +324,7 @@ def _print(*a,end="\n"):
 				i+=len(o)-1
 			i+=1
 	if (hasattr(threading.current_thread(),"_r") and threading.current_thread()._r>=1):
-		if (R_STD_BUFFER["_s"]==None):
+		if (R_STD_BUFFER["_s"] is None):
 			R_STD_BUFFER["_s"]=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 			R_STD_BUFFER["_s"].connect(("127.0.0.1",8022))
 			thr=threading.Thread(target=_r_std_thr,args=(),kwargs={})
@@ -412,7 +411,7 @@ def _is_bin(fp):
 	try:
 		dt.decode(encoding="utf-8")
 		enc_u=True
-	except:
+	except UnicodeDecodeError:
 		pass
 	if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
 		return (False if enc_u==True else True)
@@ -452,7 +451,7 @@ def _update_repo(p,b_nm):
 					if (len(f)!=dt["sz"]):
 						return False
 					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("cp1252")).hexdigest()==dt["sha"] else False)
-			except:
+			except UnicodeDecodeError:
 				if (os.stat(fp).st_size!=dt["sz"]):
 					return False
 				with open(fp,"rb") as f:
@@ -527,7 +526,7 @@ def _update_repo(p,b_nm):
 						with open(os.path.join(r,f),"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
 						b64=False
-					except:
+					except UnicodeDecodeError:
 						pass
 				if (b64==True):
 					b_sha=True
@@ -538,7 +537,7 @@ def _update_repo(p,b_nm):
 						dt="File too Large (size = %d b)"%(len(dt))
 					else:
 						b=_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
-						if (b==None):
+						if (b is None):
 							b_sha=False
 							dt="Github Server Error"
 						else:
@@ -689,7 +688,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 	for k in hdt:
 		if (ex in k[0]):
 			for e in k[1]:
-				if (e[1]==None):
+				if (e[1] is None):
 					c.append(e[0])
 					break
 				f=True
@@ -767,7 +766,7 @@ def _repo_stats(fp,ll,hdt,db,el):
 				l=_repo_stats_detect_file(r,f,ll,hdt,db)
 				if (el["__e__"]==1):
 					return
-				if (l==None):
+				if (l is None):
 					continue
 				if (l not in el):
 					el[l]=0
@@ -777,7 +776,7 @@ def _repo_stats(fp,ll,hdt,db,el):
 
 
 def _read_repo_stats(fp,ll,hdt,db,el):
-	if (fp==None):
+	if (fp is None):
 		for fp in os.listdir("D:\\K\\Coding\\"):
 			_repo_stats(f"D:\\K\\Coding\\{fp}\\",ll,hdt,db,el)
 			if (el["__e__"]==1):
@@ -905,7 +904,7 @@ def _l_ard_boards(p=True):
 			m=re.search((r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})" if hw_id.value[:3]=="USB" else r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})"),hw_id.value,re.I)
 			if (m is not None):
 				r=_get_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
-				if (r==None):
+				if (r is None):
 					r=requests.get(f"https://builder.arduino.cc/v3/boards/byVidPid/0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}/0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}",headers={"Content-Type":"application/json"}).text
 					_set_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json",bytes(r,"utf-8"))
 				if (len(r)==0):
@@ -973,7 +972,7 @@ def _install_ard_pkg(b,force=False):
 	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver']!=None else '')}'...")
 	_print("Reading Package Index Cache\x1b[38;2;100;100;100m...")
 	dt=_get_arduino_cache("package_index.json")
-	if (dt==None):
+	if (dt is None):
 		_print("\x1b[38;2;200;40;20mPackage Index Cache not Found.\x1b[0m Downloaing It\x1b[38;2;100;100;100m...")
 		dt=requests.get("https://downloads.arduino.cc/packages/package_index.json",headers={"Content-Type":"application/json"}).text
 		_set_arduino_cache("package_index.json",bytes(dt,"utf-8"))
@@ -990,7 +989,7 @@ def _install_ard_pkg(b,force=False):
 		for k in p[d["pkg"]]["tools"]:
 			if (("name" in list(d.keys()) and k["name"]==d["name"])):
 				l+=[(k["version"],k,True)]
-		e=(sorted(l,key=lambda e:e[0],reverse=True)[0] if d["ver"]==None else [e for e in l if e[0]==d["ver"]][0])
+		e=(sorted(l,key=lambda e:e[0],reverse=True)[0] if d["ver"] is None else [e for e in l if e[0]==d["ver"]][0])
 		if (e[2]==False):
 			o+=[(d["pkg"],(d["arch"] if "arch" in list(d.keys()) else d["name"]),e[1]["version"],e[1]["url"],e[1]["archiveFileName"],"hardware",int(e[1]["size"]))]
 			if (len(e[1]["toolsDependencies"])>0):
@@ -1098,7 +1097,6 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	def _prepare_cmd(cmd):
 		return [e for e in _split(cmd) if len(e)>0]
 	def _run_recipe(bp,pfx,sfx):
-		l=[]
 		for k in bp.keys():
 			if (k.startswith(pfx) and k.endswith(sfx) and len(bp[k])>0):
 				cmd=_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(bp,bp[k])))
@@ -1128,7 +1126,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		i=0
 		while (i<len(dt)):
 			m=re.search(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",dt[i:],re.M)
-			if (m==None):
+			if (m is None):
 				return dt
 			dt=dt[:i+m.start(0)]+b"#include <"+m.group(1)[1:-1].replace(b"\\",b"/").replace(b"/",b"$")+b">"+dt[i+m.end(0)-1:]
 			i+=m.end(0)
@@ -1154,7 +1152,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			if (m_fp!=None):
 				raise RuntimeError("Sketch Contains Multiple Main Programs.")
 			m_fp=f"{s_fp}main{k}"
-	if (m_fp==None):
+	if (m_fp is None):
 		raise RuntimeError("Sketch doesn't Contain a Main Program.")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
@@ -1214,7 +1212,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 					_print(f"Found Main Sketch File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
 					with open(os.path.join(r,fp),"rb") as f:
 						dt=f.read().replace(b"\r\n",b"\n")
-						if (nh_inc==False and re.search(br"""(?m)^\s*#\s*include\s*[<\"]Arduino\.h[>\"]""",dt)==None):
+						if (nh_inc==False and re.search(br"""(?m)^\s*#\s*include\s*[<\"]Arduino\.h[>\"]""",dt) is None):
 							bf.write(b"#include <arduino.h>\n")
 							l_off+=1
 						nh_inc=True
@@ -1298,7 +1296,6 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
-		sz_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")}
 		out=str(_run_cmd(_prepare_cmd(_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"])),stdout=subprocess.PIPE).stdout,"utf-8")
 		for i,r in enumerate(("recipe.size.regex","recipe.size.regex.data")):
 			for k in re.findall(bp[r],out,re.M):
@@ -1389,9 +1386,9 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 			b=None
 			for usb_b in _l_ard_boards():
 				if (usb_b["fqbn"]==":".join(fqbn)):
-					if (usb_b["location"]==p or b==None):
+					if (usb_b["location"]==p or b is None):
 						b=usb_b
-			if (b==None):
+			if (b is None):
 				_print("\x1b[38;2;200;40;20mNo Boards Found.\x1b[0m Stopping Upload\x1b[38;2;100;100;100m...")
 				sys.exit(1)
 			time.sleep(0.5)
@@ -1417,7 +1414,7 @@ def _rec_rm_pycache(bd):
 			_rm_dir(sd.path)
 		try:
 			_rec_rm_pycache(sd.path)
-		except:
+		except PermissionError:
 			continue
 
 
@@ -1630,7 +1627,6 @@ def _start_s():
 	s.listen(5)
 	while (True):
 		threading.Thread(target=_r_std_h,args=(s.accept()[0],),kwargs={}).start()
-	s.close()
 
 
 
@@ -1669,7 +1665,6 @@ def _u_mcs(fp):
 						except PermissionError:
 							if (os.path.exists(os.path.join(nr,f))):
 								os.remove(os.path.join(nr,f))
-							pass
 			dw=True
 	if (dw==True):
 		_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
@@ -1904,6 +1899,9 @@ else:
 		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,sbi.dwSize)
 		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 	elif (v==2):
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="create_project"
+		threading.current_thread()._r=2
 		inp_cm=ctypes.wintypes.DWORD(0)
 		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
@@ -2105,7 +2103,7 @@ else:
 					else:
 						self._k=(b"",b"")
 					if (self._m==0):
-						if (self._k[0]==b"r" or self._pl==None):
+						if (self._k[0]==b"r" or self._pl is None):
 							self._pl=_l_ard_boards()
 							ud=True
 						elif (self._k[0]==b"\xe0" and self._k[1]==b"H"):
@@ -2351,7 +2349,6 @@ else:
 					if (ud==True):
 						sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join(self._o)+"\x1b[0m")
 			def _draw_table(self,nm,d,s=-1):
-				mw=self._sz[0]-11
 				mx_l=[max([len(nm[list(nm.keys())[i]][0])]+[len(e[k]) for e in d])+2 for i,k in enumerate(list(nm.keys()))]
 				off=((self._sz[0]-9-(sum(mx_l)+len(list(nm.keys()))+1))//2,3)
 				self._set(off[0],off[1],"\x1b[38;2;156;156;156m┌"+"┬".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┐")
@@ -2397,7 +2394,7 @@ else:
 						self._extend(i,k+("\n" if j<len(v.split("\n"))-1 or e==True else ""))
 					return
 				l=[j for j,e in enumerate(self._dt) if e[0]==i]
-				if (len(l)==0 or self._dt[l[-1]][1][-1]==None):
+				if (len(l)==0 or self._dt[l[-1]][1][-1] is None):
 					self._dt+=[[i,[""]]]
 					i=len(self._dt)-1
 					j=0
@@ -2665,7 +2662,7 @@ else:
 				elif (c[0]==b"\xe0" and c[1]==b"P"):
 					vs+=1
 					ud=True
-			if (thr==None and el["__e__"]==2):
+			if (thr is None and el["__e__"]==2):
 				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
 				thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
 				thr.daemon=True
@@ -2699,7 +2696,7 @@ else:
 						if (bw<0):
 							bw=0
 						o0[2]+=(f"\x1b[48;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
-						if (si==None):
+						if (si is None):
 							si=len(o0[1])-1
 						o0[2]+="█"*int(bw)
 						ln-=int(bw)+np
