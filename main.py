@@ -35,7 +35,7 @@ ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_HOST_SYSTEM="i686-mingw32"
-ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino",".pde"]
+ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
