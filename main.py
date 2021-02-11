@@ -43,12 +43,11 @@ CMD_L={}
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN=f.strip()
-MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5"]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
-REPO_STATS_IGNORE_REGEX=re.compile(r"""(?://|#|%).*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|0[bB][0-1]+|0[oO][0-7]+|0[xX][0-9a-f]+|(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][\+\-]?[0-9]+)?""",re.M|re.S)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
 REPO_STATS_LOG_ZERO_TOKENS=None
 REPO_STATS_MAX_READ=65536
