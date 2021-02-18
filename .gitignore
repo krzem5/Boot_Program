@@ -1,6 +1,7 @@
 ### Github File Push Ignore
 
 arduino
+processing
 mcs
 *.dt
 *.json

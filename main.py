@@ -1729,8 +1729,8 @@ fc.Char.UnicodeChar=" "
 fc.Attributes=csbi.wAttributes
 csbi.dwCursorPosition.X=0
 csbi.dwCursorPosition.Y=0
-ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
-ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
+# ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
+# ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 if (len(sys.argv)==1):
 	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
@@ -1900,8 +1900,6 @@ else:
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
 		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
 		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,sbi.dwSize)
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 	elif (v==2):
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="create_project"
@@ -1918,9 +1916,6 @@ else:
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		try:
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
@@ -2036,8 +2031,6 @@ else:
 		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
 		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
 		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,sbi.dwSize)
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 	elif (v==3):
 		class _UI:
 			def __init__(self,sz):
