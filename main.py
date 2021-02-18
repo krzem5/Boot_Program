@@ -30,7 +30,7 @@ with open("D:\\boot\\secret.dt","r") as f:
 
 
 
-global ARDUINO_CACHE,CMD_L,R_STD_BUFFER,STDOUT_LOCK
+global ARDUINO_CACHE,CMD_L,END,R_STD_BUFFER,STDOUT_LOCK
 ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
@@ -40,10 +40,11 @@ ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
 CMD_L={}
+END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN=f.strip()
-MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a"]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -1526,7 +1527,7 @@ def _create_prog(type_,name,op=True,pr=True):
 				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ..\nset INCLUDE=%_INCLUDE%")
+				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /utf-8 /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /utf-8 /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ..\nset INCLUDE=%_INCLUDE%")
 	elif (type_=="cpp"):
 		if (not os.path.exists(f"{p}src/main.cpp") and "cpp" not in fel):
 			with open(f"{p}src/main.cpp","x") as f:
@@ -1682,6 +1683,12 @@ def _u_mcs(fp):
 
 
 def _hotkey_handler(c,wp,lp):
+	global END
+	def _thr(vk):
+		if (vk in VK_SAME_KEYS):
+			vk=VK_SAME_KEYS[vk]
+		if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
+				_hotkey_handler._hk[vk]()
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 		if (dt.vk_code!=VK_PACKET and dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN)!=LLKHF_INJECTED|LLKHF_ALTDOWN):
@@ -1690,11 +1697,11 @@ def _hotkey_handler(c,wp,lp):
 			else:
 				if (dt.scan_code==0x21d and dt.vk_code==0xa2):
 					_hotkey_handler._ig_alt=True
-				if (dt.vk_code in VK_SAME_KEYS):
-					dt.vk_code=VK_SAME_KEYS[dt.vk_code]
-				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and dt.vk_code in _hotkey_handler._hk and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
-						_hotkey_handler._hk[dt.vk_code]()
-						return -1
+				thr=threading.Thread(target=_thr,args=(dt.vk_code,))
+				thr.daemon=True
+				thr.start()
+	except KeyboardInterrupt:
+		ND=True
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
 	return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
@@ -1741,20 +1748,20 @@ if (len(sys.argv)==1):
 	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	# _register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
-	# _register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
+	_register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
+	_register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
-	_print("Registering All Projects\x1b[38;2;100;100;100m...")
+	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir("D:\\K\\Coding"):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
 	_print("Startint Remote Std Listener\x1b[38;2;100;100;100m...")
 	_start_thr(_start_s,"__core__","remote_std_server")
-	_print("Starting Infinite Loop\x1b[38;2;100;100;100m...")
+	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
 	msg=ctypes.wintypes.LPMSG()
-	while (True):
+	while (END==False):
 		if (ctypes.windll.user32.GetMessageW(msg,None,0,0)!=0):
 			ctypes.windll.user32.TranslateMessage(msg)
 			ctypes.windll.user32.DispatchMessageW(msg)
