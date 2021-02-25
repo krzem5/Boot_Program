@@ -44,7 +44,7 @@ END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN=f.strip()
-MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a"]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -1729,8 +1729,8 @@ fc.Char.UnicodeChar=" "
 fc.Attributes=csbi.wAttributes
 csbi.dwCursorPosition.X=0
 csbi.dwCursorPosition.Y=0
-# ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
-# ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
+ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
+ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 if (len(sys.argv)==1):
 	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
@@ -1748,8 +1748,8 @@ if (len(sys.argv)==1):
 	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
-	_register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
+	# _register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
+	# _register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
@@ -2689,7 +2689,7 @@ else:
 					for k,v in pl.items():
 						if (mv==0):
 							mv=v[0]
-						bw=round(v[0]*(sbi.dwMaximumWindowSize.X-10)*2/pt)/2-np/2
+						bw=int(v[0]*(sbi.dwMaximumWindowSize.X-10)*2/pt)/2-np/2
 						if (bw<0):
 							bw=0
 						o0[2]+=(f"\x1b[48;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
