@@ -44,7 +44,7 @@ END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN=f.strip()
-MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a"]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -1505,7 +1505,7 @@ def _create_prog(type_,name,op=True,pr=True):
 			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
 	if (not os.path.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
-			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n(This is an auto - generated file.)\n""")
+			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n""")
 	if (type_=="arduino"):
 		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
