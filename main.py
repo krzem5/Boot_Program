@@ -86,6 +86,7 @@ GENERIC_READ=0x80000000
 GENERIC_WRITE=0x40000000
 ICON_BIG=1
 ICON_SMALL=0
+IDYES=6
 IMAGE_ICON=1
 INVALID_HANDLE_VALUE=0xffffffffffffffff
 KEY_READ=0x20019
@@ -93,6 +94,10 @@ LLKHF_ALTDOWN=0x20
 LLKHF_INJECTED=0x10
 LR_LOADFROMFILE=0x10
 MAXDWORD=0xffffffff
+MB_DEFBUTTON2=0x100
+MB_ICONQUESTION=0x20
+MB_SYSTEMMODAL=0x1000
+MB_YESNO=0x4
 NOPARITY=0
 NULL=0
 ONESTOPBIT=0
@@ -231,6 +236,8 @@ ctypes.windll.user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
 ctypes.windll.user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
 ctypes.windll.user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
 ctypes.windll.user32.LoadImageW.restype=ctypes.wintypes.HANDLE
+ctypes.windll.user32.MessageBoxW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.c_uint)
+ctypes.windll.user32.MessageBoxW.restype=ctypes.c_int
 ctypes.windll.user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
 ctypes.windll.user32.PeekMessageW.restype=ctypes.wintypes.BOOL
 ctypes.windll.user32.SendMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.c_uint,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
@@ -1708,6 +1715,11 @@ def _hotkey_handler(c,wp,lp):
 
 
 
+def _check_close(t):
+	if (ctypes.windll.user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
+		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe"]+(["/l","/f"] if t==0 else ["/s","/t","0","/f"]))
+
+
 
 def _register_hk(e,cb):
 	if (e not in VK_KEYS):
@@ -1748,8 +1760,8 @@ if (len(sys.argv)==1):
 	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	# _register_hk("home",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/l","/f"]))
-	# _register_hk("end",lambda:subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/s","/t","0","/f"]))
+	_register_hk("home",lambda:_check_close(0))
+	_register_hk("end",lambda:_check_close(1))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
