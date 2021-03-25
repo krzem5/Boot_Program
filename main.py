@@ -761,6 +761,8 @@ def _repo_stats(fp,ll,hdt,db,el):
 	if (el["__e__"]==1):
 		return
 	for r,_,fl in os.walk(fp):
+		if (el["__ig__"]==True and r[len(fp):].replace("\\","/").strip("/")[:4]=="docs"):
+			continue
 		if (el["__e__"]==1):
 			return
 		if ("\\build" not in r.lower()):
@@ -1717,7 +1719,7 @@ def _hotkey_handler(c,wp,lp):
 
 def _check_close(t):
 	if (ctypes.windll.user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
-		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe"]+(["/l","/f"] if t==0 else ["/s","/t","0","/f"]))
+		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
 
 
 
