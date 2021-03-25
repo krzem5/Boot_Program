@@ -1717,7 +1717,7 @@ def _hotkey_handler(c,wp,lp):
 
 def _check_close(t):
 	if (ctypes.windll.user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
-		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
+		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe"]+(["/l","/f"] if t==0 else ["/s","/t","0","/f"]))
 
 
 
