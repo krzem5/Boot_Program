@@ -44,7 +44,7 @@ END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_TOKEN=f.strip()
-MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a"]
+MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -428,7 +428,7 @@ def _is_bin(fp):
 
 
 def _update_repo(p,b_nm):
-	def _request(m="get",**kw):
+	def _request(m,**kw):
 		kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 		r=getattr(requests,m)(**kw)
 		if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
@@ -1762,6 +1762,7 @@ if (len(sys.argv)==1):
 	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("i",lambda:subprocess.Popen(["python","D:\\boot\\main.py","7"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("home",lambda:_check_close(0))
 	_register_hk("end",lambda:_check_close(1))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
@@ -2746,3 +2747,9 @@ else:
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
 			time.sleep(0.01)
+	elif (v==7):
+		threading.current_thread()._b_nm="__core__"
+		threading.current_thread()._nm="minecraft_server_updater"
+		threading.current_thread()._dpt=True
+		threading.current_thread()._r=2
+		_u_mcs()
