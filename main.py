@@ -1086,8 +1086,8 @@ def _split(cmd):
 
 
 def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
-	def _run_cmd(cmd):
-		o=subprocess.run(cmd)
+	def _run_cmd(cmd,**kw):
+		o=subprocess.run(cmd,**kw)
 		if (o.returncode!=0):
 			sys.exit(o.returncode)
 		return o
@@ -1332,8 +1332,8 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 
 
 def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
-	def _run_cmd(cmd):
-		o=subprocess.run(cmd)
+	def _run_cmd(cmd,**kw):
+		o=subprocess.run(cmd,**kw)
 		if (o.returncode!=0):
 			sys.exit(o.returncode)
 		return o
