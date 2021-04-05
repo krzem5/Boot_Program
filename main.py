@@ -2751,4 +2751,4 @@ else:
 		threading.current_thread()._nm="minecraft_server_updater"
 		threading.current_thread()._dpt=True
 		threading.current_thread()._r=2
-		_u_mcs()
+		_u_mcs("D:\\boot\\mcs")
