@@ -1765,7 +1765,7 @@ if (len(sys.argv)==1):
 	_register_hk("home",lambda:_check_close(0))
 	_register_hk("end",lambda:_check_close(1))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
-	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:\\boot\\mcs")
+	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:/boot/mcs")
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir("D:\\K\\Coding"):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
@@ -2751,4 +2751,4 @@ else:
 		threading.current_thread()._nm="minecraft_server_updater"
 		threading.current_thread()._dpt=True
 		threading.current_thread()._r=2
-		_u_mcs("D:\\boot\\mcs")
+		_u_mcs("D:/boot/mcs")
