@@ -1514,6 +1514,10 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (not os.path.exists(f"{p}README.md")):
 		with open(f"{p}README.md","x") as f:
 			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n""")
+	if (not os.path.exists(f"{p}.lgtm.yml")):
+		with open(f"{p}.lgtm.yml","x") as f:
+			f.write("""queries:\n  - include: "*"\n  - exclude: cpp/short-global-name\n  - exclude: py/redundant-global-declaration\nextraction:\n  python:\n    python_setup:\n      version: 3\n""")
+		os.system(f"cd /d {p}&&attrib +h .lgtm.yml")
 	if (type_=="arduino"):
 		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
