@@ -1463,7 +1463,7 @@ def _open_prog_w(p):
 	if (t=="arduino"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/main.ino")
 	if (t=="assembly"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/main.asm")
+		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"asm",f"{p}src/main.asm")
 	elif (t=="c"):
 		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}src/main.c")
 	elif (t=="cpp"):
