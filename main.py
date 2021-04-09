@@ -664,7 +664,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 		if (fn in db["filenames"][k]):
 			c.append(k)
 	if (el["__e__"]==1):
-		return
+		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -675,7 +675,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 		if (ex in ll[k][0]):
 			c.append(k)
 	if (el["__e__"]==1):
-		return
+		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -689,7 +689,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 	if (REPO_STATS_XML_REGEX.search("\n".join(dt.split("\n")[:2]))!=None):
 		return "XML"
 	if (el["__e__"]==1):
-		return
+		return None
 	c.clear()
 	for k in hdt:
 		if (ex in k[0]):
@@ -708,7 +708,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 				break
 			break
 	if (el["__e__"]==1):
-		return
+		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -717,7 +717,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 		return None
 	tl=_repo_file_tokenize(dt,el)
 	if (el["__e__"]==1):
-		return
+		return None
 	if (len(tl)==0):
 		return None
 	tc={}
@@ -1135,9 +1135,10 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		while (i<len(dt)):
 			m=re.search(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",dt[i:],re.M)
 			if (m is None):
-				return dt
+				break
 			dt=dt[:i+m.start(0)]+b"#include <"+m.group(1)[1:-1].replace(b"\\",b"/").replace(b"/",b"$")+b">"+dt[i+m.end(0)-1:]
 			i+=m.end(0)
+		return dt
 	fqbn=fqbn.split(":")
 	s_fp=os.path.abspath(s_fp).replace("\\","/")
 	if (s_fp[-1]!="/"):
@@ -1955,8 +1956,6 @@ else:
 				if (k[0].lower() not in list(l.keys())):
 					l[k[0].lower()]=[]
 				l[k[0].lower()]+=[k[1].replace("_"," ").title().replace(" ","_")]
-			w=sbi.dwMaximumWindowSize.X+1
-			h=sbi.dwMaximumWindowSize.Y
 			bf=["",""]
 			ll=0
 			pr=["",""]
@@ -2707,7 +2706,6 @@ else:
 					ptvl=max([len(str(e[0])) for e in pl.values()])
 					o0=[f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
 					np=0
-					po=False
 					ln=sbi.dwMaximumWindowSize.X-10
 					mv=0
 					si=None
