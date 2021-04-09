@@ -1519,13 +1519,6 @@ def _create_prog(type_,name,op=True,pr=True):
 		with open(f"{p}.lgtm.yml","x") as f:
 			f.write("""queries:\n  - include: "*"\n  - exclude: cpp/poorly-documented-function\n  - exclude: cpp/short-global-name\n  - exclude: py/empty-except\n  - exclude: py/redundant-global-declaration\nextraction:\n  python:\n    python_setup:\n      version: 3\n""")
 		os.system(f"cd /d {p}&&attrib +h .lgtm.yml")
-	else:
-		with open(f"{p}.lgtm.yml","r") as f:
-			dt=f.read().replace("\r\n","\n").replace("""queries:\n  - include: "*"\n  - exclude: cpp/short-global-name\n  - exclude: py/redundant-global-declaration""","""queries:\n  - include: "*"\n  - exclude: cpp/poorly-documented-function\n  - exclude: cpp/short-global-name\n  - exclude: py/empty-except\n  - exclude: py/redundant-global-declaration""")
-		os.remove(f"{p}.lgtm.yml")
-		with open(f"{p}.lgtm.yml","w") as f:
-			f.write(dt)
-		os.system(f"cd /d {p}&&attrib +h .lgtm.yml")
 	if (type_=="arduino"):
 		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
