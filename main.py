@@ -126,13 +126,13 @@ ctypes.wintypes.LPCOMSTAT=ctypes.POINTER(ctypes.wintypes.COMSTAT)
 ctypes.wintypes.LPDCB=ctypes.POINTER(ctypes.wintypes.DCB)
 ctypes.wintypes.LPOVERLAPPED=ctypes.POINTER(ctypes.wintypes.OVERLAPPED)
 ctypes.wintypes.LPSECURITY_ATTRIBUTES=ctypes.c_void_p
+ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PCHAR_INFO=ctypes.POINTER(ctypes.wintypes.CHAR_INFO)
 ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO)
 ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO)
 ctypes.wintypes.PGUID=ctypes.POINTER(ctypes.wintypes.GUID)
 ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
 ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
-ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 
 
@@ -2394,7 +2394,6 @@ else:
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:/K/Coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program")
 				dc=("None" if sys.argv[2].lower().startswith("d:/k") else "'Boot Program'")
-				_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc})")
 				threading.current_thread()._df=True
 				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:/k/coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
