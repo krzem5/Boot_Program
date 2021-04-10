@@ -1,1 +1,1 @@
-# Boot Program
+# Javascript - Square Finding
