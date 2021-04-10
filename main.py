@@ -33,6 +33,7 @@ ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 END=False
+GITHUB_API_QUOTA=5000
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 with open("D:/boot/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
@@ -393,7 +394,7 @@ def _update_repo(p,b_nm):
 		if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
 			print(r.headers)
 			sys.exit(1)
-		time.sleep(0.72)
+		time.sleep(3600/GITHUB_API_QUOTA)
 		if (type(r.json())==dict and "message" in r.json().keys() and r.json()["message"]=="Server Error"):
 			print(r.json())
 			return None
