@@ -26,14 +26,12 @@ import zipfile
 
 
 global ARDUINO_CACHE,CMD_L,END,R_STD_BUFFER,STDOUT_LOCK
-ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
-ARDUINO_PREPROCESSOR_BUILD_PROPERTIES={"tools.arduino-preprocessor.path":"{runtime.tools.arduino-preprocessor.path}","tools.arduino-preprocessor.cmd.path":"{path}/arduino-preprocessor","tools.arduino-preprocessor.pattern":"\"{cmd.path}\" \"{source_file}\" \"{codecomplete}\" -- -std=gnu++11","preproc.macros.flags":"-w -x c++ -E -CC"}
 CMD_L={}
 END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
@@ -42,7 +40,6 @@ with open("D:\\boot\\secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
-REPO_STATS_BAR_WIDTH=60
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
@@ -65,13 +62,9 @@ TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv(
 DICS_FLAG_GLOBAL=1
 DIGCF_PRESENT=2
 DIREG_DEV=1
-DTR_CONTROL_DISABLE=0
 DTR_CONTROL_ENABLE=1
-DTR_CONTROL_HANDSHAKE=2
-ERROR_INVALID_USER_BUFFER=0x6f8
 ERROR_IO_INCOMPLETE=0x3e4
 ERROR_IO_PENDING=0x3e5
-ERROR_NOT_ENOUGH_MEMORY=8
 ERROR_OPERATION_ABORTED=0x3e3
 ERROR_SUCCESS=0
 EV_ERR=0x80
@@ -90,7 +83,6 @@ KEY_READ=0x20019
 LLKHF_ALTDOWN=0x20
 LLKHF_INJECTED=0x10
 LR_LOADFROMFILE=0x10
-MAXDWORD=0xffffffff
 MB_DEFBUTTON2=0x100
 MB_ICONQUESTION=0x20
 MB_SYSTEMMODAL=0x1000
