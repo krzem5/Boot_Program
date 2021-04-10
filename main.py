@@ -105,11 +105,6 @@ WM_SYSKEYDOWN=0x104
 
 
 
-advapi32=ctypes.windll.advapi32
-kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary("D:/boot/move_to_desktop.dll")
-setupapi=ctypes.windll.setupapi
-user32=ctypes.windll.user32
 ctypes.wintypes.HDEVINFO=ctypes.c_void_p
 ctypes.wintypes.LRESULT=ctypes.c_int
 ctypes.wintypes.PCWSTR=ctypes.c_wchar_p
@@ -141,6 +136,14 @@ ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
 ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
 ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
+
+
+
+advapi32=ctypes.windll.advapi32
+kernel32=ctypes.windll.kernel32
+move_to_desktop=ctypes.windll.LoadLibrary("D:/boot/move_to_desktop.dll")
+setupapi=ctypes.windll.setupapi
+user32=ctypes.windll.user32
 advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
 advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
 advapi32.RegQueryValueExW.argtypes=(ctypes.wintypes.HKEY,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPDWORD,ctypes.c_void_p,ctypes.wintypes.LPDWORD)
@@ -211,6 +214,10 @@ kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes
 kernel32.SetupComm.restype=ctypes.wintypes.BOOL
 kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
 kernel32.WriteFile.restype=ctypes.wintypes.BOOL
+move_to_desktop.move_to_desktop.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.UINT)
+move_to_desktop.move_to_desktop.restype=ctypes.wintypes.BOOL
+move_to_desktop.switch_to_desktop.argtypes=(ctypes.wintypes.UINT,)
+move_to_desktop.switch_to_desktop.restype=ctypes.wintypes.BOOL
 setupapi.SetupDiClassGuidsFromNameW.argtypes=(ctypes.wintypes.PCWSTR,ctypes.wintypes.PGUID,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
 setupapi.SetupDiClassGuidsFromNameW.restype=ctypes.wintypes.BOOL
 setupapi.SetupDiDestroyDeviceInfoList.argtypes=(ctypes.wintypes.HDEVINFO,)
