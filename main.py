@@ -25,11 +25,6 @@ import zipfile
 
 
 
-with open("D:\\boot\\secret.dt","r") as f:
-	f=f.read()
-
-
-
 global ARDUINO_CACHE,CMD_L,END,R_STD_BUFFER,STDOUT_LOCK
 ARDUINO_ADDITIONAL_SKETCH_FILE_EXTENSIONS=[".c",".cpp",".h",".hh",".hpp",".s"]
 ARDUINO_CACHE=None
@@ -43,7 +38,8 @@ CMD_L={}
 END=False
 GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-GITHUB_TOKEN=f.strip()
+with open("D:\\boot\\secret.dt","r") as f:
+	GITHUB_TOKEN=f.read().strip()
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_BAR_WIDTH=60
@@ -79,6 +75,8 @@ ERROR_NOT_ENOUGH_MEMORY=8
 ERROR_OPERATION_ABORTED=0x3e3
 ERROR_SUCCESS=0
 EV_ERR=0x80
+FILE_ATTRIBUTE_ARCHIVE=0x20
+FILE_ATTRIBUTE_HIDDEN=0x2
 FILE_ATTRIBUTE_NORMAL=0x80
 FILE_FLAG_OVERLAPPED=0x40000000
 GENERIC_READ=0x80000000
@@ -211,6 +209,8 @@ ctypes.windll.kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
 ctypes.windll.kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
 ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
+ctypes.windll.kernel32.SetFileAttributesW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD)
+ctypes.windll.kernel32.SetFileAttributesW.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
 ctypes.windll.kernel32.SetupComm.restype=ctypes.wintypes.BOOL
 ctypes.windll.kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
@@ -249,16 +249,6 @@ ctypes.windll.user32.TranslateMessage.argtypes=(ctypes.wintypes.LPMSG,)
 ctypes.windll.user32.TranslateMessage.restype=ctypes.wintypes.BOOL
 ctypes.windll.user32.UnhookWindowsHookEx.argtypes=(ctypes.wintypes.HHOOK,)
 ctypes.windll.user32.UnhookWindowsHookEx.restype=ctypes.wintypes.BOOL
-
-
-
-def _set_print(*a):
-	if (len(a)==1):
-		threading.current_thread()._b_nm=t._b_nm
-		threading.current_thread()._nm=t._nm
-	else:
-		threading.current_thread()._b_nm=a[0]
-		threading.current_thread()._nm=a[1]
 
 
 
@@ -1508,7 +1498,7 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (not os.path.exists(f"{p}.gitignore")):
 		with open(f"{p}.gitignore","x") as f:
 			f.write("build\n")
-		os.system(f"cd /d {p}&&attrib +h .gitignore")
+		ctypes.windll.kernel32.SetFileAttributesW(f"{p}.gitignore",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (not os.path.exists(f"{p}LICENSE.txt")):
 		with open(f"{p}LICENSE.txt","x") as f:
 			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
@@ -1518,7 +1508,7 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (not os.path.exists(f"{p}.lgtm.yml")):
 		with open(f"{p}.lgtm.yml","x") as f:
 			f.write("""queries:\n  - include: "*"\n  - exclude: cpp/poorly-documented-function\n  - exclude: cpp/short-global-name\n  - exclude: java/index-out-of-bounds\n  - exclude: java/local-shadows-field\n  - exclude: java/potentially-weak-cryptographic-algorithm\n  - exclude: java/uncaught-number-format-exception\n  - exclude: java/unused-parameter\n  - exclude: py/empty-except\n  - exclude: py/redundant-global-declaration\nextraction:\n  python:\n    python_setup:\n      version: 3\n""")
-		os.system(f"cd /d {p}&&attrib +h .lgtm.yml")
+		ctypes.windll.kernel32.SetFileAttributesW(f"{p}.lgtm.yml",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (type_=="arduino"):
 		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
