@@ -300,7 +300,7 @@ def _print(*a,end="\n"):
 	def _r_std_thr():
 		global R_STD_BUFFER
 		while (not R_STD_BUFFER["_e"]):
-			if (not R_STD_BUFFER["bf"]):
+			if (len(R_STD_BUFFER["bf"])>0):
 				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
 	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
