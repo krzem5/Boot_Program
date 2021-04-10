@@ -469,11 +469,12 @@ def _update_repo(p,b_nm):
 	r_t=_get_tree(nm,bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
-	p=p.replace("\\","/")
+	p=os.path.abspath(p).replace("\\","/").strip("/")+"/"
 	for r,_,fl in os.walk(p):
-		r=r.replace("\\","/")+"/"
+		r=r.replace("\\","/").strip("/")+"/"
 		for f in fl:
-			fp=(r+f).replace(p,"")[(1 if not p.endswith("/") else 0):]
+			fp=(r+f)[len(p):]
+			print(fp)
 			if (_gitigonre_match(gdt,fp)==True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
