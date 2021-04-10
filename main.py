@@ -471,14 +471,14 @@ def _update_repo(p,b_nm):
 	cnt=[0,0,0,0]
 	p=p.replace("\\","/")
 	for r,_,fl in os.walk(p):
-		r=r.replace("\\","/")
+		r=r.replace("\\","/")+"/"
 		for f in fl:
-			fp=os.path.join(r,f).replace(p,"")[(1 if not p.endswith("/") else 0):]
+			fp=(r+f).replace(p,"")[(1 if not p.endswith("/") else 0):]
 			if (_gitigonre_match(gdt,fp)==True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
-			if (fp in list(r_t.keys()) and _match_f(os.path.join(r,f),r_t[fp])==True):
+			if (fp in list(r_t.keys()) and _match_f(r+f,r_t[fp])==True):
 				cnt[1]+=1
 				bl+=[[fp,None]]
 				_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
@@ -487,11 +487,11 @@ def _update_repo(p,b_nm):
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
 			dt=f"File too Large (size = {os.stat(os.path.join(r,f)).st_size} b)"
 			b_sha=False
-			if (os.stat(os.path.join(r,f)).st_size<=50*1024*1024):
+			if (os.stat(r+f).st_size<=50*1024*1024):
 				b64=True
-				if (_is_bin(os.path.join(r,f))==False):
+				if (_is_bin(r+f)==False):
 					try:
-						with open(os.path.join(r,f),"r",encoding="utf-8") as rbf:
+						with open(r+f,"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
 						b64=False
 					except UnicodeDecodeError:
