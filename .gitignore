@@ -1,1 +1,5 @@
-build
+arduino
+mcs
+*.dll
+*.dt
+*.json
