@@ -34,7 +34,6 @@ ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 CMD_L={}
 END=False
-GIT_CLONE_REGEX=re.compile(r"^([A-Za-z0-9]+@|http(|s)\:\/\/)([A-Za-z0-9.]+(:\d+)?)(?::|\/)([\d\/\w.-]+?)\.git$")
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 with open("D:\\boot\\secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
@@ -106,6 +105,11 @@ WM_SYSKEYDOWN=0x104
 
 
 
+advapi32=ctypes.windll.advapi32
+kernel32=ctypes.windll.kernel32
+move_to_desktop=ctypes.windll.LoadLibrary("D:/boot/move_to_desktop.dll")
+setupapi=ctypes.windll.setupapi
+user32=ctypes.windll.user32
 ctypes.wintypes.HDEVINFO=ctypes.c_void_p
 ctypes.wintypes.LRESULT=ctypes.c_int
 ctypes.wintypes.PCWSTR=ctypes.c_wchar_p
@@ -137,110 +141,110 @@ ctypes.wintypes.PHHOOK=ctypes.POINTER(ctypes.wintypes.HHOOK)
 ctypes.wintypes.PSMALL_RECT=ctypes.POINTER(ctypes.wintypes.SMALL_RECT)
 ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
-ctypes.windll.advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
-ctypes.windll.advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
-ctypes.windll.advapi32.RegQueryValueExW.argtypes=(ctypes.wintypes.HKEY,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPDWORD,ctypes.c_void_p,ctypes.wintypes.LPDWORD)
-ctypes.windll.advapi32.RegQueryValueExW.restype=ctypes.wintypes.LONG
-ctypes.windll.kernel32.CancelIoEx.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED)
-ctypes.windll.kernel32.CancelIoEx.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.ClearCommError.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPCOMSTAT)
-ctypes.windll.kernel32.ClearCommError.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.CloseHandle.argtypes=(ctypes.wintypes.HANDLE,)
-ctypes.windll.kernel32.CloseHandle.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.BOOL,ctypes.wintypes.LPCWSTR)
-ctypes.windll.kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
-ctypes.windll.kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
-ctypes.windll.kernel32.CreateFileW.restype=ctypes.wintypes.HANDLE
-ctypes.windll.kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
-ctypes.windll.kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
-ctypes.windll.kernel32.FillConsoleOutputCharacterA.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
-ctypes.windll.kernel32.GetCommState.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
-ctypes.windll.kernel32.GetCommTimeouts.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
-ctypes.windll.kernel32.GetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
-ctypes.windll.kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO)
-ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetConsoleWindow.argtypes=tuple()
-ctypes.windll.kernel32.GetConsoleWindow.restype=ctypes.wintypes.HWND
-ctypes.windll.kernel32.GetLastError.argtypes=tuple()
-ctypes.windll.kernel32.GetLastError.restype=ctypes.wintypes.DWORD
-ctypes.windll.kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
-ctypes.windll.kernel32.GetModuleHandleW.restype=ctypes.wintypes.HMODULE
-ctypes.windll.kernel32.GetOverlappedResult.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED,ctypes.wintypes.LPDWORD,ctypes.wintypes.BOOL)
-ctypes.windll.kernel32.GetOverlappedResult.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.GetStdHandle.argtypes=(ctypes.wintypes.DWORD,)
-ctypes.windll.kernel32.GetStdHandle.restype=ctypes.wintypes.HANDLE
-ctypes.windll.kernel32.PurgeComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
-ctypes.windll.kernel32.PurgeComm.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.ReadFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
-ctypes.windll.kernel32.ReadFile.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.ResetEvent.argtypes=(ctypes.wintypes.HANDLE,)
-ctypes.windll.kernel32.ResetEvent.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.ScrollConsoleScreenBufferW.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PSMALL_RECT,ctypes.wintypes.OPT_PSMALL_RECT,ctypes.wintypes._COORD,ctypes.wintypes.PCHAR_INFO)
-ctypes.windll.kernel32.ScrollConsoleScreenBufferW.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetCommMask.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
-ctypes.windll.kernel32.SetCommMask.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
-ctypes.windll.kernel32.SetCommState.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
-ctypes.windll.kernel32.SetCommTimeouts.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
-ctypes.windll.kernel32.SetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleCursorPosition.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
-ctypes.windll.kernel32.SetConsoleCursorPosition.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
-ctypes.windll.kernel32.SetConsoleMode.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
-ctypes.windll.kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
-ctypes.windll.kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
-ctypes.windll.kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetFileAttributesW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD)
-ctypes.windll.kernel32.SetFileAttributesW.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
-ctypes.windll.kernel32.SetupComm.restype=ctypes.wintypes.BOOL
-ctypes.windll.kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
-ctypes.windll.kernel32.WriteFile.restype=ctypes.wintypes.BOOL
-ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.argtypes=(ctypes.wintypes.PCWSTR,ctypes.wintypes.PGUID,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
-ctypes.windll.setupapi.SetupDiClassGuidsFromNameW.restype=ctypes.wintypes.BOOL
-ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList.argtypes=(ctypes.wintypes.HDEVINFO,)
-ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList.restype=ctypes.wintypes.BOOL
-ctypes.windll.setupapi.SetupDiEnumDeviceInfo.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.DWORD,ctypes.wintypes.PSP_DEVINFO_DATA)
-ctypes.windll.setupapi.SetupDiEnumDeviceInfo.restype=ctypes.wintypes.BOOL
-ctypes.windll.setupapi.SetupDiGetClassDevsW.argtypes=(ctypes.wintypes.PGUID,ctypes.wintypes.PCWSTR,ctypes.wintypes.HWND,ctypes.wintypes.DWORD)
-ctypes.windll.setupapi.SetupDiGetClassDevsW.restype=ctypes.wintypes.HDEVINFO
-ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD,ctypes.c_void_p,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
-ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW.restype=ctypes.wintypes.BOOL
-ctypes.windll.setupapi.SetupDiOpenDevRegKey.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
-ctypes.windll.setupapi.SetupDiOpenDevRegKey.restype=ctypes.wintypes.HKEY
-ctypes.windll.user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
-ctypes.windll.user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
-ctypes.windll.user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
-ctypes.windll.user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
-ctypes.windll.user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
-ctypes.windll.user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
-ctypes.windll.user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
-ctypes.windll.user32.LoadImageW.restype=ctypes.wintypes.HANDLE
-ctypes.windll.user32.MessageBoxW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.c_uint)
-ctypes.windll.user32.MessageBoxW.restype=ctypes.c_int
-ctypes.windll.user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
-ctypes.windll.user32.PeekMessageW.restype=ctypes.wintypes.BOOL
-ctypes.windll.user32.SendMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.c_uint,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
-ctypes.windll.user32.SendMessageW.restype=ctypes.wintypes.LRESULT
-ctypes.windll.user32.SetWindowsHookExW.argtypes=(ctypes.c_int,ctypes.wintypes.LowLevelKeyboardProc,ctypes.wintypes.HINSTANCE,ctypes.wintypes.DWORD)
-ctypes.windll.user32.SetWindowsHookExW.restype=ctypes.wintypes.HHOOK
-ctypes.windll.user32.ShowCursor.argtypes=(ctypes.wintypes.BOOL,)
-ctypes.windll.user32.ShowCursor.restype=ctypes.c_int
-ctypes.windll.user32.TranslateMessage.argtypes=(ctypes.wintypes.LPMSG,)
-ctypes.windll.user32.TranslateMessage.restype=ctypes.wintypes.BOOL
-ctypes.windll.user32.UnhookWindowsHookEx.argtypes=(ctypes.wintypes.HHOOK,)
-ctypes.windll.user32.UnhookWindowsHookEx.restype=ctypes.wintypes.BOOL
+advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
+advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
+advapi32.RegQueryValueExW.argtypes=(ctypes.wintypes.HKEY,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPDWORD,ctypes.c_void_p,ctypes.wintypes.LPDWORD)
+advapi32.RegQueryValueExW.restype=ctypes.wintypes.LONG
+kernel32.CancelIoEx.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED)
+kernel32.CancelIoEx.restype=ctypes.wintypes.BOOL
+kernel32.ClearCommError.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPCOMSTAT)
+kernel32.ClearCommError.restype=ctypes.wintypes.BOOL
+kernel32.CloseHandle.argtypes=(ctypes.wintypes.HANDLE,)
+kernel32.CloseHandle.restype=ctypes.wintypes.BOOL
+kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.BOOL,ctypes.wintypes.LPCWSTR)
+kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
+kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
+kernel32.CreateFileW.restype=ctypes.wintypes.HANDLE
+kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
+kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
+kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
+kernel32.FillConsoleOutputCharacterA.restype=ctypes.wintypes.BOOL
+kernel32.GetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
+kernel32.GetCommState.restype=ctypes.wintypes.BOOL
+kernel32.GetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
+kernel32.GetCommTimeouts.restype=ctypes.wintypes.BOOL
+kernel32.GetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
+kernel32.GetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
+kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
+kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
+kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO)
+kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
+kernel32.GetConsoleWindow.argtypes=tuple()
+kernel32.GetConsoleWindow.restype=ctypes.wintypes.HWND
+kernel32.GetLastError.argtypes=tuple()
+kernel32.GetLastError.restype=ctypes.wintypes.DWORD
+kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
+kernel32.GetModuleHandleW.restype=ctypes.wintypes.HMODULE
+kernel32.GetOverlappedResult.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPOVERLAPPED,ctypes.wintypes.LPDWORD,ctypes.wintypes.BOOL)
+kernel32.GetOverlappedResult.restype=ctypes.wintypes.BOOL
+kernel32.GetStdHandle.argtypes=(ctypes.wintypes.DWORD,)
+kernel32.GetStdHandle.restype=ctypes.wintypes.HANDLE
+kernel32.PurgeComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+kernel32.PurgeComm.restype=ctypes.wintypes.BOOL
+kernel32.ReadFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
+kernel32.ReadFile.restype=ctypes.wintypes.BOOL
+kernel32.ResetEvent.argtypes=(ctypes.wintypes.HANDLE,)
+kernel32.ResetEvent.restype=ctypes.wintypes.BOOL
+kernel32.ScrollConsoleScreenBufferW.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PSMALL_RECT,ctypes.wintypes.OPT_PSMALL_RECT,ctypes.wintypes._COORD,ctypes.wintypes.PCHAR_INFO)
+kernel32.ScrollConsoleScreenBufferW.restype=ctypes.wintypes.BOOL
+kernel32.SetCommMask.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+kernel32.SetCommMask.restype=ctypes.wintypes.BOOL
+kernel32.SetCommState.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDCB)
+kernel32.SetCommState.restype=ctypes.wintypes.BOOL
+kernel32.SetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMMTIMEOUTS)
+kernel32.SetCommTimeouts.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
+kernel32.SetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleCursorPosition.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
+kernel32.SetConsoleCursorPosition.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+kernel32.SetConsoleMode.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleScreenBufferSize.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes._COORD)
+kernel32.SetConsoleScreenBufferSize.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleTitleW.argtypes=(ctypes.wintypes.LPCWSTR,)
+kernel32.SetConsoleTitleW.restype=ctypes.wintypes.BOOL
+kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.BOOL,ctypes.wintypes.PSMALL_RECT)
+kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
+kernel32.SetFileAttributesW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD)
+kernel32.SetFileAttributesW.restype=ctypes.wintypes.BOOL
+kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
+kernel32.SetupComm.restype=ctypes.wintypes.BOOL
+kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
+kernel32.WriteFile.restype=ctypes.wintypes.BOOL
+setupapi.SetupDiClassGuidsFromNameW.argtypes=(ctypes.wintypes.PCWSTR,ctypes.wintypes.PGUID,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
+setupapi.SetupDiClassGuidsFromNameW.restype=ctypes.wintypes.BOOL
+setupapi.SetupDiDestroyDeviceInfoList.argtypes=(ctypes.wintypes.HDEVINFO,)
+setupapi.SetupDiDestroyDeviceInfoList.restype=ctypes.wintypes.BOOL
+setupapi.SetupDiEnumDeviceInfo.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.DWORD,ctypes.wintypes.PSP_DEVINFO_DATA)
+setupapi.SetupDiEnumDeviceInfo.restype=ctypes.wintypes.BOOL
+setupapi.SetupDiGetClassDevsW.argtypes=(ctypes.wintypes.PGUID,ctypes.wintypes.PCWSTR,ctypes.wintypes.HWND,ctypes.wintypes.DWORD)
+setupapi.SetupDiGetClassDevsW.restype=ctypes.wintypes.HDEVINFO
+setupapi.SetupDiGetDeviceRegistryPropertyW.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD,ctypes.c_void_p,ctypes.wintypes.DWORD,ctypes.wintypes.PDWORD)
+setupapi.SetupDiGetDeviceRegistryPropertyW.restype=ctypes.wintypes.BOOL
+setupapi.SetupDiOpenDevRegKey.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
+setupapi.SetupDiOpenDevRegKey.restype=ctypes.wintypes.HKEY
+user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
+user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
+user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
+user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
+user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
+user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
+user32.LoadImageW.restype=ctypes.wintypes.HANDLE
+user32.MessageBoxW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.c_uint)
+user32.MessageBoxW.restype=ctypes.c_int
+user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
+user32.PeekMessageW.restype=ctypes.wintypes.BOOL
+user32.SendMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.c_uint,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+user32.SendMessageW.restype=ctypes.wintypes.LRESULT
+user32.SetWindowsHookExW.argtypes=(ctypes.c_int,ctypes.wintypes.LowLevelKeyboardProc,ctypes.wintypes.HINSTANCE,ctypes.wintypes.DWORD)
+user32.SetWindowsHookExW.restype=ctypes.wintypes.HHOOK
+user32.ShowCursor.argtypes=(ctypes.wintypes.BOOL,)
+user32.ShowCursor.restype=ctypes.c_int
+user32.TranslateMessage.argtypes=(ctypes.wintypes.LPMSG,)
+user32.TranslateMessage.restype=ctypes.wintypes.BOOL
+user32.UnhookWindowsHookEx.argtypes=(ctypes.wintypes.HHOOK,)
+user32.UnhookWindowsHookEx.restype=ctypes.wintypes.BOOL
 
 
 
@@ -269,7 +273,7 @@ def _print(*a,end="\n"):
 				o+="\x1b[38;2;91;216;38m'"
 				i+=1
 				s=False
-				while (s==False or m[i-1]!="'"):
+				while (not s or m[i-1]!="'"):
 					o+=m[i]
 					i+=1
 					s=True
@@ -295,11 +299,11 @@ def _print(*a,end="\n"):
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
 	def _r_std_thr():
 		global R_STD_BUFFER
-		while (R_STD_BUFFER["_e"]==False):
-			if (len(R_STD_BUFFER["bf"])>0):
+		while (not R_STD_BUFFER["_e"]):
+			if (not R_STD_BUFFER["bf"]):
 				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
-	if (not hasattr(threading.current_thread(),"_df") or threading.current_thread()._df==False):
+	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
 		i=0
 		while (i<len(a)):
 			_im=re.match(r"\x1b\[[^m]+m",a[i:])
@@ -871,26 +875,26 @@ def _l_ard_boards(p=True):
 		_print("Listing Arduino Boards Attached to the System\x1b[38;2;100;100;100m...")
 	pg=(ctypes.wintypes.GUID*8)()
 	pg_l=ctypes.wintypes.DWORD()
-	ctypes.windll.setupapi.SetupDiClassGuidsFromNameW("Ports",pg,ctypes.sizeof(pg),ctypes.byref(pg_l))
+	setupapi.SetupDiClassGuidsFromNameW("Ports",pg,ctypes.sizeof(pg),ctypes.byref(pg_l))
 	mg=(ctypes.wintypes.GUID*8)()
 	mg_l=ctypes.wintypes.DWORD()
-	ctypes.windll.setupapi.SetupDiClassGuidsFromNameW("Modem",mg,ctypes.sizeof(mg),ctypes.byref(mg_l))
+	setupapi.SetupDiClassGuidsFromNameW("Modem",mg,ctypes.sizeof(mg),ctypes.byref(mg_l))
 	o=[]
 	for k in (pg[:pg_l.value]+mg[:mg_l.value]):
-		di_g=ctypes.windll.setupapi.SetupDiGetClassDevsW(ctypes.byref(k),None,0,DIGCF_PRESENT)
+		di_g=setupapi.SetupDiGetClassDevsW(ctypes.byref(k),None,0,DIGCF_PRESENT)
 		di=ctypes.wintypes.SP_DEVINFO_DATA()
 		di.cbSize=ctypes.sizeof(di)
 		i=0
-		while (ctypes.windll.setupapi.SetupDiEnumDeviceInfo(di_g,i,ctypes.byref(di))!=0):
+		while (setupapi.SetupDiEnumDeviceInfo(di_g,i,ctypes.byref(di))!=0):
 			i+=1
-			hkey=ctypes.windll.setupapi.SetupDiOpenDevRegKey(di_g,ctypes.byref(di),DICS_FLAG_GLOBAL,0,DIREG_DEV,KEY_READ)
+			hkey=setupapi.SetupDiOpenDevRegKey(di_g,ctypes.byref(di),DICS_FLAG_GLOBAL,0,DIREG_DEV,KEY_READ)
 			nm=ctypes.create_unicode_buffer(256)
-			ctypes.windll.advapi32.RegQueryValueExW(hkey,"PortName",None,None,ctypes.byref(nm),ctypes.byref(ctypes.wintypes.ULONG(ctypes.sizeof(nm))))
-			ctypes.windll.advapi32.RegCloseKey(hkey)
+			advapi32.RegQueryValueExW(hkey,"PortName",None,None,ctypes.byref(nm),ctypes.byref(ctypes.wintypes.ULONG(ctypes.sizeof(nm))))
+			advapi32.RegCloseKey(hkey)
 			if (nm.value[:3]=="LPT"):
 				continue
 			hw_id=ctypes.create_unicode_buffer(250)
-			ctypes.windll.setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
+			setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
 			m=re.search((r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})" if hw_id.value[:3]=="USB" else r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})"),hw_id.value,re.I)
 			if (m is not None):
 				r=_get_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
@@ -903,7 +907,7 @@ def _l_ard_boards(p=True):
 				o+=[{"arch":r["architecture"],"fqbn":r["fqbn"],"name":r["name"],"location":nm.value.replace("\\","/").split("/")[-1]}]
 			else:
 				continue
-		ctypes.windll.setupapi.SetupDiDestroyDeviceInfoList(di_g)
+		setupapi.SetupDiDestroyDeviceInfoList(di_g)
 	return o
 
 
@@ -1396,20 +1400,6 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 
 
 
-def _rec_rm_pycache(bd):
-	_print(f"Deleting PyCache For Folder '{bd}'\x1b[38;2;100;100;100m...")
-	for sd in os.scandir(bd):
-		if (sd.is_dir()==False or "\\Python38" in sd.path or "\\Python37" in sd.path or "\\Windows" in sd.path):
-			continue
-		if ("__pycache__" in sd.path):
-			_rm_dir(sd.path)
-		try:
-			_rec_rm_pycache(sd.path)
-		except PermissionError:
-			continue
-
-
-
 def _save_f(fn,txt):
 	p=""
 	i=0
@@ -1440,29 +1430,29 @@ def _open_prog_w(p):
 						subprocess.Popen([p,os.path.join(r,fn)])
 						return
 	t=p.split("-")[0].lower()
-	_print(f"Opening Project: (name='{p[len(t)+1:]}', type='{t}', path='D:\\K\\Coding\\{p}\\')\x1b[38;2;100;100;100m...")
-	p=f"D:\\K\\Coding\\{p}\\"
-	subprocess.Popen(["C:\\Program Files\\Sublime Text 3\\sublime_text.exe","--add",p])
+	_print(f"Opening Project: (name='{p[len(t)+1:]}', type='{t}', path='D:/K/Coding/{p}/')\x1b[38;2;100;100;100m...")
+	p=f"D:/K/Coding/{p}/"
+	subprocess.Popen(["C:/Program Files/Sublime Text 3/sublime_text.exe","--add",p])
 	if (t=="arduino"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"ino",f"{p}src/main.ino")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"ino",f"{p}src/main.ino")
 	if (t=="assembly"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"asm",f"{p}src/main.asm")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"asm",f"{p}src/main.asm")
 	elif (t=="c"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"c",f"{p}src/main.c")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"c",f"{p}src/main.c")
 	elif (t=="cpp"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"cpp",f"{p}src/main.cpp")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"cpp",f"{p}src/main.cpp")
 	elif (t=="css"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"css",f"{p}src/index.html",f"{p}src/style.css")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"css",f"{p}src/index.html",f"{p}src/style.css")
 	elif (t=="java"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"java",f"{p}src/com/krzem/{p.split('-')[1].lower().replace(' ','_')}\\Main.java")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"java",f"{p}src/com/krzem/{p.split('-')[1].lower().replace(' ','_')}/Main.java")
 	elif (t=="javascript"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/main.js")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/main.js")
 	elif (t=="php"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"php",f"{p}src/index.php")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"php",f"{p}src/index.php")
 	elif (t=="processing"):
 		os.system(f"start /min cmd /c \"{p}main/main.pde\"")
 	elif (t=="python"):
-		_open_prog_w_f("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",p,"py",f"{p}src/main.py")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"py",f"{p}src/main.py")
 	else:
 		_print("\x1b[38;2;200;40;20mUnknown type.\x1b[0m Defaulting to Editor\x1b[38;2;100;100;100m...")
 
@@ -1490,7 +1480,7 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (not os.path.exists(f"{p}.gitignore")):
 		with open(f"{p}.gitignore","x") as f:
 			f.write("build\n")
-		ctypes.windll.kernel32.SetFileAttributesW(f"{p}.gitignore",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
+		kernel32.SetFileAttributesW(f"{p}.gitignore",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (not os.path.exists(f"{p}LICENSE.txt")):
 		with open(f"{p}LICENSE.txt","x") as f:
 			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
@@ -1500,7 +1490,7 @@ def _create_prog(type_,name,op=True,pr=True):
 	if (not os.path.exists(f"{p}.lgtm.yml")):
 		with open(f"{p}.lgtm.yml","x") as f:
 			f.write("""queries:\n  - include: "*"\n  - exclude: cpp/poorly-documented-function\n  - exclude: cpp/short-global-name\n  - exclude: java/index-out-of-bounds\n  - exclude: java/local-shadows-field\n  - exclude: java/potentially-weak-cryptographic-algorithm\n  - exclude: java/uncaught-number-format-exception\n  - exclude: java/unused-parameter\n  - exclude: py/empty-except\n  - exclude: py/redundant-global-declaration\nextraction:\n  python:\n    python_setup:\n      version: 3\n""")
-		ctypes.windll.kernel32.SetFileAttributesW(f"{p}.lgtm.yml",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
+		kernel32.SetFileAttributesW(f"{p}.lgtm.yml",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (type_=="arduino"):
 		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
 			with open(f"{p}src/main.ino","x") as f:
@@ -1671,9 +1661,7 @@ def _u_mcs(fp):
 				if (len(dt)<4096):
 					break
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	subprocess.Popen(["vdesk","on:3","run:cmd","/c","java -Xms8G -Xmx8G -jar server.jar --nogui"],cwd=fp)
-	time.sleep(1)
-	subprocess.Popen(["vdesk","on:1","run:cmd","/c","echo"])
+	subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
@@ -1682,7 +1670,7 @@ def _hotkey_handler(c,wp,lp):
 	def _thr(vk):
 		if (vk in VK_SAME_KEYS):
 			vk=VK_SAME_KEYS[vk]
-		if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and ctypes.windll.user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
+		if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
 				_hotkey_handler._hk[vk]()
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
@@ -1699,12 +1687,12 @@ def _hotkey_handler(c,wp,lp):
 		END=True
 	except Exception as e:
 		traceback.print_exception(None,e,e.__traceback__)
-	return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
+	return user32.CallNextHookEx(None,c,wp,lp)
 
 
 
 def _check_close(t):
-	if (ctypes.windll.user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
+	if (user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
 		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
 
 
@@ -1716,45 +1704,47 @@ def _register_hk(e,cb):
 
 
 
-ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
-ctypes.windll.kernel32.SetConsoleTitleW("")
-hwnd=ctypes.windll.kernel32.GetConsoleWindow()
-ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,ctypes.windll.user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
-ctypes.windll.user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,ctypes.windll.user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
-ho=ctypes.windll.kernel32.GetStdHandle(-11)
+kernel32.SetConsoleMode(kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+kernel32.SetConsoleTitleW("")
+hwnd=kernel32.GetConsoleWindow()
+user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
+user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,user32.LoadImageW(0,"D:/boot/rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
+ho=kernel32.GetStdHandle(-11)
 csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
+kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
 fc=ctypes.wintypes.CHAR_INFO()
 fc.Char.UnicodeChar=" "
 fc.Attributes=csbi.wAttributes
 csbi.dwCursorPosition.X=0
 csbi.dwCursorPosition.Y=0
-ctypes.windll.kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
-ctypes.windll.kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
+kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
+kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 if (len(sys.argv)==1):
 	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
 	threading.current_thread()._nm="__main__"
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
+	move_to_desktop.move_to_desktop(hwnd,2)
+	move_to_desktop.switch_to_desktop(0)
 	_print("Registering Hotkey Handler\x1b[38;2;100;100;100m...")
 	_hotkey_handler._hk={}
 	_hotkey_handler._ig_alt=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
-	ctypes.windll.user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,ctypes.windll.kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-	atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
+	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+	atexit.register(user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
-	_register_hk("a",lambda:os.startfile("D:\\K"))
-	_register_hk("d",lambda:subprocess.Popen("C:\\Windows\\System32\\taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("e",lambda:subprocess.Popen("C:\\Windows\\System32\\control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("q",lambda:subprocess.Popen(["python","D:\\boot\\main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("r",lambda:subprocess.Popen(["pythonw","D:\\boot\\main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
-	_register_hk("i",lambda:subprocess.Popen(["python","D:\\boot\\main.py","7"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("a",lambda:os.startfile("D:/K"))
+	_register_hk("d",lambda:subprocess.Popen("C:/Windows/System32/taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("e",lambda:subprocess.Popen("C:/Windows/System32/control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("q",lambda:subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("r",lambda:subprocess.Popen(["pythonw.exe","D:/boot/main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("i",lambda:subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","7"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("home",lambda:_check_close(0))
 	_register_hk("end",lambda:_check_close(1))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:/boot/mcs")
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
-	for k in os.listdir("D:\\K\\Coding"):
+	for k in os.listdir("D:/K/Coding"):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
@@ -1763,9 +1753,9 @@ if (len(sys.argv)==1):
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
 	msg=ctypes.wintypes.LPMSG()
 	while (END==False):
-		if (ctypes.windll.user32.GetMessageW(msg,None,0,0)!=0):
-			ctypes.windll.user32.TranslateMessage(msg)
-			ctypes.windll.user32.DispatchMessageW(msg)
+		if (user32.GetMessageW(msg,None,0,0)!=0):
+			user32.TranslateMessage(msg)
+			user32.DispatchMessageW(msg)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -1778,11 +1768,11 @@ else:
 					return -1
 			except Exception as e:
 				traceback.print_exception(None,e,e.__traceback__)
-			return ctypes.windll.user32.CallNextHookEx(None,c,wp,lp)
+			return user32.CallNextHookEx(None,c,wp,lp)
 		def _loop(r):
-			if (ctypes.windll.user32.PeekMessageW(_loop._msg,None,0,0,PM_REMOVE)!=0):
-				ctypes.windll.user32.TranslateMessage(_loop._msg)
-				ctypes.windll.user32.DispatchMessageW(_loop._msg)
+			if (user32.PeekMessageW(_loop._msg,None,0,0,PM_REMOVE)!=0):
+				user32.TranslateMessage(_loop._msg)
+				user32.DispatchMessageW(_loop._msg)
 			r.after(1000//60,_loop,r)
 		r=tkinter.Tk()
 		r.bind("<FocusOut>",lambda _:r.focus_force())
@@ -1797,31 +1787,31 @@ else:
 		_handle._r=r
 		_loop._msg=ctypes.wintypes.LPMSG()
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_handle)
-		ctypes.windll.user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,ctypes.windll.kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-		atexit.register(ctypes.windll.user32.UnhookWindowsHookEx,kb_cb)
-		ctypes.windll.user32.ShowCursor(0)
+		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+		atexit.register(user32.UnhookWindowsHookEx,kb_cb)
+		user32.ShowCursor(0)
 		r.after(0,_loop,r)
 		r.mainloop()
 	elif (v==1):
 		inp_cm=ctypes.wintypes.DWORD(0)
-		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
+		kernel32.GetConsoleMode(kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
-		ho=ctypes.windll.kernel32.GetStdHandle(-11)
-		ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+		ho=kernel32.GetStdHandle(-11)
+		kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		try:
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
-			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			bf=""
 			u=True
 			ll=0
@@ -1837,44 +1827,37 @@ else:
 						u=True
 					elif (k==b"\r"):
 						if (bf=="chrome"):
-							subprocess.Popen("C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files/Google/Chrome Dev/Application/chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="processing"):
-							subprocess.Popen("C:\\Program Files\\Processing\\processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files/Processing/processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="sublime"):
-							subprocess.Popen("C:\\Program Files\\Sublime Text 3\\sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files/Sublime Text 3/sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="minecraft"):
-							subprocess.Popen("C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="vm"):
-							subprocess.Popen("C:\\Program Files\\Oracle\\VirtualBox\\VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="github"):
-							subprocess.Popen("github.bat",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files/Oracle/VirtualBox/VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="blender"):
-							subprocess.Popen("C:\\Program Files\\Blender Foundation\\Blender\\blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen("C:/Program Files/Blender Foundation/Blender/blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="work"):
-							subprocess.Popen(["python","D:\\boot\\main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="serial"):
-							subprocess.Popen(["python","D:\\boot\\main.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="stats"):
-							subprocess.Popen(["python","D:\\boot\\main.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="docs"):
-							subprocess.Popen(["C:\\Program Files\\Google\\Chrome Dev\\Application\\chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+							subprocess.Popen(["C:/Program Files/Google/Chrome Dev/Application/chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="cad"):
-							subprocess.Popen("C:\\Program Files\\CAD\\FreeCAD 0.18\\bin\\FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (GIT_CLONE_REGEX.match(bf)!=None):
-							os.system(f"cd /d D:\\K\\Downloads\\&&git clone {bf}")
-							os.startfile("D:\\K\\Downloads\\"+bf.split(".git")[0].split("/")[-1])
+							subprocess.Popen("C:/Program Files/CAD/FreeCAD 0.18/bin/FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="" or bf=="exit"):
 							break
@@ -1885,42 +1868,41 @@ else:
 						u=True
 				if (u==True):
 					u=False
-					o=f"> {bf}"
-					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
-					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+					ln=len(re.sub(r"\x1b\[[^m]*m","",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
+					sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 					sys.__stdout__.flush()
 					ll=ln
 				time.sleep(0.01)
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 			while (True):
 				pass
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
-		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
-		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),inp_cm)
+		kernel32.SetConsoleMode(ho,out_cm)
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 	elif (v==2):
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="create_project"
 		threading.current_thread()._r=2
 		inp_cm=ctypes.wintypes.DWORD(0)
-		ctypes.windll.kernel32.GetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
+		kernel32.GetConsoleMode(kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
-		ho=ctypes.windll.kernel32.GetStdHandle(-11)
-		ctypes.windll.kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+		ho=kernel32.GetStdHandle(-11)
+		kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		try:
 			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
-			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			rl=[e.split("-")[:2] for e in os.listdir("D:\\K\\Coding")]
 			tl=[]
 			for k in rl:
@@ -2020,16 +2002,16 @@ else:
 					ll=ln
 					u=False
 				time.sleep(0.01)
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 			while (True):
 				pass
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),inp_cm)
-		ctypes.windll.kernel32.SetConsoleMode(ho,out_cm)
-		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),inp_cm)
+		kernel32.SetConsoleMode(ho,out_cm)
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 	elif (v==3):
 		class _UI:
 			def __init__(self,sz):
@@ -2066,14 +2048,14 @@ else:
 							if (self._m==0):
 								break
 							elif (self._m==1):
-								ctypes.windll.kernel32.SetCommTimeouts(self._p_s[0],self._p_s[1])
-								if (not ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(ctypes.wintypes.DWORD()),False) and ctypes.windll.kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
-									ctypes.windll.kernel32.CancelIoEx(self._p_s[0],self._p_s[2])
-								ctypes.windll.kernel32.CloseHandle(self._p_s[2].hEvent)
-								if (not ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[3]),ctypes.byref(ctypes.wintypes.DWORD()),False) and ctypes.windll.kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
-									ctypes.windll.kernel32.CancelIoEx(self._p_s[0],self._p_s[3])
-								ctypes.windll.kernel32.CloseHandle(self._p_s[3].hEvent)
-								ctypes.windll.kernel32.CloseHandle(self._p_s[0])
+								kernel32.SetCommTimeouts(self._p_s[0],self._p_s[1])
+								if (not kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(ctypes.wintypes.DWORD()),False) and kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
+									kernel32.CancelIoEx(self._p_s[0],self._p_s[2])
+								kernel32.CloseHandle(self._p_s[2].hEvent)
+								if (not kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[3]),ctypes.byref(ctypes.wintypes.DWORD()),False) and kernel32.GetLastError() in (ERROR_IO_PENDING,ERROR_IO_INCOMPLETE)):
+									kernel32.CancelIoEx(self._p_s[0],self._p_s[3])
+								kernel32.CloseHandle(self._p_s[3].hEvent)
+								kernel32.CloseHandle(self._p_s[0])
 								self._m=0
 								self._t=0
 								self._pl=None
@@ -2112,17 +2094,17 @@ else:
 							if (len(self._pl)>0):
 								ud=True
 								self._p=self._pl[self._pi]
-								h=ctypes.windll.kernel32.CreateFileW(f"\\\\.\\{self._p['location']}",GENERIC_READ|GENERIC_WRITE,0,None,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0)
+								h=kernel32.CreateFileW(f"\\\\.\\{self._p['location']}",GENERIC_READ|GENERIC_WRITE,0,None,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0)
 								if (h!=INVALID_HANDLE_VALUE):
-									ctypes.windll.kernel32.SetupComm(h,4096,4096)
+									kernel32.SetupComm(h,4096,4096)
 									o_tm=ctypes.wintypes.COMMTIMEOUTS()
-									ctypes.windll.kernel32.GetCommTimeouts(h,ctypes.byref(o_tm))
+									kernel32.GetCommTimeouts(h,ctypes.byref(o_tm))
 									n_tm=ctypes.wintypes.COMMTIMEOUTS()
 									n_tm.ReadTotalTimeoutConstant=max(SERIAL_TIMEOUT,1)
-									ctypes.windll.kernel32.SetCommTimeouts(h,ctypes.byref(n_tm))
-									ctypes.windll.kernel32.SetCommMask(h,EV_ERR)
+									kernel32.SetCommTimeouts(h,ctypes.byref(n_tm))
+									kernel32.SetCommMask(h,EV_ERR)
 									comDCB=ctypes.wintypes.DCB()
-									ctypes.windll.kernel32.GetCommState(h,ctypes.byref(comDCB))
+									kernel32.GetCommState(h,ctypes.byref(comDCB))
 									comDCB.BaudRate=SERIAL_BAUD
 									comDCB.ByteSize=8
 									comDCB.Parity=NOPARITY
@@ -2139,14 +2121,14 @@ else:
 									comDCB.fAbortOnError=0
 									comDCB.XonChar=b"\x11"
 									comDCB.XoffChar=b"\x13"
-									if (not ctypes.windll.kernel32.SetCommState(h,ctypes.byref(comDCB))):
-										ctypes.windll.kernel32.SetCommTimeouts(h,o_tm)
-										ctypes.windll.kernel32.CloseHandle(h)
+									if (not kernel32.SetCommState(h,ctypes.byref(comDCB))):
+										kernel32.SetCommTimeouts(h,o_tm)
+										kernel32.CloseHandle(h)
 									else:
-										ctypes.windll.kernel32.PurgeComm(h,PURGE_TXCLEAR|PURGE_TXABORT|PURGE_RXCLEAR|PURGE_RXABORT)
+										kernel32.PurgeComm(h,PURGE_TXCLEAR|PURGE_TXABORT|PURGE_RXCLEAR|PURGE_RXABORT)
 										self._p_s=(h,o_tm,ctypes.wintypes.OVERLAPPED(),ctypes.wintypes.OVERLAPPED())
-										self._p_s[2].hEvent=ctypes.windll.kernel32.CreateEventW(None,1,0,None)
-										self._p_s[3].hEvent=ctypes.windll.kernel32.CreateEventW(None,0,0,None)
+										self._p_s[2].hEvent=kernel32.CreateEventW(None,1,0,None)
+										self._p_s[3].hEvent=kernel32.CreateEventW(None,0,0,None)
 										self._m=1
 						self._draw_table({"name":("Name","#8ae8c6"),"arch":("Arch","#dbdf0c"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
 					elif (self._m==1):
@@ -2156,8 +2138,8 @@ else:
 							if (len(self._inp_bf)>0):
 								dt=bytes(self._inp_bf,"utf-8")
 								c=ctypes.wintypes.DWORD()
-								if (ctypes.windll.kernel32.WriteFile(self._p_s[0],dt,len(dt),ctypes.byref(c),self._p_s[3]) or ctypes.windll.kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)):
-									ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],self._p_s[3],ctypes.byref(c),True)
+								if (kernel32.WriteFile(self._p_s[0],dt,len(dt),ctypes.byref(c),self._p_s[3]) or kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)):
+									kernel32.GetOverlappedResult(self._p_s[0],self._p_s[3],ctypes.byref(c),True)
 									if (self._inp_bf in self._mem):
 										self._mem.remove(self._inp_bf)
 									self._mem=self._mem[:-1]+[self._inp_bf,""]
@@ -2246,13 +2228,13 @@ else:
 							inp_ch=True
 							ud=True
 						ql=ctypes.wintypes.COMSTAT()
-						if (not ctypes.windll.kernel32.ClearCommError(self._p_s[0],ctypes.byref(ctypes.wintypes.DWORD()),ctypes.byref(ql))):
+						if (not kernel32.ClearCommError(self._p_s[0],ctypes.byref(ctypes.wintypes.DWORD()),ctypes.byref(ql))):
 							ql.cbInQue=0
 						if (ql.cbInQue>0):
-							ctypes.windll.kernel32.ResetEvent(self._p_s[2].hEvent)
+							kernel32.ResetEvent(self._p_s[2].hEvent)
 							bf=ctypes.create_string_buffer(ql.cbInQue)
 							bf_l=ctypes.wintypes.DWORD()
-							if ((ctypes.windll.kernel32.ReadFile(self._p_s[0],bf,ql.cbInQue,ctypes.byref(bf_l),ctypes.byref(self._p_s[2])) or ctypes.windll.kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)) and (ctypes.windll.kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(bf_l),True) or ctypes.windll.kernel32.GetLastError()==ERROR_OPERATION_ABORTED)):
+							if ((kernel32.ReadFile(self._p_s[0],bf,ql.cbInQue,ctypes.byref(bf_l),ctypes.byref(self._p_s[2])) or kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)) and (kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(bf_l),True) or kernel32.GetLastError()==ERROR_OPERATION_ABORTED)):
 								self._extend(0,re.sub(r"\r(\n|$)",r"\1",str(bf.raw[:bf_l.value],"utf-8")).replace("\t","    "))
 								n_dt=True
 								ud=True
@@ -2414,26 +2396,26 @@ else:
 		threading.current_thread()._nm="arduino_serial_terminal"
 		threading.current_thread()._r=2
 		_init_arduino_cache()
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ho=ctypes.windll.kernel32.GetStdHandle(-11)
-		ctypes.windll.kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ho=kernel32.GetStdHandle(-11)
+		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		PATCH_HEIGHT=11
 		ui=_UI((sbi.dwMaximumWindowSize.X+1,sbi.dwMaximumWindowSize.Y-PATCH_HEIGHT))
 		try:
-			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-			ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.dwMaximumWindowSize.X,sbi.dwMaximumWindowSize.Y-PATCH_HEIGHT-1))
-			ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-			ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+			kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+			kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.dwMaximumWindowSize.X,sbi.dwMaximumWindowSize.Y-PATCH_HEIGHT-1))
+			kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
-			ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			ui.loop()
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
@@ -2525,13 +2507,13 @@ else:
 		if (not os.path.exists("D:\\boot\\git-languages.json") or not os.path.exists("D:\\boot\\git-languages-h.json") or not os.path.exists("D:\\boot\\git-languages-db.json")):
 			ll={}
 			l_id_m={}
-			for k,v in yaml.load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.Loader).items():
+			for k,v in yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader).items():
 				l_id_m[k]=len(ll)
 				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
 			with open("D:\\boot\\git-languages.json","w") as f:
 				f.write(json.dumps(ll,separators=(",",":"),indent=None))
 			hdt=[]
-			_hdt=yaml.load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.Loader)
+			_hdt=yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader)
 			for k in _hdt["disambiguations"]:
 				rl=[]
 				for e in k["rules"]:
@@ -2611,21 +2593,21 @@ else:
 				db=json.loads(f.read(),strict=False)
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		ho=ctypes.windll.kernel32.GetStdHandle(-11)
-		ctypes.windll.kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
+		ho=kernel32.GetStdHandle(-11)
+		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		ctypes.windll.kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
-		ctypes.windll.kernel32.SetConsoleMode(ctypes.windll.kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-		ctypes.windll.kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.srWindow.Right+1,sbi.srWindow.Bottom+1))
-		ctypes.windll.kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-		ctypes.windll.kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ctypes.windll.kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ctypes.windll.kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.srWindow.Right+1,sbi.srWindow.Bottom+1))
+		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
 		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		nci.dwSize=ci.dwSize
 		nci.bVisible=0
-		ctypes.windll.kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
 		thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
 		thr.daemon=True
@@ -2731,8 +2713,12 @@ else:
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
 			time.sleep(0.01)
 	elif (v==7):
-		threading.current_thread()._b_nm="__core__"
-		threading.current_thread()._nm="minecraft_server_updater"
-		threading.current_thread()._dpt=True
-		threading.current_thread()._r=2
-		_u_mcs("D:/boot/mcs")
+		if (len(sys.argv)==2):
+			threading.current_thread()._b_nm="__core__"
+			threading.current_thread()._nm="minecraft_server_updater"
+			threading.current_thread()._dpt=True
+			threading.current_thread()._r=2
+			_u_mcs("D:/boot/mcs")
+		else:
+			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
+			subprocess.run(["java","-Xms8G","-Xmx8G","-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
