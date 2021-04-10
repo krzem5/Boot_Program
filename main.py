@@ -25,20 +25,18 @@ import zipfile
 
 
 
-global ARDUINO_CACHE,CMD_L,END,R_STD_BUFFER,STDOUT_LOCK
+global ARDUINO_CACHE,END,STDOUT_LOCK
 ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
-CMD_L={}
 END=False
 GITHUB_HEADERS="application/vnd.github.VERSION.raw,application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-with open("D:\\boot\\secret.dt","r") as f:
+with open("D:/boot/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
-R_STD_BUFFER={"_s":None,"bf":[],"_e":False}
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
@@ -256,7 +254,7 @@ user32.UnhookWindowsHookEx.restype=ctypes.wintypes.BOOL
 
 
 def _print(*a,end="\n"):
-	global CMD_L,STDOUT_LOCK,R_STD_BUFFER
+	global STDOUT_LOCK
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
@@ -304,11 +302,6 @@ def _print(*a,end="\n"):
 				o+="\x1b[38;2;32;162;132m,"
 				i+=1
 		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
-	def _r_std_thr():
-		global R_STD_BUFFER
-		while (not R_STD_BUFFER["_e"]):
-			if (len(R_STD_BUFFER["bf"])>0):
-				_,R_STD_BUFFER["bf"]=R_STD_BUFFER["_s"].sendall(base64.b64encode(R_STD_BUFFER["bf"][0])+b"\n"),R_STD_BUFFER["bf"][1:]
 	a=" ".join([str(e) for e in a])
 	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
 		i=0
@@ -322,22 +315,6 @@ def _print(*a,end="\n"):
 				a=a[:i]+o+a[i+len(m[0]):]
 				i+=len(o)-1
 			i+=1
-	if (hasattr(threading.current_thread(),"_r") and threading.current_thread()._r>=1):
-		if (R_STD_BUFFER["_s"] is None):
-			R_STD_BUFFER["_s"]=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-			R_STD_BUFFER["_s"].connect(("127.0.0.1",8022))
-			thr=threading.Thread(target=_r_std_thr,args=(),kwargs={})
-			thr.daemon=True
-			thr.start()
-			atexit.register(lambda:(R_STD_BUFFER.__setitem__("_e",True),[R_STD_BUFFER["_s"].sendall(base64.b64encode(e)+b"\n") for e in R_STD_BUFFER["bf"]]))
-		R_STD_BUFFER["bf"]+=[bytes(f"{threading.current_thread()._b_nm}\x00{threading.current_thread()._nm}\x00{a}","utf-8")]
-		if (threading.current_thread()._r>=2):
-			return
-	if (not hasattr(threading.current_thread(),"_dp") or threading.current_thread()._dp==False):
-		t=(datetime.datetime.now().strftime("\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
-		if (threading.current_thread()._nm not in CMD_L[threading.current_thread()._b_nm].keys()):
-			CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]=b""
-		CMD_L[threading.current_thread()._b_nm][threading.current_thread()._nm]+=bytes(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+end,"utf-8")
 	t=(datetime.datetime.now().strftime((f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._b_nm}/{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")) if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	while (STDOUT_LOCK==True):
 		pass
@@ -348,17 +325,7 @@ def _print(*a,end="\n"):
 
 
 def _start_thr(f,b_nm,nm,*a,**kw):
-	def _wr(f,a,kw):
-		global CMD_L
-		if (b_nm not in CMD_L.keys()):
-			CMD_L[b_nm]={nm:b""}
-		if (nm not in CMD_L[b_nm].keys()):
-			CMD_L[b_nm][nm]=b""
-		try:
-			f(*a,**kw)
-		except Exception as e:
-			traceback.print_exception(None,e,e.__traceback__)
-	thr=threading.Thread(target=_wr,args=(f,a,kw),kwargs={},name=f"{b_nm} => {nm} Thread")
+	thr=threading.Thread(target=f,args=a,kwargs=kw,name=f"{b_nm} => {nm} Thread")
 	thr._b_nm=b_nm
 	thr._nm=nm
 	thr.daemon=True
@@ -462,7 +429,7 @@ def _update_repo(p,b_nm):
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
-	with open("D:\\boot\\github-created.dt","r") as f:
+	with open("D:/boot/github-created.dt","r") as f:
 		gr_dt=f.read().strip().replace("\r","").split("\n")
 	if (nm not in gr_dt):
 		try:
@@ -481,9 +448,9 @@ def _update_repo(p,b_nm):
 				if (ln.startswith("!")):
 					ln=ln[1:]
 					iv=True
-				while (ln.endswith(" ") and ln[-2:]!="\\ "):
+				while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
 					ln=ln[:-1]
-				ln=re.sub(r"\\([!# ])",r"\1",ln)
+				ln=re.sub(r"[\\/]([!# ])",r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
@@ -502,9 +469,11 @@ def _update_repo(p,b_nm):
 	r_t=_get_tree(nm,bt_sha)
 	bl=[]
 	cnt=[0,0,0,0]
+	p=p.replace("\\","/")
 	for r,_,fl in os.walk(p):
+		r=r.replace("\\","/")
 		for f in fl:
-			fp=os.path.join(r,f).replace(p,"")[(1 if not p.endswith("\\") else 0):].replace("\\","/")
+			fp=os.path.join(r,f).replace(p,"")[(1 if not p.endswith("/") else 0):]
 			if (_gitigonre_match(gdt,fp)==True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
@@ -556,7 +525,7 @@ def _update_repo(p,b_nm):
 		_request("patch",url=f"https://api.github.com/repos/Krzem5/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/Krzem5/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	if (nm not in gr_dt):
 		_request("delete",url=f"https://api.github.com/repos/Krzem5/{nm}/contents/_",data=json.dumps({"message":msg,"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}))
-		with open("D:\\boot\\github-created.dt","w") as f:
+		with open("D:/boot/github-created.dt","w") as f:
 			f.write("\n".join(gr_dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 	return True
@@ -564,28 +533,26 @@ def _update_repo(p,b_nm):
 
 
 def _git_project_push(r=False,fr=False):
-	_print(f"Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-	if (r==True):
-		threading.current_thread()._dp=True
-		threading.current_thread()._r=1
+	if (r==False):
+		_print(f"Starting Global Github Project Push\x1b[38;2;100;100;100m...")
 	threading.current_thread()._df=True
 	tm=int(time.time()//604800)
 	t=[0,0]
-	with open("./github.dt","r") as f:
+	with open("D:/boot/github.dt","r") as f:
 		b_dt=f.read().replace("\r","").split("\n")
-	with open("./github.dt","w") as f:
+	with open("D:/boot/github.dt","w") as f:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
 		f.flush()
-		for p in sorted(os.listdir("D:\\K\\Coding")):
+		for p in sorted(os.listdir("D:/K/Coding")):
 			if (fr==False and p in b_dt[1:]):
 				t[1]+=1
 				f.write(p+"\n")
 				f.flush()
 				continue
 			t[0]+=1
-			if (_update_repo(f"D:\\K\\Coding\\{p}",p)==False):
+			if (_update_repo(f"D:/K/Coding/{p}",p)==False):
 				return
 			f.write(p+"\n")
 			f.flush()
@@ -595,12 +562,13 @@ def _git_project_push(r=False,fr=False):
 			f.flush()
 		else:
 			t[0]+=1
-			if (_update_repo("D:\\boot\\","Boot_Program")==False):
+			if (_update_repo("D:/boot/","Boot_Program")==False):
 				return
 			f.write("Boot_Program\n")
 			f.flush()
 	threading.current_thread()._df=False
-	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
+	if (r==False):
+		_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
 
 
@@ -743,9 +711,9 @@ def _repo_stats(fp,ll,hdt,db,el):
 				if (ln.startswith("!")):
 					ln=ln[1:]
 					iv=True
-				while (ln.endswith(" ") and ln[-2:]!="\\ "):
+				while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
 					ln=ln[:-1]
-				ln=re.sub(r"\\([!# ])",r"\1",ln)
+				ln=re.sub(r"[\\/]([!# ])",r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
@@ -753,11 +721,12 @@ def _repo_stats(fp,ll,hdt,db,el):
 	if (el["__e__"]==1):
 		return
 	for r,_,fl in os.walk(fp):
-		if (el["__ig__"]==True and r[len(fp):].replace("\\","/").strip("/")[:4]=="docs"):
+		r=r.replace("\\","/")
+		if (el["__ig__"]==True and r[len(fp):].strip("/")[:4]=="docs"):
 			continue
 		if (el["__e__"]==1):
 			return
-		if ("\\build" not in r.lower()):
+		if ("/build" not in r.lower()):
 			for f in fl:
 				if (el["__e__"]==1):
 					return
@@ -778,11 +747,11 @@ def _repo_stats(fp,ll,hdt,db,el):
 
 def _read_repo_stats(fp,ll,hdt,db,el):
 	if (fp is None):
-		for fp in os.listdir("D:\\K\\Coding\\"):
-			_repo_stats(f"D:\\K\\Coding\\{fp}\\",ll,hdt,db,el)
+		for fp in os.listdir("D:/K/Coding/"):
+			_repo_stats(f"D:/K/Coding/{fp}/",ll,hdt,db,el)
 			if (el["__e__"]==1):
 				break
-		_repo_stats("D:\\boot\\",ll,hdt,db,el)
+		_repo_stats("D:/boot/",ll,hdt,db,el)
 	else:
 		_repo_stats(fp,ll,hdt,db,el)
 	el["__cf__"]=None
@@ -1407,22 +1376,6 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 
 
 
-def _save_f(fn,txt):
-	p=""
-	i=0
-	for ps in fn.split("\\")[:-1]:
-		p+=ps+"\\"
-		if (i<2):
-			i+=1
-			continue
-		if (not os.path.exists(p)):
-			os.mkdir(p)
-		i+=1
-	with open(fn,"w") as f:
-		f.write(txt)
-
-
-
 def _open_prog_w(p):
 	def _open_prog_w_f(p,p2,e,*f):
 		op=False
@@ -1465,17 +1418,14 @@ def _open_prog_w(p):
 
 
 
-def _create_prog(type_,name,op=True,pr=True):
-	if (pr==True):
-		_print(f"Creating Project: (type='{type_}', name='{name}', open_on_creation={op})")
+def _create_prog(type_,name,op=True):
 	type_=type_.lower()
 	if (type_ not in "arduino,assembly,c,cpp,css,java,js,javascript,php,processing,python".split(",")):
-		_print(f"Unknown Prog Type: {type_}")
-		return
+		raise RuntimeError(f"Unknown Type '{type_}'")
 	if (type_=="js"):
 		type_="javascript"
 	name=name.replace("_"," ").lower().title().replace(" ","_")
-	p="D:\\K\\Coding\\"+type_.title()+"-"+name+"\\"
+	p=f"D:/K/Coding/{type_.title()}-{name}/"
 	fel=[]
 	for r,_,fl in os.walk(p):
 		for f in fl:
@@ -1504,7 +1454,7 @@ def _create_prog(type_,name,op=True,pr=True):
 				f.write("#include <arduino.h>\n\n\n\nvoid setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\npython D:\\boot\\main.py 5 compile ./src ./build arduino:avr:uno&&python D:\\boot\\main.py 5 upload ./build COM3 arduino:avr:uno\n")
+				f.write(f"@echo off\ncls\npython D:/boot/main.py 5 compile ./src ./build arduino:avr:uno&&python D:/boot/main.py 5 upload ./build COM3 arduino:avr:uno\n")
 	elif (type_=="assembly"):
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
@@ -1630,11 +1580,11 @@ def _u_mcs(fp):
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
 	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
 	dw=True
-	if (os.path.exists(f"{fp}\\server.jar")):
+	if (os.path.exists(f"{fp}/server.jar")):
 		dw=False
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
-		with open(f"{fp}\\server.jar","rb") as f:
+		with open(f"{fp}/server.jar","rb") as f:
 			fb=f.read(2**16)
 			while (len(fb)>0):
 				h.update(fb)
@@ -1642,10 +1592,10 @@ def _u_mcs(fp):
 		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
 		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
 			_print(f"Creating Backup\x1b[38;2;100;100;100m...")
-			if (not os.path.exists(f"{fp}\\world-backup_{json['id']}")):
-				os.mkdir(f"{fp}\\world-backup_{json['id']}")
-			for r,dl,fl in os.walk(f"{fp}\\world"):
-				nr=f"{fp}\\world-backup_{json['id']}"+r[len(f"{fp}\\world"):]
+			if (not os.path.exists(f"{fp}/world-backup_{json['id']}")):
+				os.mkdir(f"{fp}/world-backup_{json['id']}")
+			for r,dl,fl in os.walk(f"{fp}/world"):
+				nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):]
 				for d in dl:
 					if (not os.path.exists(os.path.join(nr,d))):
 						os.mkdir(os.path.join(nr,d))
@@ -1661,7 +1611,7 @@ def _u_mcs(fp):
 	if (dw==True):
 		_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
 		r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
-		with open(f"{fp}\\server.jar","wb") as f:
+		with open(f"{fp}/server.jar","wb") as f:
 			while (True):
 				dt=r.read(4096)
 				f.write(dt)
@@ -1700,7 +1650,7 @@ def _hotkey_handler(c,wp,lp):
 
 def _check_close(t):
 	if (user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
-		subprocess.Popen(["C:\\Windows\\System32\\shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
+		subprocess.Popen(["C:/Windows/System32/shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
 
 
 
@@ -1727,7 +1677,6 @@ csbi.dwCursorPosition.Y=0
 kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 if (len(sys.argv)==1):
-	CMD_L["__core__"]={"__main__":b""}
 	threading.current_thread()._b_nm="__core__"
 	threading.current_thread()._nm="__main__"
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
@@ -1752,17 +1701,17 @@ if (len(sys.argv)==1):
 	_start_thr(_u_mcs,"__core__","minecraft_server_updater","D:/boot/mcs")
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir("D:/K/Coding"):
-		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False,pr=False)
+		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	_start_thr(_git_project_push,"__core__","github_project_push")
 	_print("Startint Remote Std Listener\x1b[38;2;100;100;100m...")
 	_start_thr(_start_s,"__core__","remote_std_server")
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
-	msg=ctypes.wintypes.LPMSG()
+	msg=ctypes.wintypes.MSG()
 	while (END==False):
-		if (user32.GetMessageW(msg,None,0,0)!=0):
-			user32.TranslateMessage(msg)
-			user32.DispatchMessageW(msg)
+		if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
+			user32.TranslateMessage(ctypes.byref(msg))
+			user32.DispatchMessageW(ctypes.byref(msg))
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -1777,9 +1726,9 @@ else:
 				traceback.print_exception(None,e,e.__traceback__)
 			return user32.CallNextHookEx(None,c,wp,lp)
 		def _loop(r):
-			if (user32.PeekMessageW(_loop._msg,None,0,0,PM_REMOVE)!=0):
-				user32.TranslateMessage(_loop._msg)
-				user32.DispatchMessageW(_loop._msg)
+			if (user32.PeekMessageW(ctypes.byref(_loop._msg),None,0,0,PM_REMOVE)!=0):
+				user32.TranslateMessage(ctypes.byref(_loop._msg))
+				user32.DispatchMessageW(ctypes.byref(_loop._msg))
 			r.after(1000//60,_loop,r)
 		r=tkinter.Tk()
 		r.bind("<FocusOut>",lambda _:r.focus_force())
@@ -1792,7 +1741,7 @@ else:
 		r.update_idletasks()
 		_handle._ig_alt=False
 		_handle._r=r
-		_loop._msg=ctypes.wintypes.LPMSG()
+		_loop._msg=ctypes.wintypes.MSG()
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_handle)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 		atexit.register(user32.UnhookWindowsHookEx,kb_cb)
@@ -1893,7 +1842,6 @@ else:
 	elif (v==2):
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="create_project"
-		threading.current_thread()._r=2
 		inp_cm=ctypes.wintypes.DWORD(0)
 		kernel32.GetConsoleMode(kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
 		out_cm=ctypes.wintypes.DWORD(0)
@@ -1910,7 +1858,7 @@ else:
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
 			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-			rl=[e.split("-")[:2] for e in os.listdir("D:\\K\\Coding")]
+			rl=[e.split("-")[:2] for e in os.listdir("D:/K/Coding")]
 			tl=[]
 			for k in rl:
 				if (k[0] not in tl):
@@ -2401,7 +2349,6 @@ else:
 					self._dt=self._dt[-128:]
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="arduino_serial_terminal"
-		threading.current_thread()._r=2
 		_init_arduino_cache()
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=kernel32.GetStdHandle(-11)
@@ -2433,37 +2380,30 @@ else:
 			threading.current_thread()._b_nm="__core__"
 			threading.current_thread()._nm="github_project_push_remote"
 			threading.current_thread()._dpt=True
-			threading.current_thread()._r=2
 			_git_project_push(r=True)
 		else:
 			if (sys.argv[2]=="*"):
 				threading.current_thread()._b_nm="__core__"
 				threading.current_thread()._nm="github_project_push_all"
 				threading.current_thread()._dpt=True
-				threading.current_thread()._r=2
 				_git_project_push(r=True,fr=True)
 			else:
 				threading.current_thread()._b_nm="__core__"
 				threading.current_thread()._nm="github_project_push_single"
 				threading.current_thread()._dpt=True
-				threading.current_thread()._r=2
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:/K/Coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program")
 				dc=("None" if sys.argv[2].lower().startswith("d:/k") else "'Boot Program'")
 				_print(f"Pushing Project to Github: (path='{sys.argv[2]}', name='{nm}', desc={dc})")
-				threading.current_thread()._dp=True
 				threading.current_thread()._df=True
-				threading.current_thread()._r=1
 				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:/k/coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._b_nm="__core__"
 		threading.current_thread()._nm="arduino_runner"
 		threading.current_thread()._dpt=True
-		threading.current_thread()._dp=True
-		threading.current_thread()._r=1
-		if (not os.path.exists(f"D:/boot/arduino")):
-			os.mkdir(f"D:/boot/arduino")
+		if (not os.path.exists("D:/boot/arduino")):
+			os.mkdir("D:/boot/arduino")
 		_init_arduino_cache()
 		if (len(sys.argv)<3):
 			_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
@@ -2512,13 +2452,13 @@ else:
 		ll=None
 		hdt=None
 		db=None
-		if (not os.path.exists("D:\\boot\\git-languages.json") or not os.path.exists("D:\\boot\\git-languages-h.json") or not os.path.exists("D:\\boot\\git-languages-db.json")):
+		if (not os.path.exists("D:/boot/git-languages.json") or not os.path.exists("D:/boot/git-languages-h.json") or not os.path.exists("D:/boot/git-languages-db.json")):
 			ll={}
 			l_id_m={}
 			for k,v in yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader).items():
 				l_id_m[k]=len(ll)
 				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
-			with open("D:\\boot\\git-languages.json","w") as f:
+			with open("D:/boot/git-languages.json","w") as f:
 				f.write(json.dumps(ll,separators=(",",":"),indent=None))
 			hdt=[]
 			_hdt=yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader)
@@ -2552,7 +2492,7 @@ else:
 							npl+=[(sse,pm) for sse in se]
 						rl+=[(e["language"],npl)]
 				hdt+=[(k["extensions"],rl)]
-			with open("D:\\boot\\git-languages-h.json","w") as f:
+			with open("D:/boot/git-languages-h.json","w") as f:
 				f.write(json.dumps(hdt,separators=(",",":"),indent=None))
 			t=requests.get("https://api.github.com/repos/github/linguist/branches/master",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).json()["commit"]["commit"]["tree"]["sha"]
 			db={"tokens_total":0,"languages_total":0,"tokens":{},"language_tokens":{},"languages":{},"filenames":{}}
@@ -2588,16 +2528,16 @@ else:
 								db["tokens"][nm][t]+=1
 							db["tokens_total"]+=1
 					break
-			with open("D:\\boot\\git-languages-db.json","w") as f:
+			with open("D:/boot/git-languages-db.json","w") as f:
 				f.write(json.dumps(db,indent=4).replace("    ","\t"))
 		else:
-			with open("D:\\boot\\git-languages.json","r") as f:
+			with open("D:/boot/git-languages.json","r") as f:
 				ll=json.loads(f.read(),strict=False)
-			with open("D:\\boot\\git-languages-h.json","r") as f:
+			with open("D:/boot/git-languages-h.json","r") as f:
 				hdt=json.loads(f.read(),strict=False)
 				for i,k in enumerate(hdt):
 					hdt[i]=(k[0],tuple((e[0],(tuple((regex.compile(sk,regex.M|regex.V1),sv) for sk,sv in e[1]) if e[1]!=None else None)) for e in k[1]))
-			with open("D:\\boot\\git-languages-db.json","r") as f:
+			with open("D:/boot/git-languages-db.json","r") as f:
 				db=json.loads(f.read(),strict=False)
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
@@ -2725,7 +2665,6 @@ else:
 			threading.current_thread()._b_nm="__core__"
 			threading.current_thread()._nm="minecraft_server_updater"
 			threading.current_thread()._dpt=True
-			threading.current_thread()._r=2
 			_u_mcs("D:/boot/mcs")
 		else:
 			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
