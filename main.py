@@ -2393,8 +2393,6 @@ else:
 				threading.current_thread()._nm="github_project_push_single"
 				threading.current_thread()._dpt=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
-				nm=(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].replace("D:/K/Coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program")
-				dc=("None" if sys.argv[2].lower().startswith("d:/k") else "'Boot Program'")
 				threading.current_thread()._df=True
 				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:/k/coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
