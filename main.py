@@ -1411,7 +1411,7 @@ def _open_prog_w(p):
 	elif (t=="php"):
 		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"php",f"{p}src/index.php")
 	elif (t=="processing"):
-		os.system(f"start /min cmd /c \"{p}main/main.pde\"")
+		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"pde",f"{p}src/main/main.pde")
 	elif (t=="python"):
 		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"py",f"{p}src/main.py")
 	else:
@@ -1526,14 +1526,14 @@ def _create_prog(type_,name,op=True):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}src/index.php")
 	elif (type_=="processing"):
-		if (not os.path.exists(f"{p}main/")):
-			os.mkdir(f"{p}main/")
-		if (not os.path.exists(f"{p}main/main.pde")):
-			with open(f"{p}main/main.pde","x") as f:
-				f.write("void setup(){\n\t\n}\n\nvoid draw(){\n\t\n}")
+		if (not os.path.exists(f"{p}src/")):
+			os.mkdir(f"{p}src/")
+		if (not os.path.exists(f"{p}src/Main.pde")):
+			with open(f"{p}src/Main.pde","x") as f:
+				f.write("void setup(){\n\t\n}\n\nvoid draw(){\n\t\n}\n")
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\nstart /min cmd /c \"{p}main/main.pde\"")
+				f.write(f"@echo off\ncls\npython build.py %*\n")
 	elif (type_=="python"):
 		if (not os.path.exists(f"{p}src/main.py") and "py" not in fel):
 			with open(f"{p}src/main.py","x") as f:
