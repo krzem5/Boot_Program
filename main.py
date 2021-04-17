@@ -29,7 +29,6 @@ global ARDUINO_CACHE,END,STDOUT_LOCK
 ARDUINO_CACHE=None
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_HOST_SYSTEM="i686-mingw32"
-ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS=[".ino"]
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 END=False
@@ -1117,15 +1116,10 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
-	m_fp=None
+	m_fp=f"{s_fp}main.ino"
 	_print("Searching For Main File\x1b[38;2;100;100;100m...")
-	for k in ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS:
-		if (os.path.exists(f"{s_fp}main{k}")==True and os.path.isdir(f"{s_fp}main{k}")==False):
-			if (m_fp!=None):
-				raise RuntimeError("Sketch Contains Multiple Main Programs.")
-			m_fp=f"{s_fp}main{k}"
-	if (m_fp is None):
-		raise RuntimeError("Sketch doesn't Contain a Main Program.")
+	if (os.path.exists(m_fp)==False or os.path.isdir(m_fp)==True):
+		raise RuntimeError("Sketch doesn't Contain a Main Program")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(f"D:/boot/arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
@@ -1180,7 +1174,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		src=b""
 		for r,_,fl in os.walk(s_fp):
 			for fp in fl:
-				if ("."+fp.split(".")[-1].lower() in ARDUINO_MAIN_SKETCH_FILE_EXTENSIONS):
+				if (fp.split(".")[-1].lower()=="ino"):
 					_print(f"Found Main Sketch File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
 					with open(os.path.join(r,fp),"rb") as f:
 						dt=f.read().replace(b"\r\n",b"\n")
@@ -1691,7 +1685,6 @@ if (len(sys.argv)==1):
 	atexit.register(user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
 	_register_hk("a",lambda:os.startfile("D:/K"))
-	_register_hk("d",lambda:subprocess.Popen("C:/Windows/System32/taskmgr.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("e",lambda:subprocess.Popen("C:/Windows/System32/control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("q",lambda:subprocess.Popen(["cmd.exe","/c","python.exe","D:/boot/main.py","1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen(["pythonw.exe","D:/boot/main.py","0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
