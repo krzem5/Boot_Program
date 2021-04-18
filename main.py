@@ -144,7 +144,7 @@ ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 
 advapi32=ctypes.windll.advapi32
 kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"data/move_to_desktop.dll")
+move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"src/move_to_desktop.dll")
 setupapi=ctypes.windll.setupapi
 user32=ctypes.windll.user32
 advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
