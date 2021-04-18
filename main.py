@@ -38,7 +38,7 @@ ARDUINO_OS_TYPE="windows"
 GITHUB_API_QUOTA=5000
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
-with open(__file_dir__+"secret.dt","r") as f:
+with open(__file_dir__+"data/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 GITHUB_USERNAME="Krzem5"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
@@ -144,7 +144,7 @@ ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 
 advapi32=ctypes.windll.advapi32
 kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"move_to_desktop.dll")
+move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"data/move_to_desktop.dll")
 setupapi=ctypes.windll.setupapi
 user32=ctypes.windll.user32
 advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
@@ -422,7 +422,7 @@ def _update_repo(p,b_nm):
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
-	with open(__file_dir__+"github-created.dt","r") as f:
+	with open(__file_dir__+"data/github-created.dt","r") as f:
 		gr_dt=f.read().strip().replace("\r","").split("\n")
 	if (nm not in gr_dt):
 		try:
@@ -518,7 +518,7 @@ def _update_repo(p,b_nm):
 		_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	if (nm not in gr_dt):
 		_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
-		with open(__file_dir__+"github-created.dt","w") as f:
+		with open(__file_dir__+"data/github-created.dt","w") as f:
 			f.write("\n".join(gr_dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 	return True
@@ -531,9 +531,9 @@ def _git_project_push(r=False,fr=False):
 	threading.current_thread()._df=True
 	tm=int(time.time()//604800)
 	t=[0,0]
-	with open(__file_dir__+"github.dt","r") as f:
+	with open(__file_dir__+"data/github.dt","r") as f:
 		b_dt=f.read().replace("\r","").split("\n")
-	with open(__file_dir__+"github.dt","w") as f:
+	with open(__file_dir__+"data/github.dt","w") as f:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
@@ -1635,6 +1635,8 @@ csbi.dwCursorPosition.X=0
 csbi.dwCursorPosition.Y=0
 kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
+if (not os.path.exists(__file_dir__+"data")):
+	os.mkdir(__file_dir__+"data")
 if (len(sys.argv)==1):
 	threading.current_thread()._nm="__main__"
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
@@ -2404,13 +2406,13 @@ else:
 		ll=None
 		hdt=None
 		db=None
-		if (not os.path.exists(__file_dir__+"git-languages.json") or not os.path.exists(__file_dir__+"git-languages-h.json") or not os.path.exists(__file_dir__+"git-languages-db.json")):
+		if (not os.path.exists(__file_dir__+"data/git-languages.json") or not os.path.exists(__file_dir__+"data/git-languages-h.json") or not os.path.exists(__file_dir__+"data/git-languages-db.json")):
 			ll={}
 			l_id_m={}
 			for k,v in yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader).items():
 				l_id_m[k]=len(ll)
 				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
-			with open(__file_dir__+"git-languages.json","w") as f:
+			with open(__file_dir__+"data/git-languages.json","w") as f:
 				f.write(json.dumps(ll,separators=(",",":"),indent=None))
 			hdt=[]
 			_hdt=yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader)
@@ -2444,7 +2446,7 @@ else:
 							npl+=[(sse,pm) for sse in se]
 						rl+=[(e["language"],npl)]
 				hdt+=[(k["extensions"],rl)]
-			with open(__file_dir__+"git-languages-h.json","w") as f:
+			with open(__file_dir__+"data/git-languages-h.json","w") as f:
 				f.write(json.dumps(hdt,separators=(",",":"),indent=None))
 			t=requests.get("https://api.github.com/repos/github/linguist/branches/master",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).json()["commit"]["commit"]["tree"]["sha"]
 			db={"tokens_total":0,"languages_total":0,"tokens":{},"language_tokens":{},"languages":{},"filenames":{}}
@@ -2480,16 +2482,16 @@ else:
 								db["tokens"][nm][t]+=1
 							db["tokens_total"]+=1
 					break
-			with open(__file_dir__+"git-languages-db.json","w") as f:
+			with open(__file_dir__+"data/git-languages-db.json","w") as f:
 				f.write(json.dumps(db,indent=4).replace("    ","\t"))
 		else:
-			with open(__file_dir__+"git-languages.json","r") as f:
+			with open(__file_dir__+"data/git-languages.json","r") as f:
 				ll=json.loads(f.read(),strict=False)
-			with open(__file_dir__+"git-languages-h.json","r") as f:
+			with open(__file_dir__+"data/git-languages-h.json","r") as f:
 				hdt=json.loads(f.read(),strict=False)
 				for i,k in enumerate(hdt):
 					hdt[i]=(k[0],tuple((e[0],(tuple((regex.compile(sk,regex.M|regex.V1),sv) for sk,sv in e[1]) if e[1]!=None else None)) for e in k[1]))
-			with open(__file_dir__+"git-languages-db.json","r") as f:
+			with open(__file_dir__+"data/git-languages-db.json","r") as f:
 				db=json.loads(f.read(),strict=False)
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()

@@ -1,5 +1,6 @@
 arduino
+data
 mc_server
-*.dll
+!data/move_to_desktop.dll
 *.dt
 *.json
