@@ -346,8 +346,30 @@ def _gitigonre_match(gdt,fp):
 	ig=False
 	for p in gdt:
 		if ((ig==False or p[0]==True) and _pattern(p,fp)==True):
+			fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
+			if (len(fnm)<len(p[1].split("/"))):
+				continue
+			if (len(p[1].split("/")[0])==0):
+				ok=True
+				for sr,sfnm in zip(p[1].split("/"),fnm):
+					if (fnmatch.fnmatch(sfnm,sr)==False):
+						ok=False
+						break
+				if (ok==False):
+					continue
+			else:
+				ok=False
+				for i in range(0,len(fnm)-len(p[1].split("/"))+1):
+					for sr,sfnm in zip(p[1].split("/"),fnm[i:]):
+						if (fnmatch.fnmatch(sfnm,sr)==False):
+							break
+					else:
+						ok=True
+						break
+				if (ok==False):
+					continue
 			if (p[0]==True):
-				return False
+				continue
 			ig=True
 	if (ig==True):
 		return True
@@ -448,8 +470,6 @@ def _update_repo(p,b_nm):
 					gdt+=[[iv,ln]]
 	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	br=_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/branches")
-	if ("message" in br):
-		return True
 	br=[e["name"] for e in br]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
 	try:
