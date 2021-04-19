@@ -228,7 +228,7 @@ with open("build/main.java","wb") as f,open("src/Main.pde","rb") as mf:
 with open("build/mapping.txt","w") as f:
 	for k,v in lm:
 		f.write(f"{k} {v}\n")
-if (subprocess.run(["javac","-encoding","utf8","-d","build","-classpath",(";" if os.name=="nt" else ":").join(lib),"build/main.java"]).returncode!=0):
+if (subprocess.run(["javac","-encoding","utf8","-d","build","-classpath",os.path.pathsep.join(lib),"build/main.java"]).returncode!=0):
 	sys.exit(1)
 with zipfile.ZipFile("build/main.jar","w") as zf:
 	print("Writing: META-INF/MANIFEST.MF")

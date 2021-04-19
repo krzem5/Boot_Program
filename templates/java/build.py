@@ -24,7 +24,7 @@ for r,_,fl in os.walk("src"):
 			jfl.append(r+f)
 		if (f[-4:]==".jar"):
 			ml.append(r+f)
-if (subprocess.run(["javac","-encoding","utf8","-cp",(";" if os.name=="nt" else ":").join(ml),"-d","build"]+jfl).returncode!=0):
+if (subprocess.run(["javac","-encoding","utf8","-cp",os.path.pathsep.join(ml),"-d","build"]+jfl).returncode!=0):
 	sys.exit(1)
 with zipfile.ZipFile("build/$$$NAME$$$.jar","w") as zf:
 	print("Writing: META-INF/MANIFEST.MF")
