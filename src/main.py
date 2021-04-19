@@ -43,6 +43,7 @@ ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
 ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",re.M)
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
+BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 CMD_FILE_PATH="C:/Windows/System32/cmd.exe"
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 GITHUB_API_QUOTA=5000
@@ -50,6 +51,7 @@ GITHUB_CREATED_PROJECT_LIST_FILE_PATH="data/github-created.dt"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
+GITHUB_MAX_FILE_SIZE=52428800
 GITHUB_PUSHED_PROJECT_LIST_FILE_PATH="data/github.dt"
 with open(__file_dir__+"data/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
@@ -366,7 +368,7 @@ def _is_binary(fp):
 		dt=f.read(4096)
 	if (len(dt)==0):
 		return False
-	r1=len(dt.translate(None,b"\t\r\n\f\b"+bytes(range(32,127))))/len(dt)
+	r1=len(dt.translate(None,b"\b\t\n\f\r"+bytes(range(32,127))))/len(dt)
 	r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
 	if (r1>0.90 and r2>0.9):
 		return True
@@ -491,19 +493,28 @@ def _push_single_github_project(p,b_nm):
 					except UnicodeDecodeError:
 						pass
 				if (b64==True):
-					b_sha=True
-					with open(os.path.join(r,f),"rb") as rbf:
-						dt=str(base64.b64encode(rbf.read()),"utf-8")
-					if (len(dt)>50*1024*1024):
+					if (len(dt)*4//3>GITHUB_MAX_FILE_SIZE):
 						b_sha=False
 						dt="File too Large (size = %d b)"%(len(dt))
 					else:
-						b=_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
-						if (b is None):
-							b_sha=False
-							dt="Github Server Error"
-						else:
-							dt=b["sha"]
+						b_sha=True
+						with open(os.path.join(r,f),"rb") as rbf:
+							dt=""
+							i=0
+							b_dt=rbf.read()
+							while (i<len(b_dt)-2):
+								dt+=BASE64_ALPHABET[b_dt[i]>>2]+BASE64_ALPHABET[((b_dt[i]<<4)&0x3f)|(b_dt[i+1]>>4)]+BASE64_ALPHABET[((b_dt[i+1]<<2)&0x3f)|(b_dt[i+2]>>6)]+BASE64_ALPHABET[b_dt[i+2]&0x3f]
+								i+=3
+							if (i==len(b_dt)-2):
+								dt+=BASE64_ALPHABET[b_dt[i]>>2]+BASE64_ALPHABET[((b_dt[i]<<4)&0x3f)|(b_dt[i+1]>>4)]+BASE64_ALPHABET[(b_dt[i+1]<<2)&0x3f]+"="
+							elif (i==len(b_dt)-1):
+								dt+=BASE64_ALPHABET[b_dt[i]>>2]+BASE64_ALPHABET[(b_dt[i]<<4)&0x3f]+"=="
+							b=_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
+							if (b is None):
+								b_sha=False
+								dt="Github Server Error"
+							else:
+								dt=b["sha"]
 			bl+=[[fp,({"path":fp,"mode":"100644","type":"blob","content":dt} if b_sha==False else {"path":fp,"mode":"100644","type":"blob","sha":dt})]]
 	for fp in r_t.keys():
 		rm=True
