@@ -1,5 +1,4 @@
 import atexit
-import base64
 import ctypes
 import ctypes.wintypes
 import datetime
