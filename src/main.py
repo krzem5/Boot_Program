@@ -27,32 +27,38 @@ import zipfile
 
 __file__=os.path.abspath(__file__).replace("\\","/")
 __file_dir__=__file__[:-len(__file__.split("/")[-1])-4].strip("/")+"/"
+if (not os.path.exists(__file_dir__+"data")):
+	os.mkdir(__file_dir__+"data")
 
 
 
-ARDUINO_DIRECTORY_PATH_REGEX=re.compile(r"/$")
-ARDUINO_CPP_INCLUDE_FILE_REGEX=re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",re.M)
 ARDUINO_CACHE={}
 ARDUINO_COMMAND_FORMAT_REGEX=re.compile(r"\{.+?\}")
+ARDUINO_CPP_INCLUDE_FILE_REGEX=re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",re.M)
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_DATA_LINE_SEPARATOR_REGEX=re.compile(r"\r(\n|$)")
+ARDUINO_DIRECTORY_PATH_REGEX=re.compile(r"/$")
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
+ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",re.M)
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 CMD_FILE_PATH="C:/Windows/System32/cmd.exe"
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 GITHUB_API_QUOTA=5000
+GITHUB_CREATED_PROJECT_LIST_FILE_PATH="data/github-created.dt"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH="data/github.dt"
 with open(__file_dir__+"data/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jre8_251/bin/java.exe"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
-PRINT_ADD_COLOR_REGEX=re.compile(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|None|-?[0-9]+(?:\.[0-9]+)?%?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?%|-?[0-9]+(?:\.[0-9]+)?\b")
+MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
+PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?%\b|-?[0-9]+(?:\.[0-9]+)?\b|[0123456789abcdefABCDEF]+\b")
 PROJECT_DIR="D:/K/Coding/"
 REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -71,10 +77,10 @@ SERIAL_TIMEOUT=5000
 SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
 SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
 STDOUT_LOCK=threading.Lock()
+TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").strip("/")+"/"
 VALID_PROGRAM_TYPES=[k.lower() for k in os.listdir(__file_dir__+"templates")]
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
-TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/")
 
 
 
@@ -168,7 +174,7 @@ ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 
 advapi32=ctypes.windll.advapi32
 kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"lib/move_to_desktop.dll")
+move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+MOVE_TO_DESKTOP_DLL_PATH)
 setupapi=ctypes.windll.setupapi
 shell32=ctypes.windll.shell32
 user32=ctypes.windll.user32
@@ -292,62 +298,25 @@ def _print(*a,end="\n"):
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
-		elif (m.group(0)[0] in "-0123456789" and m.group(0)[-1]!="%"):
+		elif (m.group(0)[0] in "-0123456789" and (m.end(0)==1 or m.group(0)[1:].isnumeric()) and m.group(0)[-1]!="%"):
 			return f"\x1b[38;2;48;109;206m{m.group(0)}\x1b[0m"
 		elif (m.group(0)[0] in "-0123456789" and m.group(0)[-1]=="%"):
 			return f"\x1b[38;2;245;103;245m{m.group(0)}\x1b[0m"
-		m=m.group(0)[1:-1]
-		o=""
-		i=0
-		while (i<len(m)):
-			while (m[i]==" "):
-				o+=" "
-				i+=1
-			o+="\x1b[38;2;214;206;42m"+m[i:].split("=")[0]+"\x1b[38;2;32;162;132m="
-			i+=len(m[i:].split("=")[0])+1
-			while (m[i]==" "):
-				o+=" "
-				i+=1
-			if (m[i]=="'"):
-				o+="\x1b[38;2;91;216;38m'"
-				i+=1
-				s=False
-				while (not s or m[i-1]!="'"):
-					o+=m[i]
-					i+=1
-					s=True
-			elif (m[i:].startswith("False")):
-				o+="\x1b[38;2;239;128;15mFalse"
-				i+=5
-			elif (m[i:][:4] in "True,None".split(",")):
-				o+=f"\x1b[38;2;239;128;15m{m[i:][:4]}"
-				i+=4
-			else:
-				o+="\x1b[38;2;48;109;206m"
-				while (m[i] in "0123456789.-"):
-					o+=m[i]
-					i+=1
-			if (i>=len(m)):
-				break
-			while (m[i]==" "):
-				o+=" "
-				i+=1
-			if (m[i]==","):
-				o+="\x1b[38;2;32;162;132m,"
-				i+=1
-		return "\x1b[38;2;186;39;130m("+o+"\x1b[38;2;186;39;130m)\x1b[0m"
+		else:
+			return f"\x1b[38;2;227;204;59m{m.group(0)}\x1b[0m"
 	a=" ".join([str(e) for e in a])
 	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
 		i=0
 		while (i<len(a)):
-			_im=REMOVE_COLOR_FORMATTING_REGEX.match(a[i:])
-			if (_im!=None):
-				i+=len(_im.group(0))
-			m=PRINT_ADD_COLOR_REGEX.match(a[i:])
+			m=REMOVE_COLOR_FORMATTING_REGEX.match(a[i:])
 			if (m!=None):
-				o=_r_color_f(m)
-				a=a[:i]+o+a[i+len(m[0]):]
-				i+=len(o)-1
+				i+=len(m.group(0))
+			if (a[i] in "'-" or i==0 or a[i-1] not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):
+				m=PRINT_ADD_COLOR_REGEX.match(a[i:])
+				if (m!=None):
+					o=_r_color_f(m)
+					a=a[:i]+o+a[i+len(m[0]):]
+					i+=len(o)-1
 			i+=1
 	t=(datetime.datetime.now().strftime((f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")) if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	STDOUT_LOCK.acquire()
@@ -451,7 +420,7 @@ def _update_repo(p,b_nm):
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
-	with open(__file_dir__+"data/github-created.dt","r") as f:
+	with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
 		gr_dt=f.read().strip().replace("\r","").split("\n")
 	if (nm not in gr_dt):
 		try:
@@ -547,7 +516,7 @@ def _update_repo(p,b_nm):
 		_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	if (nm not in gr_dt):
 		_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
-		with open(__file_dir__+"data/github-created.dt","w") as f:
+		with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"w") as f:
 			f.write("\n".join(gr_dt)+f"\n{nm}")
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 	return True
@@ -560,9 +529,9 @@ def _git_project_push(r=False,fr=False):
 	threading.current_thread()._df=True
 	tm=int(time.time()//604800)
 	t=[0,0]
-	with open(__file_dir__+"data/github.dt","r") as f:
+	with open(__file_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as f:
 		b_dt=f.read().replace("\r\n","\n").split("\n")
-	with open(__file_dir__+"data/github.dt","w") as f:
+	with open(__file_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"w") as f:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
@@ -1117,7 +1086,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	def _replace_inc(dt):
 		i=0
 		while (i<len(dt)):
-			m=re.search(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",dt[i:],re.M)
+			m=ARDUINO_REPLACE_INCLUDE_REGEX.search(dt[i:])
 			if (m is None):
 				break
 			dt=dt[:i+m.start(0)]+b"#include <"+m.group(1)[1:-1].replace(b"\\",b"/").replace(b"/",b"$")+b">"+dt[i+m.end(0)-1:]
@@ -1576,8 +1545,6 @@ csbi.dwCursorPosition.X=0
 csbi.dwCursorPosition.Y=0
 kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
-if (not os.path.exists(__file_dir__+"data")):
-	os.mkdir(__file_dir__+"data")
 if (len(sys.argv)==1):
 	threading.current_thread()._nm="__main__"
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
