@@ -30,18 +30,31 @@ __file_dir__=__file__[:-len(__file__.split("/")[-1])].strip("/")+"/"
 
 
 
+ARDUINO_DIRECTORY_PATH_REGEX=re.compile(r"/$")
+ARDUINO_CPP_INCLUDE_FILE_REGEX=re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",re.M)
 ARDUINO_CACHE={}
+ARDUINO_COMMAND_FORMAT_REGEX=re.compile(r"\{.+?\}")
 ARDUINO_CUSTOM_WARNING_LEVEL=""
+ARDUINO_DATA_LINE_SEPARATOR_REGEX=re.compile(r"\r(\n|$)")
 ARDUINO_HOST_SYSTEM="i686-mingw32"
 ARDUINO_OPTIMIZE_FOR_DEBUG=False
 ARDUINO_OS_TYPE="windows"
+ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
+CMD_FILE_PATH="C:/Windows/System32/cmd.exe"
+CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 GITHUB_API_QUOTA=5000
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-preview+json"
+GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
 with open(__file_dir__+"data/secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 GITHUB_USERNAME="Krzem5"
+GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
+JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jre8_251/bin/java.exe"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
+PRINT_ADD_COLOR_REGEX=re.compile(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|None|-?[0-9]+(?:\.[0-9]+)?%?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?%|-?[0-9]+(?:\.[0-9]+)?\b")
+PROJECT_DIR="D:/K/Coding/"
+REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
@@ -52,8 +65,11 @@ REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ 
 REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
 REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
 REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
+ROOT_FILE_PATH="D:/K/"
 SERIAL_BAUD=9600
 SERIAL_TIMEOUT=5000
+SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
+SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
 STDOUT_LOCK=threading.Lock()
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
@@ -70,6 +86,10 @@ ERROR_IO_PENDING=0x3e5
 ERROR_OPERATION_ABORTED=0x3e3
 ERROR_SUCCESS=0
 EV_ERR=0x80
+EWX_FORCEIFHUNG=0x10
+EWX_LOGOFF=0x0
+EWX_POWEROFF=0x8
+EWX_SHUTDOWN=0x1
 FILE_ATTRIBUTE_ARCHIVE=0x20
 FILE_ATTRIBUTE_HIDDEN=0x2
 FILE_ATTRIBUTE_NORMAL=0x80
@@ -90,7 +110,6 @@ MB_ICONQUESTION=0x20
 MB_SYSTEMMODAL=0x1000
 MB_YESNO=0x4
 NOPARITY=0
-NULL=0
 ONESTOPBIT=0
 OPEN_EXISTING=3
 PM_REMOVE=1
@@ -99,7 +118,11 @@ PURGE_RXCLEAR=8
 PURGE_TXABORT=1
 PURGE_TXCLEAR=4
 RTS_CONTROL_ENABLE=1
+SHTDN_REASON_FLAG_PLANNED=0x80000000
+SHTDN_REASON_MAJOR_OTHER=0
+SHTDN_REASON_MINOR_OTHER=0
 SPDRP_HARDWAREID=1
+SW_SHOWMAXIMIZED=3
 VK_PACKET=0xe7
 WH_KEYBOARD_LL=13
 WM_KEYDOWN=0x100
@@ -146,6 +169,7 @@ advapi32=ctypes.windll.advapi32
 kernel32=ctypes.windll.kernel32
 move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"src/move_to_desktop.dll")
 setupapi=ctypes.windll.setupapi
+shell32=ctypes.windll.shell32
 user32=ctypes.windll.user32
 advapi32.RegCloseKey.argtypes=(ctypes.wintypes.HKEY,)
 advapi32.RegCloseKey.restype=ctypes.wintypes.LONG
@@ -233,10 +257,14 @@ setupapi.SetupDiGetDeviceRegistryPropertyW.argtypes=(ctypes.wintypes.HDEVINFO,ct
 setupapi.SetupDiGetDeviceRegistryPropertyW.restype=ctypes.wintypes.BOOL
 setupapi.SetupDiOpenDevRegKey.argtypes=(ctypes.wintypes.HDEVINFO,ctypes.wintypes.PSP_DEVINFO_DATA,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
 setupapi.SetupDiOpenDevRegKey.restype=ctypes.wintypes.HKEY
+shell32.ShellExecuteW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPCWSTR,ctypes.wintypes.INT)
+shell32.ShellExecuteW.restype=ctypes.wintypes.HINSTANCE
 user32.CallNextHookEx.argtypes=(ctypes.wintypes.PHHOOK,ctypes.c_int,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
 user32.CallNextHookEx.restype=ctypes.wintypes.LRESULT
 user32.DispatchMessageW.argtypes=(ctypes.wintypes.LPMSG,)
 user32.DispatchMessageW.restype=ctypes.wintypes.LRESULT
+user32.ExitWindowsEx.argtypes=(ctypes.wintypes.UINT,ctypes.wintypes.DWORD)
+user32.ExitWindowsEx.restype=ctypes.wintypes.BOOL
 user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
 user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
 user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
@@ -311,10 +339,10 @@ def _print(*a,end="\n"):
 	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
 		i=0
 		while (i<len(a)):
-			_im=re.match(r"\x1b\[[^m]+m",a[i:])
+			_im=REMOVE_COLOR_FORMATTING_REGEX.match(a[i:])
 			if (_im!=None):
 				i+=len(_im.group(0))
-			m=re.match(r"\(( *[A-Za-z0-9_]+ *= *(?:False|True|None|-?[0-9]+(?:\.[0-9]+)?%?|'[^']*'),?)+ *\)|'[^']*'|-?[0-9]+(?:\.[0-9]+)?%|-?[0-9]+(?:\.[0-9]+)?\b",a[i:])
+			m=PRINT_ADD_COLOR_REGEX.match(a[i:])
 			if (m!=None):
 				o=_r_color_f(m)
 				a=a[:i]+o+a[i+len(m[0]):]
@@ -322,7 +350,7 @@ def _print(*a,end="\n"):
 			i+=1
 	t=(datetime.datetime.now().strftime((f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m [{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else f"\x1b[38;2;50;50;50m[%H:%M:%S]\x1b[0m ")) if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	STDOUT_LOCK.acquire()
-	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(re.sub(r"\x1b\[[^m]+m","",t)))+"\x1b[0m"+end)
+	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m"+end)
 	STDOUT_LOCK.release()
 
 
@@ -421,7 +449,7 @@ def _update_repo(p,b_nm):
 			with open(fp,"rb") as f:
 				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
-	nm=re.sub(r"[^A-Za-z0-9_\.\-]",r"",b_nm)
+	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
 	with open(__file_dir__+"data/github-created.dt","r") as f:
 		gr_dt=f.read().strip().replace("\r","").split("\n")
 	if (nm not in gr_dt):
@@ -432,7 +460,7 @@ def _update_repo(p,b_nm):
 			return False
 	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
-		for ln in f.read().replace("\r","").split("\n"):
+		for ln in f.read().replace("\r\n","\n").split("\n"):
 			if (ln.endswith("\n")):
 				ln=ln[:-1]
 			ln=ln.lstrip()
@@ -443,7 +471,7 @@ def _update_repo(p,b_nm):
 					iv=True
 				while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
 					ln=ln[:-1]
-				ln=re.sub(r"[\\/]([!# ])",r"\1",ln)
+				ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
@@ -532,20 +560,20 @@ def _git_project_push(r=False,fr=False):
 	tm=int(time.time()//604800)
 	t=[0,0]
 	with open(__file_dir__+"data/github.dt","r") as f:
-		b_dt=f.read().replace("\r","").split("\n")
+		b_dt=f.read().replace("\r\n","\n").split("\n")
 	with open(__file_dir__+"data/github.dt","w") as f:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
 		f.write(str(tm)+"\n")
 		f.flush()
-		for p in sorted(os.listdir("D:/K/Coding")):
+		for p in sorted(os.listdir(PROJECT_DIR)):
 			if (fr==False and p in b_dt[1:]):
 				t[1]+=1
 				f.write(p+"\n")
 				f.flush()
 				continue
 			t[0]+=1
-			if (_update_repo(f"D:/K/Coding/{p}",p)==False):
+			if (_update_repo(PROJECT_DIR+p,p)==False):
 				return
 			f.write(p+"\n")
 			f.flush()
@@ -555,7 +583,7 @@ def _git_project_push(r=False,fr=False):
 			f.flush()
 		else:
 			t[0]+=1
-			if (_update_repo(__file_dir__+"","Boot_Program")==False):
+			if (_update_repo(__file_dir__,"Boot_Program")==False):
 				return
 			f.write("Boot_Program\n")
 			f.flush()
@@ -695,7 +723,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 def _repo_stats(fp,ll,hdt,db,el):
 	gdt=[]
 	with open(os.path.join(fp,".gitignore"),"r") as f:
-		for ln in f.read().replace("\r","").split("\n"):
+		for ln in f.read().replace("\r\n","\n").split("\n"):
 			if (ln.endswith("\n")):
 				ln=ln[:-1]
 			ln=ln.lstrip()
@@ -706,7 +734,7 @@ def _repo_stats(fp,ll,hdt,db,el):
 					iv=True
 				while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
 					ln=ln[:-1]
-				ln=re.sub(r"[\\/]([!# ])",r"\1",ln)
+				ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
@@ -740,8 +768,8 @@ def _repo_stats(fp,ll,hdt,db,el):
 
 def _read_repo_stats(fp,ll,hdt,db,el):
 	if (fp is None):
-		for fp in os.listdir("D:/K/Coding/"):
-			_repo_stats(f"D:/K/Coding/{fp}/",ll,hdt,db,el)
+		for fp in os.listdir(PROJECT_DIR):
+			_repo_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
 			if (el["__e__"]==1):
 				break
 		_repo_stats(__file_dir__+"",ll,hdt,db,el)
@@ -792,31 +820,31 @@ def _rm_dir(fp):
 
 def _init_arduino_cache():
 	_print("Initialising Cache\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(f__file_dir__+"arduino/cache")):
-		os.mkdir(f__file_dir__+"arduino/cache")
-	if (not os.path.exists(f__file_dir__+"arduino/cache/index")):
-		with open(f__file_dir__+"arduino/cache/index","w"):
+	if (not os.path.exists(__file_dir__+f"arduino/cache")):
+		os.mkdir(__file_dir__+f"arduino/cache")
+	if (not os.path.exists(__file_dir__+f"arduino/cache/index")):
+		with open(__file_dir__+f"arduino/cache/index","w"):
 			pass
 	else:
-		with open(f__file_dir__+"arduino/cache/index","r") as f:
+		with open(__file_dir__+f"arduino/cache/index","r") as f:
 			for k in f.read().replace("\r","").split("\n"):
 				if (len(k)>0):
 					ARDUINO_CACHE[k.split(":")[0]]=float(k.split(":")[1])
 	u=False
 	_print("Reading Cache Index\x1b[38;2;100;100;100m...")
 	for k in list(ARDUINO_CACHE.keys()):
-		if (ARDUINO_CACHE[k]<time.time() or not os.path.exists(f__file_dir__+"arduino/cache/{k}")):
-			if (os.path.exists(f__file_dir__+"arduino/cache/{k}")):
-				os.remove(f__file_dir__+"arduino/cache/{k}")
+		if (ARDUINO_CACHE[k]<time.time() or not os.path.exists(__file_dir__+f"arduino/cache/{k}")):
+			if (os.path.exists(__file_dir__+f"arduino/cache/{k}")):
+				os.remove(__file_dir__+f"arduino/cache/{k}")
 			del ARDUINO_CACHE[k]
 			u=True
 	_print("Removing Old Cache\x1b[38;2;100;100;100m...")
-	for k in os.listdir(f__file_dir__+"arduino/cache/"):
+	for k in os.listdir(__file_dir__+f"arduino/cache/"):
 		if (k=="index" or k in list(ARDUINO_CACHE.keys())):
 			continue
-		os.remove(f__file_dir__+"arduino/cache/{k}")
+		os.remove(__file_dir__+f"arduino/cache/{k}")
 	if (u==True):
-		with open(f__file_dir__+"arduino/cache/index","w") as f:
+		with open(__file_dir__+f"arduino/cache/index","w") as f:
 			f.write("\n".join([f"{e[0]}:{e[1]}" for e in ARDUINO_CACHE.items()]))
 
 
@@ -825,16 +853,16 @@ def _get_arduino_cache(k):
 	t=ARDUINO_CACHE.get(k,0)
 	if (t==0):
 		return None
-	with open(f__file_dir__+"arduino/cache/{k}","rb") as f:
+	with open(__file_dir__+f"arduino/cache/{k}","rb") as f:
 		return f.read()
 
 
 
 def _set_arduino_cache(k,v,t=2592000):
 	ARDUINO_CACHE[k]=time.time()+t
-	with open(f__file_dir__+"arduino/cache/index","w") as f:
+	with open(__file_dir__+f"arduino/cache/index","w") as f:
 		f.write("\n".join([f"{e[0]}:{e[1]}" for e in ARDUINO_CACHE.items()]))
-	with open(f__file_dir__+"arduino/cache/{k}","wb") as f:
+	with open(__file_dir__+f"arduino/cache/{k}","wb") as f:
 		f.write(v)
 
 
@@ -864,7 +892,7 @@ def _l_ard_boards(p=True):
 				continue
 			hw_id=ctypes.create_unicode_buffer(250)
 			setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
-			m=re.search((r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})" if hw_id.value[:3]=="USB" else r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})"),hw_id.value,re.I)
+			m=(SERIAL_VALID_DEVICE_NAME_USB_REGEX if hw_id.value[:3]=="USB" else SERIAL_VALID_DEVICE_NAME_REGEX).search(hw_id.value)
 			if (m is not None):
 				r=_get_arduino_cache(f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json")
 				if (r is None):
@@ -885,9 +913,9 @@ def _install_ard_pkg(b,force=False):
 	if (type(b)==str):
 		_print(f"Searching For Package '{b}'\x1b[38;2;100;100;100m...")
 		i_pkg=[]
-		if (os.path.exists(f__file_dir__+"arduino/packages/index")):
-			with open(f__file_dir__+"arduino/packages/index","r") as f:
-				i_pkg=f.read().replace("\r","").split("\n")
+		if (os.path.exists(__file_dir__+f"arduino/packages/index")):
+			with open(__file_dir__+f"arduino/packages/index","r") as f:
+				i_pkg=f.read().replace("\r\n","\n").split("\n")
 		_print(f"Querying 'https://api.github.com/repos/arduino/{b}/releases/latest' for Package Metadata\x1b[38;2;100;100;100m...")
 		dt=requests.get(f"https://api.github.com/repos/arduino/{b}/releases/latest").json()
 		if (force==False and f"arduino-{b}-{dt['tag_name']}" in i_pkg):
@@ -904,32 +932,32 @@ def _install_ard_pkg(b,force=False):
 					_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
 					with tarfile.open(f"{TEMP_DIR}/{k['name']}","r:bz2") as tf:
-						tf.extractall(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
-						off=len(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
+						tf.extractall(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
+						off=len(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-						for r,_,fl in os.walk(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"):
+						for r,_,fl in os.walk(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"):
 							for f in fl:
 								fp=os.path.join(r,f)
-								os.makedirs(os.path.dirname(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
+								os.makedirs(os.path.dirname(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}"),exist_ok=True)
 								try:
-									with open(fp,"rb") as rf,open(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
+									with open(fp,"rb") as rf,open(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
 										wf.write(rf.read())
 								except Exception as e:
 									traceback.print_exception(None,e,e.__traceback__)
 									_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-						_rm_dir(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}")
+						_rm_dir(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}")
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
 					with zipfile.ZipFile(f"{TEMP_DIR}/{k['name']}","r") as zf:
-						zf.extractall(f__file_dir__+"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
+						zf.extractall(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 					raise RuntimeError(f"Unknown File Extension '{k['name'][len(k['name'].split('.')[0]):]}'.")
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
 				os.remove(f"{TEMP_DIR}/{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
-		with open(f__file_dir__+"arduino/packages/index","a") as f:
+		with open(__file_dir__+f"arduino/packages/index","a") as f:
 			f.write(f"arduino-{b}-{dt['tag_name']}\n")
 		return
 	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver']!=None else '')}'...")
@@ -960,56 +988,56 @@ def _install_ard_pkg(b,force=False):
 			dl+=[{"pkg":k["packager"],"name":k["name"],"ver":k["version"]} for k in e[1]["toolsDependencies"]]
 		else:
 			o+=[(d["pkg"],(d["arch"] if "arch" in list(d.keys()) else d["name"]),e[1]["version"],k["url"],k["archiveFileName"],"tools",k["size"]) for k in e[1]["systems"] if k["host"]==ARDUINO_HOST_SYSTEM]
-	if (not os.path.exists(f__file_dir__+"arduino/packages")):
-		os.mkdir(f__file_dir__+"arduino/packages")
+	if (not os.path.exists(__file_dir__+f"arduino/packages")):
+		os.mkdir(__file_dir__+f"arduino/packages")
 	i_pkg=[]
-	if (os.path.exists(f__file_dir__+"arduino/packages/index")):
-		with open(f__file_dir__+"arduino/packages/index","r") as f:
-			i_pkg=f.read().replace("\r","").split("\n")
+	if (os.path.exists(__file_dir__+f"arduino/packages/index")):
+		with open(__file_dir__+f"arduino/packages/index","r") as f:
+			i_pkg=f.read().replace("\r\n","\n").split("\n")
 	else:
-		with open(f__file_dir__+"arduino/packages/index","w"):
+		with open(__file_dir__+f"arduino/packages/index","w"):
 			pass
 	for k in o:
 		if (force==False and f"{k[0]}-{k[1]}-{k[2]}" in i_pkg):
 			_print(f"\x1b[38;2;200;40;20mPackage '{k[0]}:{k[1]}:{k[2]}' already Installed.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 			continue
-		if (not os.path.exists(f__file_dir__+"arduino/packages/{k[0]}")):
-			os.mkdir(f__file_dir__+"arduino/packages/{k[0]}")
-		if (not os.path.exists(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}")):
-			os.mkdir(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}")
-		if (not os.path.exists(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
-			os.mkdir(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}")
-		if (not os.path.exists(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
-			os.mkdir(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+		if (not os.path.exists(__file_dir__+f"arduino/packages/{k[0]}")):
+			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}")
+		if (not os.path.exists(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}")):
+			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}")
+		if (not os.path.exists(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}")):
+			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}")
+		if (not os.path.exists(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
+			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print(f"Cloning to File '{TEMP_DIR}/{k[4]}' ...")
 		_arduino_clone_f(k[3],TEMP_DIR+"/"+k[4],k[6])
 		if (k[4].endswith(".tar.bz2")):
 			_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
 			with tarfile.open(TEMP_DIR+"/"+k[4],"r:bz2") as tf:
-				tf.extractall(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
-				off=len(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
+				tf.extractall(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+				off=len(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}/")
 				_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
-				for r,_,fl in os.walk(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"):
+				for r,_,fl in os.walk(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"):
 					for f in fl:
 						fp=os.path.join(r,f)
-						os.makedirs(os.path.dirname(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
+						os.makedirs(os.path.dirname(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}"),exist_ok=True)
 						try:
-							with open(fp,"rb") as rf,open(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
+							with open(fp,"rb") as rf,open(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
 								wf.write(rf.read())
 						except Exception as e:
 							traceback.print_exception(None,e,e.__traceback__)
 							_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-				_rm_dir(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}")
+				_rm_dir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}")
 		elif (k[4].endswith(".zip")):
 			_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
 			with zipfile.ZipFile(TEMP_DIR+"/"+k[4],"r") as zf:
-				zf.extractall(f__file_dir__+"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
+				zf.extractall(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print("Removing Archive\x1b[38;2;100;100;100m...")
 		os.remove(TEMP_DIR+"/"+k[4])
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
-		with open(f__file_dir__+"arduino/packages/index","a") as f:
+		with open(__file_dir__+f"arduino/packages/index","a") as f:
 			f.write(f"{k[0]}-{k[1]}-{k[2]}\n")
 
 
@@ -1062,7 +1090,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	def _run_recipe(bp,pfx,sfx):
 		for k in bp.keys():
 			if (k.startswith(pfx) and k.endswith(sfx) and len(bp[k])>0):
-				cmd=_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(bp,bp[k])))
+				cmd=_prepare_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string(bp,bp[k])))
 				_run_cmd(cmd)
 	def _compile_files(b,i_fp,o_fp,inc_l,rc):
 		l=[[],[],[]]
@@ -1082,7 +1110,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 				c_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+("."+ARDUINO_CUSTOM_WARNING_LEVEL if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"" for e in inc_l]),"source_file":f,"object_file":o_fp+f[len(i_fp):]+".o"}
 				if (not os.path.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
 					os.makedirs(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))
-				_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
+				_run_cmd(_prepare_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
 				o+=[o_fp+f[len(i_fp):]+".o"]
 		return o
 	def _replace_inc(dt):
@@ -1114,13 +1142,13 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	if (os.path.exists(m_fp)==False or os.path.isdir(m_fp)==True):
 		raise RuntimeError("Sketch doesn't Contain a Main Program")
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not os.path.exists(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=os.path.abspath(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=os.path.abspath(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
-		for k in hb_f.read().replace("\r","").split("\n"):
+		for k in hb_f.read().replace("\r\n","\n").split("\n"):
 			if (len(k.strip())==0 or k.strip()[0]=="#"):
 				continue
 			if (k.split(".")[0] not in list(h_pm.keys())):
@@ -1130,10 +1158,10 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Invalid FQBN '{':'.join(fqbn)}'.")
 	_print(f"Reading '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}platform.txt","r") as hp_f:
-		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
+		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
-	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":re.sub(r"/$","",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
-	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":re.sub(r"/$","",h_fp),"runtime.hardware.path":re.sub(r"/$","",os.path.abspath(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":__file_dir__+"","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":re.sub(r"/$","",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
+	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
+	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",h_fp),"runtime.hardware.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",os.path.abspath(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":__file_dir__+"","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(datetime.datetime.now(datetime.timezone.utc).timestamp()),"extra.time.zone":"0","extra.time.dst":"0"})
 	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.debug"]
@@ -1141,12 +1169,12 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		if ("compiler.optimization_flags.release" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.release"]
 	_print("Loading Tools\x1b[38;2;100;100;100m...")
-	for pkg in os.listdir(f__file_dir__+"arduino/packages/"):
-		if (os.path.exists(f__file_dir__+"arduino/packages/{pkg}/tools/")):
-			for t in os.listdir(f__file_dir__+"arduino/packages/{pkg}/tools/"):
-				for v in os.listdir(f__file_dir__+"arduino/packages/{pkg}/tools/{t}/"):
-					bp[f"runtime.tools.{t}-{v}.path"]=_step_dir(f__file_dir__+"arduino/packages/{pkg}/tools/{t}/{v}/")
-				bp[f"runtime.tools.{t}.path"]=_step_dir(f__file_dir__+"arduino/packages/{pkg}/tools/{t}/{v}/")
+	for pkg in os.listdir(__file_dir__+f"arduino/packages/"):
+		if (os.path.exists(__file_dir__+f"arduino/packages/{pkg}/tools/")):
+			for t in os.listdir(__file_dir__+f"arduino/packages/{pkg}/tools/"):
+				for v in os.listdir(__file_dir__+f"arduino/packages/{pkg}/tools/{t}/"):
+					bp[f"runtime.tools.{t}-{v}.path"]=_step_dir(__file_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
+				bp[f"runtime.tools.{t}.path"]=_step_dir(__file_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
 	if (os.path.exists(f"{b_fp}build-properties.md5")):
 		with open(f"{b_fp}build-properties.md5","r") as f:
@@ -1171,15 +1199,20 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 					_print(f"Found Main Sketch File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
 					with open(os.path.join(r,fp),"rb") as f:
 						dt=f.read().replace(b"\r\n",b"\n")
-						if (nh_inc==False and re.search(br"""(?m)^\s*#\s*include\s*[<\"]Arduino\.h[>\"]""",dt) is None):
-							bf.write(b"#include <arduino.h>\n")
-							l_off+=1
-						nh_inc=True
+						if (nh_inc==False):
+							for k in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(dt,"utf-8").lower()):
+								if (k=="arduino.h"):
+									nh_inc=True
+									break
+							if (nh_inc==False):
+								bf.write(b"#include <arduino.h>\n")
+								l_off+=1
+								nh_inc=True
 						src+=dt+b"\n"
 						bf.write(bytes(f"#line 1 \"{_quote_fp(os.path.join(r,fp))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
 						l_off+=(1 if os.path.join(r,fp)==m_fp else 0)
 		dl=[(e[0].replace("\\","/"),e[1].replace("\\","/")+("/" if e[1][-1] not in "\\/" else "")) for e in [(s_fp,s_fp)]+[(os.path.join(r,d),r) for r,dl,_ in os.walk(s_fp) for d in dl]+[(e,e) for e in inc_l]]
-		l=[e for e in re.findall(r"(?m)^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(src,"utf-8").lower()) if e!="arduino.h"]
+		l=[e for e in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(src,"utf-8").lower()) if e!="arduino.h"]
 		r_dl=[]
 		for k in l:
 			if (k[-2:]==".h"):
@@ -1189,7 +1222,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 					_print(f"Found Included Sketch File '{os.path.join(d[0],k)}'\x1b[38;2;100;100;100m...")
 					with open(b_fp+"/"+os.path.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(os.path.join(d[0],k),"rb") as rf:
 						dt=rf.read().replace(b"\r\n",b"\n")
-						l+=[e for e in re.findall(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",str(dt,"utf-8").lower(),re.M) if e!="arduino.h" and e not in l]
+						l+=[e for e in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(src,"utf-8").lower()) if e!="arduino.h" and e not in l]
 						wf.write(bytes(f"#line 1 \"{_quote_fp(os.path.join(d[0],k))}\"\n","utf-8")+_replace_inc(dt)+b"\n;\n")
 					for e in inc_l:
 						if (os.path.join(d[0],k).replace("\\","/").startswith(e.replace("\\","/"))):
@@ -1230,7 +1263,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 			if (pr==False):
 				_print("Archiving Core Files\x1b[38;2;100;100;100m...")
 			pr=True
-			_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"archive_file":"core.a","archive_file_path":f"{b_fp}core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
+			_run_cmd(_prepare_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string({**bp,"archive_file":"core.a","archive_file_path":f"{b_fp}core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
 			os.remove(c_of)
 			os.remove(c_of[:-2]+".d")
 	else:
@@ -1241,7 +1274,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.linking.prelink",".pattern")
 	_print("Linking Files\x1b[38;2;100;100;100m...")
-	_run_cmd(_prepare_cmd(re.sub(r"\{.+?\}","",_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":f"{b_fp}core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
+	_run_cmd(_prepare_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":f"{b_fp}core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
 	_run_recipe(bp,"recipe.hooks.linking.postlink",".pattern")
 	_print("Running Recipe 'recipe.hooks.objcopy.preobjcopy'\x1b[38;2;100;100;100m...")
@@ -1306,13 +1339,13 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 		_print("\x1b[38;2;200;40;20mSketch Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
+	if (not os.path.exists(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
-	h_fp=os.path.abspath(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(f__file_dir__+"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
+	h_fp=os.path.abspath(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}boards.txt","r") as hb_f:
 		h_pm={}
-		for k in hb_f.read().replace("\r","").split("\n"):
+		for k in hb_f.read().replace("\r\n","\n").split("\n"):
 			if (len(k.strip())==0 or k.strip()[0]=="#"):
 				continue
 			if (k.split(".")[0] not in list(h_pm.keys())):
@@ -1323,7 +1356,7 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 	h_pm=h_pm[fqbn[2]]
 	_print(f"Reading File '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
 	with open(f"{h_fp}platform.txt","r") as hp_f:
-		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r","").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
+		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Generating Upload Properties\x1b[38;2;100;100;100m...")
 	up={**p_pm,**h_pm,"serial.port":p,"serial.port.file":p,"runtime.platform.path":h_fp}
 	up.update({k[len(h_pm[("bootloader.tool" if bb==True else "upload.tool")])+7:]:v for k,v in up.items() if k.startswith(f"tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.")})
@@ -1332,9 +1365,9 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 	for k in ("upload","program"):
 		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if vu==False else '')}verify","")
 	_print(f"Loading Tools\x1b[38;2;100;100;100m...")
-	for v in os.listdir(f__file_dir__+"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/"):
-		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}-{v}.path"]=_step_dir(f__file_dir__+"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/")
-	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.path"]=f__file_dir__+"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}"
+	for v in os.listdir(__file_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/"):
+		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}-{v}.path"]=_step_dir(__file_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/")
+	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.path"]=__file_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}"
 	if (bb==False):
 		up.update({"build.path":b_fp,"build.project_name":[e.split(".")[0] for e in os.listdir(b_fp) if e[-4:]==".hex"][0]})
 		_print("Setting Board in Bootloader Mode\x1b[38;2;100;100;100m...")
@@ -1354,31 +1387,31 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 			p=b["location"]
 			up.update({"serial.port":p,"serial.port.file":p})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string(up,up["upload.pattern"]))) if len(e)>0])
 	else:
 		_print("Erasing Board\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string(up,up["erase.pattern"]))) if len(e)>0])
 		_print("Burning Bootloader to Board\x1b[38;2;100;100;100m...")
-		_run_cmd([e for e in _split(re.sub(r"\{.+?\}","",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
+		_run_cmd([e for e in _split(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_in_string(up,up["bootloader.pattern"]))) if len(e)>0])
 	_print("Upload Finished.")
 
 
 
 def _open_prog_w(p):
-	def _open_prog_w_f(p,p2,e,*f):
+	def _open_prog_w_f(p,d,e,*f):
 		op=False
 		for fn in f:
 			if (os.path.isfile(fn)):
 				subprocess.Popen([p,fn])
 				op=True
 		if (op==False):
-			for r,_,fl in os.walk(p2):
+			for r,_,fl in os.walk(d):
 				for fn in fl:
 					if (fn.endswith(e)):
 						subprocess.Popen([p,os.path.join(r,fn)])
 						return
 	t=p.split("-")[0].lower()
-	p=f"D:/K/Coding/{p}/"
+	p=PROJECT_DIR+p+"/"
 	subprocess.Popen(["C:/Program Files/Sublime Text 3/sublime_text.exe","--add",p])
 	if (t=="arduino"):
 		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"ino",f"{p}src/main.ino")
@@ -1408,7 +1441,7 @@ def _create_prog(type_,name,op=True):
 	if (type_ not in "arduino,assembly,c,cpp,css,java,javascript,php,processing,python".split(",")):
 		raise RuntimeError(f"Unknown Type '{type_}'")
 	name=name.replace("_"," ").lower().title().replace(" ","_")
-	p=f"D:/K/Coding/{type_.title()}-{name}/"
+	p=PROJECT_DIR+f"{type_.title()}-{name}/"
 	fel=[]
 	for r,_,fl in os.walk(p):
 		for f in fl:
@@ -1523,15 +1556,13 @@ def _create_prog(type_,name,op=True):
 		if (not os.path.exists(f"{p}build.bat")):
 			with open(f"{p}build.bat","x") as f:
 				f.write(f"@echo off\ncls\npython src/main.py")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
 	if (op==True):
 		_open_prog_w(type_.title()+"-"+name)
 
 
 
 def _u_mcs(fp):
+	fp=os.path.abspath(fp).replace("\\","/").strip("/")+"/"
 	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(fp)):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
@@ -1539,7 +1570,7 @@ def _u_mcs(fp):
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
 	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
 	dw=True
-	if (os.path.exists(f"{fp}/server.jar")):
+	if (os.path.exists(fp+"server.jar")):
 		dw=False
 		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
 		h=hashlib.sha1()
@@ -1577,7 +1608,7 @@ def _u_mcs(fp):
 				if (len(dt)<4096):
 					break
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	subprocess.Popen(["cmd.exe","/c",sys.executable,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
@@ -1608,8 +1639,11 @@ def _hotkey_handler(c,wp,lp):
 
 
 def _check_close(t):
-	if (user32.MessageBoxW(NULL,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
-		subprocess.Popen(["C:/Windows/System32/shutdown.exe","/f"]+(["/l"] if t==0 else ["/s","/t","0"]))
+	if (user32.MessageBoxW(None,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
+		if (t==0):
+			user32.ExitWindowsEx(EWX_LOGOFF,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
+		else:
+			user32.ExitWindowsEx(EWX_FORCEIFHUNG|EWX_POWEROFF|EWX_SHUTDOWN,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
 
 
 
@@ -1623,8 +1657,8 @@ def _register_hk(e,cb):
 kernel32.SetConsoleMode(kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
 kernel32.SetConsoleTitleW("")
 hwnd=kernel32.GetConsoleWindow()
-user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,user32.LoadImageW(0,__file_dir__+"rsrc/icon.ico",IMAGE_ICON,16,16,LR_LOADFROMFILE))
-user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,user32.LoadImageW(0,__file_dir__+"rsrc/icon.ico",IMAGE_ICON,32,32,LR_LOADFROMFILE))
+user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,user32.LoadImageW(0,__file_dir__+CUSTOM_ICON_FILE_PATH,IMAGE_ICON,16,16,LR_LOADFROMFILE))
+user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,user32.LoadImageW(0,__file_dir__+CUSTOM_ICON_FILE_PATH,IMAGE_ICON,32,32,LR_LOADFROMFILE))
 ho=kernel32.GetStdHandle(-11)
 csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
@@ -1650,15 +1684,14 @@ if (len(sys.argv)==1):
 	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 	atexit.register(user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
-	_register_hk("a",lambda:os.startfile("D:/K"))
-	_register_hk("e",lambda:subprocess.Popen("C:/Windows/System32/control.exe",creationflags=subprocess.CREATE_NEW_CONSOLE))
+	_register_hk("a",lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED))
 	_register_hk("q",lambda:subprocess.Popen([sys.executable,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("r",lambda:subprocess.Popen([sys.executable,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("i",lambda:subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE))
 	_register_hk("home",lambda:_check_close(0))
 	_register_hk("end",lambda:_check_close(1))
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
-	thr=threading.Thread(target=_u_mcs,args=(__file_dir__+"mc_server",),name="minecraft_server_updater Thread")
+	thr=threading.Thread(target=_u_mcs,args=(__file_dir__+"mc_server",),name="minecraft_server_updater")
 	thr._nm="minecraft_server_updater"
 	thr.daemon=True
 	thr.start()
@@ -1666,7 +1699,7 @@ if (len(sys.argv)==1):
 	for k in os.listdir("D:/K/Coding"):
 		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-	thr=threading.Thread(target=_git_project_push,name="github_project_push Thread")
+	thr=threading.Thread(target=_git_project_push,name="github_project_push")
 	thr._nm="github_project_push"
 	thr.daemon=True
 	thr.start()
@@ -1745,12 +1778,9 @@ else:
 					elif (k==b"\x08"):
 						bf=bf[:-1]
 						u=True
-					elif (k==b"\r"):
+					elif (k==b"\r" or k==b"\n"):
 						if (bf=="chrome"):
 							subprocess.Popen("C:/Program Files/Google/Chrome Dev/Application/chrome.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="processing"):
-							subprocess.Popen("C:/Program Files/Processing/processing.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
 						elif (bf=="sublime"):
 							subprocess.Popen("C:/Program Files/Sublime Text 3/sublime_text.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
@@ -1773,12 +1803,6 @@ else:
 						elif (bf=="stats"):
 							subprocess.Popen([sys.executable,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 							break
-						elif (bf=="docs"):
-							subprocess.Popen(["C:/Program Files/Google/Chrome Dev/Application/chrome_proxy.exe","--profile-directory=Default","--app-id=ahiigpfcghkbjfcibpojancebdfjmoop"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="cad"):
-							subprocess.Popen("C:/Program Files/CAD/FreeCAD 0.18/bin/FreeCAD.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
 						elif (bf=="" or bf=="exit"):
 							break
 						bf=""
@@ -1788,7 +1812,7 @@ else:
 						u=True
 				if (u==True):
 					u=False
-					ln=len(re.sub(r"\x1b\[[^m]*m","",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
+					ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
 					sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 					sys.__stdout__.flush()
 					ll=ln
@@ -1880,7 +1904,7 @@ else:
 							pri=-1
 							pri_s=""
 							u=True
-					elif (k==b"\r"):
+					elif (k==b"\r" or k==b"\n"):
 						if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
 							e=False
 							for k in l.get(bf[0].lower(),[]):
@@ -1914,7 +1938,7 @@ else:
 								pr[1]=l[k][0]
 								break
 					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
-					ln=len(re.sub(r"\x1b\[[^m]*m","",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
+					ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
 					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 					sys.__stdout__.flush()
 					ll=ln
@@ -2153,7 +2177,7 @@ else:
 							bf=ctypes.create_string_buffer(ql.cbInQue)
 							bf_l=ctypes.wintypes.DWORD()
 							if ((kernel32.ReadFile(self._p_s[0],bf,ql.cbInQue,ctypes.byref(bf_l),ctypes.byref(self._p_s[2])) or kernel32.GetLastError() in (ERROR_SUCCESS,ERROR_IO_PENDING)) and (kernel32.GetOverlappedResult(self._p_s[0],ctypes.byref(self._p_s[2]),ctypes.byref(bf_l),True) or kernel32.GetLastError()==ERROR_OPERATION_ABORTED)):
-								self._extend(0,re.sub(r"\r(\n|$)",r"\1",str(bf.raw[:bf_l.value],"utf-8")).replace("\t","    "))
+								self._extend(0,ARDUINO_DATA_LINE_SEPARATOR_REGEX.sub(r"\1",str(bf.raw[:bf_l.value],"utf-8")).replace("\t","    "))
 								n_dt=True
 								ud=True
 						if (self._a_s==True and n_dt==True):
@@ -2197,7 +2221,7 @@ else:
 							for k in self._dt[::-1]:
 								if (k[0]!=0 or None not in k[1]):
 									continue
-								l+=[[float(se) for se in e.split(",")] for e in k[1][::-1] if e!=None and re.fullmatch(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$",e)!=None]
+								l+=[[float(se) for se in e.split(",")] for e in k[1][::-1] if e!=None and ARDUINO_SERIAL_PLOT_DATA_REGEX.fullmatch(e)!=None]
 								if (len(l)>=self._sz[0]-11):
 									l=l[:self._sz[0]-11]
 									break
@@ -2257,7 +2281,7 @@ else:
 				i=0
 				j=0
 				while (i<len(self._o[y])):
-					m=re.match(r"\x1b\[[^m]*m",self._o[y][i:])
+					m=REMOVE_COLOR_FORMATTING_REGEX.match(self._o[y][i:])
 					if (m!=None):
 						i+=len(m.group(0))
 						continue
@@ -2266,12 +2290,12 @@ else:
 						l=j+0
 						em=""
 						while (l<len(self._o[y])):
-							m=re.match(r"\x1b\[[^m]*m",self._o[y][k:])
+							m=REMOVE_COLOR_FORMATTING_REGEX.match(self._o[y][k:])
 							if (m!=None):
 								em+=m.group(0)
 								k+=len(m.group(0))
 								continue
-							if (l==j+len(re.sub(r"\x1b\[[^m]*m","",v))):
+							if (l==j+len(REMOVE_COLOR_FORMATTING_REGEX.sub("",v))):
 								break
 							em=""
 							k+=1
@@ -2351,7 +2375,7 @@ else:
 				threading.current_thread()._dpt=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				threading.current_thread()._df=True
-				_update_repo(sys.argv[2],(re.sub(r"[^A-Za-z0-9_.-]","",sys.argv[2].lower().replace("d:/k/coding/","").split("/")[0]) if sys.argv[2].lower().startswith("d:/k") else "Boot_Program"))
+				_update_repo(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		threading.current_thread()._nm="arduino_runner"
@@ -2621,4 +2645,4 @@ else:
 			_u_mcs(__file_dir__+"mc_server")
 		else:
 			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
-			subprocess.run(["java.exe","-Xms8G","-Xmx8G","-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
+			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms8G","-Xmx8G","-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
