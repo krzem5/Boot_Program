@@ -26,7 +26,7 @@ import zipfile
 
 
 __file__=os.path.abspath(__file__).replace("\\","/")
-__file_dir__=__file__[:-len(__file__.split("/")[-1])].strip("/")+"/"
+__file_dir__=__file__[:-len(__file__.split("/")[-1])-4].strip("/")+"/"
 
 
 
@@ -168,7 +168,7 @@ ctypes.wintypes.PSP_DEVINFO_DATA=ctypes.POINTER(ctypes.wintypes.SP_DEVINFO_DATA)
 
 advapi32=ctypes.windll.advapi32
 kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"src/move_to_desktop.dll")
+move_to_desktop=ctypes.windll.LoadLibrary(__file_dir__+"lib/move_to_desktop.dll")
 setupapi=ctypes.windll.setupapi
 shell32=ctypes.windll.shell32
 user32=ctypes.windll.user32
