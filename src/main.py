@@ -402,24 +402,6 @@ def _update_repo(p,b_nm):
 			elif ((p+"/"+e["path"]).replace("./","")!="_"):
 				o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
 		return o
-	def _match_f(r,f,r_t,fp):
-		if (_is_bin(r+f)==False):
-			try:
-				with open(r+f,"r",encoding="cp1252") as f:
-					f=f.read().replace("\r\n","\n")
-					if (len(f)!=r_t[fp]["sz"]):
-						return False
-					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("cp1252")).hexdigest()==r_t[fp]["sha"] else False)
-			except UnicodeDecodeError:
-				if (os.stat(r+f).st_size!=r_t[fp]["sz"]):
-					return False
-				with open(r+f,"rb") as f:
-					return (True if hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==r_t[fp]["sha"] else False)
-		else:
-			if (os.stat(r+f).st_size!=r_t[fp]["sz"]):
-				return False
-			with open(r+f,"rb") as f:
-				return (True if hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==r_t[fp]["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
 	with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
