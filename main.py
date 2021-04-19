@@ -1398,7 +1398,7 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 
 
 
-def _create_prog(t,nm,op=True):
+def _create_prog(t,nm,op):
 	def _open_prog_w_f(p,d,e,*f):
 		op=False
 		for fn in f:
@@ -1816,7 +1816,7 @@ else:
 							e=False
 							for k in l.get(bf[0].lower(),[]):
 								if (k.lower()==bf[1].lower()):
-									_create_prog(bf[0],bf[1],op=True)
+									_create_prog(bf[0],bf[1],True)
 									e=True
 									break
 							if (e==True):
