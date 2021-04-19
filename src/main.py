@@ -58,7 +58,7 @@ GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jre8_251/bin/java.exe"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
-PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?%\b|-?[0-9]+(?:\.[0-9]+)?\b|[0123456789abcdefABCDEF]+\b")
+PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0123456789abcdefABCDEF]+\b")
 PROJECT_DIR="D:/K/Coding/"
 REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
@@ -298,7 +298,7 @@ def _print(*a,end="\n"):
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
-		elif (m.group(0)[0] in "-0123456789" and (m.end(0)==1 or m.group(0)[1:].isnumeric()) and m.group(0)[-1]!="%"):
+		elif (m.group(0)[0] in "-0123456789" and (m.end(0)==1 or m.group(0)[1:].isnumeric())):
 			return f"\x1b[38;2;48;109;206m{m.group(0)}\x1b[0m"
 		elif (m.group(0)[0] in "-0123456789" and m.group(0)[-1]=="%"):
 			return f"\x1b[38;2;245;103;245m{m.group(0)}\x1b[0m"
@@ -781,10 +781,15 @@ def _arduino_clone_f(url,fp,sz):
 
 
 def _rm_dir(fp):
-	for r,_,fl in os.walk(fp):
+	dl=[fp]
+	for r,ndl,fl in os.walk(fp):
+		r=r.replace("\\","/").strip("/")+"/"
+		for d in ndl:
+			dl.insert(0,r+d)
 		for f in fl:
-			os.remove(os.path.join(r,f))
-	os.rmdir(fp)
+			os.remove(r+f)
+	for k in dl:
+		os.rmdir(k)
 
 
 
@@ -894,14 +899,14 @@ def _install_ard_pkg(b,force=False):
 		_print(f"Searching for '{ARDUINO_OS_TYPE}' Release\x1b[38;2;100;100;100m...")
 		for k in dt["assets"]:
 			if (k["name"].startswith(b+"-") and (k["name"].endswith(".zip") or k["name"].endswith(".tar.bz2")) and "mingw32" in re.sub(r"(\.zip|\.tar\.bz2)$","",k["name"][len(b)+1:])):
-				_print(f"Found Release '{k['name']}'.\nCloning to File '{TEMP_DIR}/{k['name']}' ...")
-				_arduino_clone_f(k["browser_download_url"],f"{TEMP_DIR}/{k['name']}",k["size"])
-				with open(f"{TEMP_DIR}/{k['name']}","wb") as f:
+				_print(f"Found Release '{k['name']}'.\nCloning to File '{TEMP_DIR}{k['name']}' ...")
+				_arduino_clone_f(k["browser_download_url"],f"{TEMP_DIR}{k['name']}",k["size"])
+				with open(f"{TEMP_DIR}{k['name']}","wb") as f:
 					f.write(requests.get(k["browser_download_url"]).content)
 				if (k["name"].endswith(".tar.bz2")):
 					_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
-					with tarfile.open(f"{TEMP_DIR}/{k['name']}","r:bz2") as tf:
+					with tarfile.open(f"{TEMP_DIR}{k['name']}","r:bz2") as tf:
 						tf.extractall(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 						off=len(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}/")
 						_print("Copying Extracted Files\x1b[38;2;100;100;100m...")
@@ -919,13 +924,13 @@ def _install_ard_pkg(b,force=False):
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
-					with zipfile.ZipFile(f"{TEMP_DIR}/{k['name']}","r") as zf:
+					with zipfile.ZipFile(f"{TEMP_DIR}{k['name']}","r") as zf:
 						zf.extractall(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 					raise RuntimeError(f"Unknown File Extension '{k['name'][len(k['name'].split('.')[0]):]}'.")
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
-				os.remove(f"{TEMP_DIR}/{k['name']}")
+				os.remove(f"{TEMP_DIR}{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
 		with open(__file_dir__+f"arduino/packages/index","a") as f:
 			f.write(f"arduino-{b}-{dt['tag_name']}\n")
@@ -979,7 +984,7 @@ def _install_ard_pkg(b,force=False):
 			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}")
 		if (not os.path.exists(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
 			os.mkdir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
-		_print(f"Cloning to File '{TEMP_DIR}/{k[4]}' ...")
+		_print(f"Cloning to File '{TEMP_DIR}{k[4]}' ...")
 		_arduino_clone_f(k[3],TEMP_DIR+"/"+k[4],k[6])
 		if (k[4].endswith(".tar.bz2")):
 			_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
@@ -1103,7 +1108,7 @@ def _compile_ard_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
 	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
-	b_fp=f"{TEMP_DIR}/arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
+	b_fp=f"{TEMP_DIR}arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
