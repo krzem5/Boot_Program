@@ -326,26 +326,9 @@ def _print(*a,end="\n"):
 
 
 def _gitigonre_match(gdt,fp):
-	def _pattern(p,fp):
-		fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
-		if (len(fnm)<len(p[1].split("/"))):
-			return False
-		if (len(p[1].split("/")[0])==0):
-			for sr,sfnm in zip(p[1].split("/"),fnm):
-				if (fnmatch.fnmatch(sfnm,sr)==False):
-					return False
-			return True
-		else:
-			for i in range(0,len(fnm)-len(p[1].split("/"))+1):
-				for sr,sfnm in zip(p[1].split("/"),fnm[i:]):
-					if (fnmatch.fnmatch(sfnm,sr)==False):
-						break
-				else:
-					return True
-			return False
 	ig=False
 	for p in gdt:
-		if ((ig==False or p[0]==True) and _pattern(p,fp)==True):
+		if ((ig==False or p[0]==True)):
 			fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
 			if (len(fnm)<len(p[1].split("/"))):
 				continue
@@ -386,12 +369,11 @@ def _is_bin(fp):
 	r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
 	if (r1>0.90 and r2>0.9):
 		return True
-	enc_u=False
+	enc_u=True
 	try:
 		dt.decode(encoding="utf-8")
-		enc_u=True
 	except UnicodeDecodeError:
-		pass
+		enc_u=False
 	if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
 		return (False if enc_u==True else True)
 	else:
@@ -411,35 +393,33 @@ def _update_repo(p,b_nm):
 			print(r.json())
 			return None
 		return r.json()
-	def _get_tree(r_nm,sha):
-		def _rec_get(r_nm,sha,p):
-			r=_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
-			o={}
-			for e in r["tree"]:
-				if (e["type"]=="tree"):
-					o.update(_rec_get(r_nm,e["sha"],p+"/"+e["path"]))
-				elif ((p+"/"+e["path"]).replace("./","")!="_"):
-					o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
-			return o
-		return _rec_get(r_nm,sha,".")
-	def _match_f(fp,dt):
-		if (_is_bin(fp)==False):
+	def _get_tree_rec_get(r_nm,sha,p):
+		r=_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
+		o={}
+		for e in r["tree"]:
+			if (e["type"]=="tree"):
+				o.update(_get_tree_rec_get(r_nm,e["sha"],p+"/"+e["path"]))
+			elif ((p+"/"+e["path"]).replace("./","")!="_"):
+				o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
+		return o
+	def _match_f(r,f,r_t,fp):
+		if (_is_bin(r+f)==False):
 			try:
-				with open(fp,"r",encoding="cp1252") as f:
+				with open(r+f,"r",encoding="cp1252") as f:
 					f=f.read().replace("\r\n","\n")
-					if (len(f)!=dt["sz"]):
+					if (len(f)!=r_t[fp]["sz"]):
 						return False
-					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("cp1252")).hexdigest()==dt["sha"] else False)
+					return (True if hashlib.sha1(f"blob {len(f)}\x00{f}".encode("cp1252")).hexdigest()==r_t[fp]["sha"] else False)
 			except UnicodeDecodeError:
-				if (os.stat(fp).st_size!=dt["sz"]):
+				if (os.stat(r+f).st_size!=r_t[fp]["sz"]):
 					return False
-				with open(fp,"rb") as f:
-					return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
+				with open(r+f,"rb") as f:
+					return (True if hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==r_t[fp]["sha"] else False)
 		else:
-			if (os.stat(fp).st_size!=dt["sz"]):
+			if (os.stat(r+f).st_size!=r_t[fp]["sz"]):
 				return False
-			with open(fp,"rb") as f:
-				return (True if hashlib.sha1(f"blob {os.stat(fp).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==dt["sha"] else False)
+			with open(r+f,"rb") as f:
+				return (True if hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+f.read()).hexdigest()==r_t[fp]["sha"] else False)
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
 	with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
@@ -477,7 +457,7 @@ def _update_repo(p,b_nm):
 	except KeyError:
 		_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
-	r_t=_get_tree(nm,bt_sha)
+	r_t=_get_tree_rec_get(nm,bt_sha,".")
 	bl=[]
 	cnt=[0,0,0,0]
 	p=os.path.abspath(p).replace("\\","/").strip("/")+"/"
@@ -489,11 +469,33 @@ def _update_repo(p,b_nm):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
-			if (fp in list(r_t.keys()) and _match_f(r+f,r_t[fp])==True):
-				cnt[1]+=1
-				bl+=[[fp,None]]
-				_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
-				continue
+			if (fp in list(r_t.keys())):
+				########################################
+				if (_is_bin(r+f)==False):
+					try:
+						with open(r+f,"r",encoding="cp1252") as rf:
+							dt=rf.read().replace("\r\n","\n")
+							if (len(dt)==r_t[fp]["sz"] and hashlib.sha1(f"blob {len(dt)}\x00{dt}".encode("cp1252")).hexdigest()==r_t[fp]["sha"]):
+								cnt[1]+=1
+								bl+=[[fp,None]]
+								_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+								continue
+					except UnicodeDecodeError:
+						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
+							with open(r+f,"rb") as rf:
+								if (hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()).hexdigest()==r_t[fp]["sha"]):
+									cnt[1]+=1
+									bl+=[[fp,None]]
+									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+									continue
+				elif (os.stat(r+f).st_size==r_t[fp]["sz"]):
+					with open(r+f,"rb") as rf:
+						if (hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()).hexdigest()==r_t[fp]["sha"]):
+							cnt[1]+=1
+							bl+=[[fp,None]]
+							_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+							continue
+				########################################
 			cnt[0]+=1
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
 			dt=f"File too Large (size = {os.stat(os.path.join(r,f)).st_size} b)"
