@@ -1398,46 +1398,19 @@ def _upload_to_ard(b_fp,p,fqbn,bb,vu,inc_l):
 
 
 
-def _open_prog_w(p):
+def _create_prog(t,nm,op=True):
 	def _open_prog_w_f(p,d,e,*f):
 		op=False
 		for fn in f:
 			if (os.path.isfile(fn)):
-				subprocess.Popen([p,fn])
+				subprocess.run([p,fn])
 				op=True
 		if (op==False):
 			for r,_,fl in os.walk(d):
 				for fn in fl:
 					if (fn.endswith(e)):
-						subprocess.Popen([p,os.path.join(r,fn)])
+						subprocess.run([p,os.path.join(r,fn)])
 						return
-	t=p.split("-")[0].lower()
-	p=PROJECT_DIR+p+"/"
-	subprocess.Popen(["C:/Program Files/Sublime Text 3/sublime_text.exe","--add",p])
-	if (t=="arduino"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"ino",f"{p}src/main.ino")
-	if (t=="assembly"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"asm",f"{p}src/main.asm")
-	elif (t=="c"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"c",f"{p}src/main.c")
-	elif (t=="cpp"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"cpp",f"{p}src/main.cpp")
-	elif (t=="css"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"css",f"{p}src/index.html",f"{p}src/style/main.css")
-	elif (t=="java"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"java",f"{p}src/com/krzem/{p.split('-')[1].lower().replace(' ','_')}/Main.java")
-	elif (t=="javascript"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"js",f"{p}src/index.html",f"{p}src/js/main.js")
-	elif (t=="php"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"php",f"{p}src/index.php")
-	elif (t=="processing"):
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"pde",f"{p}src/Main.pde")
-	else:
-		_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"py",f"{p}src/main.py")
-
-
-
-def _create_prog(t,nm,op=True):
 	t=t.lower()
 	if (t not in VALID_PROGRAM_TYPES):
 		raise RuntimeError(f"Unknown Type '{t}'")
@@ -1470,7 +1443,28 @@ def _create_prog(t,nm,op=True):
 			if (f[0]=="."):
 				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (op==True):
-		_open_prog_w(t.title()+"-"+nm)
+		p=PROJECT_DIR+t.title()+"-"+nm+"/"
+		subprocess.run(["C:/Program Files/Sublime Text 3/sublime_text.exe","--add",p])
+		if (t=="arduino"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"ino",p+"src/main.ino")
+		elif (t=="assembly"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"asm",p+"src/main.asm")
+		elif (t=="c"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"c",p+"src/main.c")
+		elif (t=="cpp"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"cpp",p+"src/main.cpp")
+		elif (t=="css"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"css",p+"src/index.html",p+"src/style/main.css")
+		elif (t=="java"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"java",p+f"src/com/krzem/{nm.lower()}/Main.java")
+		elif (t=="javascript"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"js",p+"src/index.html",p+"src/js/main.js")
+		elif (t=="php"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"php",p+"src/index.php")
+		elif (t=="processing"):
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"pde",p+"src/Main.pde")
+		else:
+			_open_prog_w_f("C:/Program Files/Sublime Text 3/sublime_text.exe",p,"py",p+"src/main.py")
 
 
 
@@ -1610,7 +1604,7 @@ if (len(sys.argv)==1):
 	thr.start()
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir("D:/K/Coding"):
-		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],op=False)
+		_create_prog(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	thr=threading.Thread(target=_git_project_push,name="github_project_push")
 	thr._nm="github_project_push"
@@ -1783,7 +1777,7 @@ else:
 						msvcrt.getch()
 					if (cr==True):
 						if (k in b"yY"):
-							_create_prog(bf[0],bf[1])
+							_create_prog(bf[0],bf[1],True)
 							break
 						cr=False
 						u=True
@@ -1823,7 +1817,6 @@ else:
 							for k in l.get(bf[0].lower(),[]):
 								if (k.lower()==bf[1].lower()):
 									_create_prog(bf[0],bf[1],op=True)
-									# _open_prog_w(f"{bf[0].title()}-{bf[1].replace('_',' ').title().replace(' ','_')}")
 									e=True
 									break
 							if (e==True):
