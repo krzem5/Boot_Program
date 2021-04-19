@@ -71,6 +71,7 @@ SERIAL_TIMEOUT=5000
 SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
 SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
 STDOUT_LOCK=threading.Lock()
+VALID_PROGRAM_TYPES=[k.lower() for k in os.listdir(__file_dir__+"templates")]
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/")
@@ -1436,128 +1437,40 @@ def _open_prog_w(p):
 
 
 
-def _create_prog(type_,name,op=True):
-	type_=type_.lower()
-	if (type_ not in "arduino,assembly,c,cpp,css,java,javascript,php,processing,python".split(",")):
-		raise RuntimeError(f"Unknown Type '{type_}'")
-	name=name.replace("_"," ").lower().title().replace(" ","_")
-	p=PROJECT_DIR+f"{type_.title()}-{name}/"
+def _create_prog(t,nm,op=True):
+	t=t.lower()
+	if (t not in VALID_PROGRAM_TYPES):
+		raise RuntimeError(f"Unknown Type '{t}'")
+	nm=nm.replace("_"," ").lower().title().replace(" ","_")
+	p=PROJECT_DIR+f"{t.title()}-{nm}/"
 	fel=[]
 	for r,_,fl in os.walk(p):
 		for f in fl:
 			fel+=[os.path.join(r,f).split(".")[-1]]
+	cr=False
 	if (not os.path.exists(p)):
+		cr=True
 		os.mkdir(p)
-	if (not os.path.exists(f"{p}src")):
-		os.mkdir(f"{p}src")
-	if (not os.path.exists(f"{p}.gitignore")):
-		with open(f"{p}.gitignore","x") as f:
-			f.write("build\n")
-		kernel32.SetFileAttributesW(f"{p}.gitignore",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
-	if (not os.path.exists(f"{p}LICENSE.txt")):
-		with open(f"{p}LICENSE.txt","x") as f:
-			f.write(f"""Copyright (c) {datetime.datetime.now().year} Krzem\n\nPermission is hereby granted, free of charge, to any person obtaining a\ncopy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including without\nlimitation the rights to use, copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included\nin all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY\nKIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE\nWARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL\nTHE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,\nDAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n""")
-	if (not os.path.exists(f"{p}README.md")):
-		with open(f"{p}README.md","x") as f:
-			f.write(f"""# {type_.title()} - {name.replace('_',' ').title()}\n""")
-	if (not os.path.exists(f"{p}.lgtm.yml")):
-		with open(f"{p}.lgtm.yml","x") as f:
-			f.write("""queries:\n  - include: "*"\n  - exclude: cpp/poorly-documented-function\n  - exclude: cpp/short-global-name\n  - exclude: java/index-out-of-bounds\n  - exclude: java/local-shadows-field\n  - exclude: java/potentially-weak-cryptographic-algorithm\n  - exclude: java/uncaught-number-format-exception\n  - exclude: java/unused-parameter\n  - exclude: py/empty-except\n  - exclude: py/redundant-global-declaration\nextraction:\n  python:\n    python_setup:\n      version: 3\n""")
-		kernel32.SetFileAttributesW(f"{p}.lgtm.yml",FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
-	if (type_=="arduino"):
-		if (not os.path.exists(f"{p}src/main.ino") and "ino" not in fel):
-			with open(f"{p}src/main.ino","x") as f:
-				f.write("#include <arduino.h>\n\n\n\nvoid setup(){\n\t\n}\n\n\n\nvoid loop(){\n\t\n}\n")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\npython {__file_dir__}main.py 5 compile ./src ./build arduino:avr:uno&&python {__file_dir__}main.py 5 upload ./build COM3 arduino:avr:uno\n")
-	elif (type_=="assembly"):
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\n")
-	elif (type_=="c"):
-		if (not os.path.exists(f"{p}src/main.c") and "c" not in fel):
-			if (not os.path.exists(f"{p}src/{name.lower()}")):
-				os.mkdir(f"{p}src/{name.lower()}")
-			if (not os.path.exists(f"{p}src/include")):
-				os.mkdir(f"{p}src/include")
-			with open(f"{p}src/main.c","x") as f:
-				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\nset _INCLUDE=%INCLUDE%\nset INCLUDE=../src/include;%INCLUDE%\nif exist build rmdir /s /q build\nmkdir build\ncd build\nif %1.==. goto dbg\nif %1==-r (\n\tcl /c /permissive- /GS /utf-8 /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"NDEBUG\" /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /GL /Gy /Zi /O2 /Oi /MD ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /LTCG /OPT:REF /INCREMENTAL:NO /OPT:ICF&&goto run\n\tgoto end\n)\n:dbg\ncl /c /permissive- /GS /utf-8 /W3 /Zc:wchar_t /Gm- /sdl /Zc:inline /fp:precise /D \"_DEBUG\"  /D \"_WINDOWS\" /D \"_UNICODE\" /D \"UNICODE\" /errorReport:none /WX /Zc:forScope /Gd /Oi /FC /EHsc /nologo /diagnostics:column /ZI /Od /RTC1 /MDd ../src/main.c ../src/{name.lower()}/*.c&&link *.obj /OUT:{name.lower()}.exe /DYNAMICBASE \"kernel32.lib\" \"user32.lib\" \"gdi32.lib\" \"winspool.lib\" \"comdlg32.lib\" \"advapi32.lib\" \"shell32.lib\" \"ole32.lib\" \"oleaut32.lib\" \"uuid.lib\" \"odbc32.lib\" \"odbccp32.lib\" /MACHINE:X64 /SUBSYSTEM:CONSOLE /ERRORREPORT:none /NOLOGO /TLBID:1 /WX /DEBUG /INCREMENTAL&&goto run\ngoto end\n:run\ndel *.obj\ndel *.pdb\ndel *.exp\ndel *.ilk\ndel *.idb\ncls\n{name.lower()}.exe\n:end\ncd ..\nset INCLUDE=%_INCLUDE%")
-	elif (type_=="cpp"):
-		if (not os.path.exists(f"{p}src/main.cpp") and "cpp" not in fel):
-			with open(f"{p}src/main.cpp","x") as f:
-				f.write("int main(int argc,const char** argv){\n\t(void)argc;\n\t(void)argv;\n\treturn 0;\n}")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\ndel *.obj&&del {name.lower()}.exe&&cl /EHsc *.cpp /link /OUT:{name.lower()}.exe&&del *.obj&&cls&&{name.lower()}.exe\n")
-	elif (type_=="css"):
-		if (not os.path.exists(f"{p}src/index.html") and "html" not in fel):
-			with open(f"{p}src/index.html","x") as f:
-				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<link href=\"css/style.css\" rel=\"stylesheet\" type=\"text/css\">\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not os.path.exists(f"{p}src/css/style.css") and "css" not in fel):
-			if (not os.path.exists(f"{p}src/css")):
-				os.mkdir(f"{p}src/css")
-			with open(f"{p}src/css/style.css","x") as f:
-				f.write("body {\n\twidth: 100%;\n\theight: 100%\n}\nbody, body * {\n\tmargin: 0;\n\tpadding: 0;\n}")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
-	elif (type_=="java"):
-		if (not os.path.exists(f"{p}src/com/krzem/{name.lower()}/Main.java") and "java" not in fel):
-			if (not os.path.exists(f"{p}src/com/")):
-				os.mkdir(f"{p}src/com/")
-			if (not os.path.exists(f"{p}src/com/krzem/")):
-				os.mkdir(f"{p}src/com/krzem/")
-			if (not os.path.exists(f"{p}src/com/krzem/{name.lower()}/")):
-				os.mkdir(f"{p}src/com/krzem/{name.lower()}/")
-			with open(f"{p}src/com/krzem/{name.lower()}/Main.java","x") as f:
-				f.write("package com.krzem."+name.lower()+";\n\n\n\npublic class Main{\n\tpublic static void main(String[] args){\n\t\tnew Main();\n\t}\n\n\n\n\tpublic Main(){\n\t\t\n\t}\n}")
-		if (not os.path.exists(f"{p}/manifest.mf")):
-			with open(p+"manifest.mf","x") as f:
-				f.write(f"Manifest-Version: 1.0\nCreated-By: Krzem\nMain-Class: com.krzem.{name.lower().replace(' ','_')}.Main\n")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(p+"build.bat","x") as f:
-				f.write(f"@echo off\ncls\nif exist build rmdir /s /q build\nmkdir build\ncd src\njavac -d ../build com/krzem/{name.lower().replace(' ','_')}/Main.java&&jar cvmf ../manifest.mf ../build/{name.lower().replace(' ','_')}.jar\n -C ../build *&&goto run\ncd ..\ngoto end\n:run\ncd ..\npushd \"build\"\nfor /D %%D in (\"*\") do (\n\trd /S /Q \"%%~D\"\n)\nfor %%F in (\"*\") do (\n\tif /I not \"%%~nxF\"==\"{name.lower().replace(' ','_')}.jar\" del \"%%~F\"\n)\npopd\njava -jar build/{name.lower().replace(' ','_')}.jar\n:end\n")
-	elif (type_=="javascript"):
-		if (not os.path.exists(f"{p}src/index.html") and "html" not in fel):
-			with open(f"{p}src/index.html","x") as f:
-				f.write(f"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<title>{name.replace('_',' ')}</title>\n\t\t<script type=\"text/javascript\" src=\"js/main.js\"></script>\n\t</head>\n\t<body>\n\t</body>\n</html>")
-		if (not os.path.exists(f"{p}src/js/main.js") and "js" not in fel):
-			if (not os.path.exists(f"{p}src/js/")):
-				os.mkdir(f"{p}src/js/")
-			with open(f"{p}src/js/main.js","x") as f:
-				f.write("function init(){\n\t\n}\ndocument.addEventListener(\"DOMContentLoaded\",init,false)")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}")
-	elif (type_=="php"):
-		if (not os.path.exists(f"{p}src/index.php") and "php" not in fel):
-			with open(f"{p}src/index.php","x") as f:
-				f.write("<?php\n\n?>")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\n\"C:/Program Files/Google/Chrome Dev/Application/chrome.exe\" http://localhost:8020/{p}src/index.php")
-	elif (type_=="processing"):
-		if (not os.path.exists(f"{p}src/")):
-			os.mkdir(f"{p}src/")
-		if (not os.path.exists(f"{p}src/Main.pde") and "pde" not in fel):
-			with open(f"{p}src/Main.pde","x") as f:
-				f.write("void setup(){\n\t\n}\n\nvoid draw(){\n\t\n}\n")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\npython build.py %*\n")
-	elif (type_=="python"):
-		if (not os.path.exists(f"{p}src/main.py") and "py" not in fel):
-			with open(f"{p}src/main.py","x") as f:
-				f.write("")
-		if (not os.path.exists(f"{p}build.bat")):
-			with open(f"{p}build.bat","x") as f:
-				f.write(f"@echo off\ncls\npython src/main.py")
+	cr=True
+	b_fp=__file_dir__+f"templates/{t.lower()}/"
+	for r,dl,fl in os.walk(b_fp):
+		r=r.replace("\\","/").strip("/")+"/"
+		pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
+		if (cr==False and r!=b_fp):
+			break
+		for d in dl:
+			d=d.replace("$$$NAME$$$",nm.lower())
+			if (not os.path.exists(pr+d)):
+				os.mkdir(pr+d)
+		for f in fl:
+			pf=f.replace("$$$NAME$$$",nm.lower())
+			if (not os.path.exists(pr+pf)):
+				with open(pr+pf,"xb") as wf,open(r+f,"rb") as rf:
+					wf.write(rf.read().replace(b"$$$YEAR$$$",bytes(str(datetime.datetime.now().year),"utf-8")).replace(b"$$$PRETTY_TITLE$$$",bytes(f"{t.title()} - {nm.replace('_',' ').title()}","utf-8")).replace(b"$$$NAME$$$",bytes(nm.lower(),"utf-8")).replace(b"$$$UPPERCASE_NAME$$$",bytes(nm.upper(),"utf-8")).replace(b"$$$TITLE_NAME$$$",bytes(nm.replace("_"," ").title(),"utf-8")))
+			if (f[0]=="."):
+				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (op==True):
-		_open_prog_w(type_.title()+"-"+name)
+		_open_prog_w(t.title()+"-"+nm)
 
 
 
@@ -1909,7 +1822,8 @@ else:
 							e=False
 							for k in l.get(bf[0].lower(),[]):
 								if (k.lower()==bf[1].lower()):
-									_open_prog_w(f"{bf[0].title()}-{bf[1].replace('_',' ').title().replace(' ','_')}")
+									_create_prog(bf[0],bf[1],op=True)
+									# _open_prog_w(f"{bf[0].title()}-{bf[1].replace('_',' ').title().replace(' ','_')}")
 									e=True
 									break
 							if (e==True):

@@ -1,5 +1,6 @@
 arduino
 data
 mc_server
+templates/processing/__processing_core
 *.dt
 *.json
