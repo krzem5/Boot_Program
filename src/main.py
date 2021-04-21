@@ -44,6 +44,7 @@ ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+"
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 CMD_FILE_PATH="cmd.exe"
+CONSOLE_APP_FRAME_RATE=60
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 GITHUB_API_QUOTA=5000
 GITHUB_CREATED_PROJECT_LIST_FILE_PATH="data/github-created.dt"
@@ -415,6 +416,7 @@ def _github_api_request(m,**kw):
 
 
 def _get_project_tree(r_nm,sha,p):
+	_print(f"\x1b[38;2;100;100;100mReading Tree \x1b[38;2;65;118;46m'{p}'\x1b[38;2;100;100;100m...")
 	r=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
 	o={}
 	for e in r["tree"]:
@@ -432,11 +434,13 @@ def _push_single_project(p,b_nm):
 	with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
 		gr_dt=f.read().strip().replace("\r","").split("\n")
 	if (nm not in gr_dt):
+		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...")
 		try:
 			_github_api_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			return False
+	_print(f"\x1b[38;2;100;100;100mParsing Github Ignore File\x1b[38;2;100;100;100m...")
 	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -455,16 +459,19 @@ def _push_single_project(p,b_nm):
 					if ("**/" in ln):
 						gdt+=[[iv,ln.replace("**/","")]]
 					gdt+=[[iv,ln]]
+	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...")
 	msg=datetime.datetime.now().strftime("Push Update %m/%d/%Y, %H:%M:%S")
 	br=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/branches")
 	br=[e["name"] for e in br]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
+	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...")
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
 		_github_api_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	r_t=_get_project_tree(nm,bt_sha,".")
+	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
 	bl=[]
 	cnt=[0,0,0,0]
 	p=os.path.abspath(p).replace("\\","/").strip("/")+"/"
@@ -549,6 +556,7 @@ def _push_single_project(p,b_nm):
 			cnt[3]+=1
 			bl+=[[None,{"path":fp,"mode":"100644","type":"blob","sha":None}]]
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
+		_print(f"\x1b[38;2;100;100;100mUploading Changes\x1b[38;2;100;100;100m...")
 		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	if (nm not in gr_dt):
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
@@ -643,8 +651,8 @@ def _tokenize_file(dt,el=None):
 
 
 
-def _repo_stats_detect_file(r,fn,ll,hdt,db):
-	if (os.stat(os.path.join(r,fn)).st_size==0 or _is_binary(os.path.join(r,fn))==True):
+def _project_stats_detect_file(r,fn,ll,hdt,db):
+	if (os.stat(r+fn).st_size==0 or _is_binary(r+fn)==True):
 		return None
 	o=list(ll.keys())
 	c=[]
@@ -670,7 +678,7 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 		return o[0]
 	dt=None
 	try:
-		with open(os.path.join(r,fn),"rb") as f:
+		with open(r+fn,"rb") as f:
 			dt=f.read().decode("utf-8",errors="replace")
 	except PermissionError:
 		return None
@@ -726,9 +734,9 @@ def _repo_stats_detect_file(r,fn,ll,hdt,db):
 
 
 
-def _repo_stats(fp,ll,hdt,db,el):
+def _project_stats(p_fp,ll,hdt,db,el):
 	gdt=[]
-	with open(os.path.join(fp,".gitignore"),"r") as f:
+	with open(p_fp+".gitignore","r") as f:
 		for ln in f.read().replace("\r\n","\n").split("\n"):
 			if (ln.endswith("\n")):
 				ln=ln[:-1]
@@ -747,9 +755,9 @@ def _repo_stats(fp,ll,hdt,db,el):
 					gdt+=[[iv,ln]]
 	if (el["__e__"]==1):
 		return
-	for r,_,fl in os.walk(fp):
-		r=r.replace("\\","/")
-		if (el["__ig__"]==True and r[len(fp):].strip("/")[:4]=="docs"):
+	for r,_,fl in os.walk(p_fp):
+		r=r.replace("\\","/").strip("/")+"/"
+		if (el["__ig__"]==True and r[len(p_fp):].strip("/")[:4]=="docs"):
 			continue
 		if (el["__e__"]==1):
 			return
@@ -757,30 +765,31 @@ def _repo_stats(fp,ll,hdt,db,el):
 			for f in fl:
 				if (el["__e__"]==1):
 					return
-				el["__cf__"]=os.path.join(r,f)
-				if (el["__ig__"]==True and _match_gitignore_path(gdt,os.path.join(r,f)[len(fp):])==True):
+				el["__cf__"]=r+f
+				if (el["__ig__"]==True and _match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
 					continue
-				l=_repo_stats_detect_file(r,f,ll,hdt,db)
+				l=_project_stats_detect_file(r,f,ll,hdt,db)
 				if (el["__e__"]==1):
 					return
 				if (l is None):
 					continue
 				if (l not in el):
 					el[l]=0
-				el[l]+=os.stat(os.path.join(r,f)).st_size
-				el["__tcnt__"]+=os.stat(os.path.join(r,f)).st_size
+				sz=os.stat(r+f).st_size
+				el[l]+=sz
+				el["__tcnt__"]+=sz
 
 
 
-def _read_repo_stats(fp,ll,hdt,db,el):
+def _read_project_stats(fp,ll,hdt,db,el):
 	if (fp is None):
 		for fp in os.listdir(PROJECT_DIR):
-			_repo_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
+			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
 			if (el["__e__"]==1):
 				break
-		_repo_stats(__file_dir__+"",ll,hdt,db,el)
+		_project_stats(__file_dir__,ll,hdt,db,el)
 	else:
-		_repo_stats(fp,ll,hdt,db,el)
+		_project_stats(fp,ll,hdt,db,el)
 	el["__cf__"]=None
 	el["__e__"]=2
 
@@ -813,19 +822,6 @@ def _arduino_clone_file(url,fp,sz):
 	_print("\n",end="")
 	s.close()
 	threading.current_thread()._df=False
-
-
-
-def _rm_dir(fp):
-	dl=[fp]
-	for r,ndl,fl in os.walk(fp):
-		r=r.replace("\\","/").strip("/")+"/"
-		for d in ndl:
-			dl.insert(0,r+d)
-		for f in fl:
-			os.remove(r+f)
-	for k in dl:
-		os.rmdir(k)
 
 
 
@@ -958,7 +954,16 @@ def _install_arduino_package(b,force=False):
 								except Exception as e:
 									traceback.print_exception(None,e,e.__traceback__)
 									_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-						_rm_dir(__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}")
+						rm_fp=__file_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"
+						dl=[rm_fp]
+						for r,ndl,fl in os.walk(rm_fp):
+							r=r.replace("\\","/").strip("/")+"/"
+							for d in ndl:
+								dl.insert(0,r+d)
+							for f in fl:
+								os.remove(r+f)
+						for k in dl:
+							os.rmdir(k)
 				elif (k["name"].endswith(".zip")):
 					_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 					_print("Extracting Files\x1b[38;2;100;100;100m...")
@@ -1040,7 +1045,16 @@ def _install_arduino_package(b,force=False):
 						except Exception as e:
 							traceback.print_exception(None,e,e.__traceback__)
 							_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-				_rm_dir(__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}")
+				rm_fp=__file_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"
+				dl=[rm_fp]
+				for r,ndl,fl in os.walk(rm_fp):
+					r=r.replace("\\","/").strip("/")+"/"
+					for d in ndl:
+						dl.insert(0,r+d)
+					for f in fl:
+						os.remove(r+f)
+				for k in dl:
+					os.rmdir(k)
 		elif (k[4].endswith(".zip")):
 			_print("Using Extractor 'zip'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
@@ -1418,9 +1432,7 @@ def _upload_to_arduino(b_fp,p,fqbn,bb,vu,inc_l):
 			if (b is None):
 				_print("\x1b[38;2;200;40;20mNo Boards Found.\x1b[0m Stopping Upload\x1b[38;2;100;100;100m...")
 				sys.exit(1)
-			time.sleep(0.5)
-			p=b["location"]
-			up.update({"serial.port":p,"serial.port.file":p})
+			up.update({"serial.port":b["location"],"serial.port.file":b["location"]})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
 		p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["upload.pattern"]))))
 		if (p.returncode!=0):
@@ -1539,8 +1551,6 @@ class _Serial_UI:
 
 
 	def loop(self):
-		def _cmp(a,b):
-			return (0 if a==b else (-1 if a<b else 1))
 		while (True):
 			self._o=[f"\x1b[0m\x1b[48;2;24;24;24m{' '*(self._sz[0]-1)}",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╔{'═'*(self._sz[0]-9)}╗   ",*(f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ║{' '*(self._sz[0]-9)}\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m║   ",)*(self._sz[1]-5),f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╚{'═'*(self._sz[0]-9)}╝   ",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m{' '*(self._sz[0]-1)}"]
 			ud=False
@@ -1913,57 +1923,62 @@ def _u_mcs(fp):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		return
 	_print("Downloading Metadata\x1b[38;2;100;100;100m...")
-	json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
-	dw=True
-	if (os.path.exists(fp+"server.jar")):
-		dw=False
-		_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
-		h=hashlib.sha1()
-		with open(f"{fp}/server.jar","rb") as f:
-			fb=f.read(2**16)
-			while (len(fb)>0):
-				h.update(fb)
+	try:
+		json=requests.get([e for e in requests.get("https://launchermeta.mojang.com/mc/game/version_manifest.json").json()["versions"] if e["id"] not in MINECRAFT_SKIP_UPDATE][0]["url"]).json()
+		dw=True
+		if (os.path.exists(fp+"server.jar")):
+			dw=False
+			_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
+			h=hashlib.sha1()
+			with open(f"{fp}/server.jar","rb") as f:
 				fb=f.read(2**16)
-		_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
-		if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
-			_print(f"Creating Backup\x1b[38;2;100;100;100m...")
-			if (not os.path.exists(f"{fp}/world-backup_{json['id']}")):
-				os.mkdir(f"{fp}/world-backup_{json['id']}")
-			for r,dl,fl in os.walk(f"{fp}/world"):
-				nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):]
-				for d in dl:
-					if (not os.path.exists(os.path.join(nr,d))):
-						os.mkdir(os.path.join(nr,d))
-				for f in fl:
-					if (not os.path.exists(os.path.join(nr,f))):
-						try:
-							with open(os.path.join(r,f),"rb") as rf,open(os.path.join(nr,f),"wb") as wf:
-								wf.write(rf.read())
-						except PermissionError:
-							if (os.path.exists(os.path.join(nr,f))):
-								os.remove(os.path.join(nr,f))
-			dw=True
-	if (dw==True):
-		_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
-		r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
-		with open(f"{fp}/server.jar","wb") as f:
-			while (True):
-				dt=r.read(4096)
-				f.write(dt)
-				if (len(dt)<4096):
-					break
+				while (len(fb)>0):
+					h.update(fb)
+					fb=f.read(2**16)
+			_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
+			if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
+				_print(f"Creating Backup\x1b[38;2;100;100;100m...")
+				if (not os.path.exists(f"{fp}/world-backup_{json['id']}")):
+					os.mkdir(f"{fp}/world-backup_{json['id']}")
+				for r,dl,fl in os.walk(f"{fp}/world"):
+					nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):]
+					for d in dl:
+						if (not os.path.exists(os.path.join(nr,d))):
+							os.mkdir(os.path.join(nr,d))
+					for f in fl:
+						if (not os.path.exists(os.path.join(nr,f))):
+							try:
+								with open(os.path.join(r,f),"rb") as rf,open(os.path.join(nr,f),"wb") as wf:
+									wf.write(rf.read())
+							except PermissionError:
+								if (os.path.exists(os.path.join(nr,f))):
+									os.remove(os.path.join(nr,f))
+				dw=True
+		if (dw==True):
+			_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
+			r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
+			with open(f"{fp}/server.jar","wb") as f:
+				while (True):
+					dt=r.read(4096)
+					f.write(dt)
+					if (len(dt)<4096):
+						break
+	except requests.exceptions.ConnectionError:
+		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Skipping Update Check\x1b[38;2;100;100;100m...")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
 	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
+def _hotkey_handler_thr(vk,wp):
+	if (vk in VK_SAME_KEYS):
+		vk=VK_SAME_KEYS[vk]
+	if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
+			_hotkey_handler._hk[vk]()
+
+
+
 def _hotkey_handler(c,wp,lp):
-	global END
-	def _thr(vk):
-		if (vk in VK_SAME_KEYS):
-			vk=VK_SAME_KEYS[vk]
-		if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
-				_hotkey_handler._hk[vk]()
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 		if (dt.vk_code!=VK_PACKET and dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN)!=LLKHF_INJECTED|LLKHF_ALTDOWN):
@@ -1972,7 +1987,7 @@ def _hotkey_handler(c,wp,lp):
 			else:
 				if (dt.scan_code==0x21d and dt.vk_code==0xa2):
 					_hotkey_handler._ig_alt=True
-				thr=threading.Thread(target=_thr,args=(dt.vk_code,))
+				thr=threading.Thread(target=_hotkey_handler_thr,args=(dt.vk_code,wp))
 				thr.daemon=True
 				thr.start()
 	except KeyboardInterrupt:
@@ -2101,11 +2116,7 @@ else:
 		r.after(0,_blocker_msg_loop,r)
 		r.mainloop()
 	elif (v==1):
-		inp_cm=ctypes.wintypes.DWORD(0)
-		kernel32.GetConsoleMode(kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
-		out_cm=ctypes.wintypes.DWORD(0)
 		ho=kernel32.GetStdHandle(-11)
-		kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
@@ -2171,24 +2182,11 @@ else:
 					sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 					sys.__stdout__.flush()
 					ll=ln
-				time.sleep(0.01)
-			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+				time.sleep(1/CONSOLE_APP_FRAME_RATE)
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
-			while (True):
-				pass
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),inp_cm)
-		kernel32.SetConsoleMode(ho,out_cm)
-		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 	elif (v==2):
-		threading.current_thread()._nm="create_project"
-		inp_cm=ctypes.wintypes.DWORD(0)
-		kernel32.GetConsoleMode(kernel32.GetStdHandle(-10),ctypes.byref(inp_cm))
-		out_cm=ctypes.wintypes.DWORD(0)
 		ho=kernel32.GetStdHandle(-11)
-		kernel32.GetConsoleMode(ho,ctypes.byref(out_cm))
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
@@ -2298,19 +2296,13 @@ else:
 					sys.__stdout__.flush()
 					ll=ln
 					u=False
-				time.sleep(0.01)
-			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+				time.sleep(1/CONSOLE_APP_FRAME_RATE)
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 			while (True):
 				pass
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),inp_cm)
-		kernel32.SetConsoleMode(ho,out_cm)
-		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 	elif (v==3):
-		threading.current_thread()._nm="arduino_serial_terminal"
+		threading.current_thread()._dpt=True
 		_init_arduino_cache()
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=kernel32.GetStdHandle(-11)
@@ -2334,8 +2326,6 @@ else:
 			ui.loop()
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
-			while (True):
-				pass
 	elif (v==4):
 		if (len(sys.argv)==2):
 			threading.current_thread()._nm="github_project_push_remote"
@@ -2374,6 +2364,7 @@ else:
 			o+=f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘"
 			_print(o)
 		elif (sys.argv[2]=="install"):
+			threading.current_thread()._dph=True
 			if (len(sys.argv)<4):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 				sys.exit(1)
@@ -2509,7 +2500,7 @@ else:
 		nci.bVisible=0
 		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
-		thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
 		thr.daemon=True
 		thr.start()
 		elc=0
@@ -2542,7 +2533,7 @@ else:
 					ud=True
 			if (thr is None and el["__e__"]==2):
 				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
-				thr=threading.Thread(target=_read_repo_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
 				thr.daemon=True
 				thr.start()
 			if (elc!=el["__tcnt__"]):
@@ -2611,12 +2602,12 @@ else:
 			if (ud==True):
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
-			time.sleep(0.01)
+			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==7):
 		if (len(sys.argv)==2):
 			threading.current_thread()._nm="minecraft_server_updater"
-			threading.current_thread()._dpt=True
 			_u_mcs(__file_dir__+"mc_server")
 		else:
+			threading.current_thread()._dpt=True
 			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
 			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
