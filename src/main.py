@@ -2500,7 +2500,7 @@ else:
 		nci.bVisible=0
 		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
-		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").strip("/")+"/"),ll,hdt,db,el))
 		thr.daemon=True
 		thr.start()
 		elc=0
