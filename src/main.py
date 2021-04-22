@@ -1,4 +1,3 @@
-import atexit
 import ctypes
 import ctypes.wintypes
 import datetime
@@ -53,7 +52,7 @@ GITHUB_HEADERS="application/vnd.github.v3+json,application/vnd.github.mercy-prev
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
 GITHUB_MAX_FILE_SIZE=52428800
 GITHUB_PUSHED_PROJECT_LIST_FILE_PATH="data/github.dt"
-with open(__file_dir__+"data/secret.dt","r") as f:
+with open(__file_dir__+"data/github-secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
@@ -372,7 +371,7 @@ def _match_gitignore_path(gdt,fp):
 				if (ok==False):
 					continue
 			if (p[0]==True):
-				continue
+				return False
 			ig=True
 	if (ig==True):
 		return True
@@ -464,7 +463,7 @@ def _push_single_project(p,b_nm):
 	br=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/branches")
 	br=[e["name"] for e in br]
 	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
-	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...")
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
@@ -558,6 +557,8 @@ def _push_single_project(p,b_nm):
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes\x1b[38;2;100;100;100m...")
 		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+	else:
+		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload")
 	if (nm not in gr_dt):
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
 		with open(__file_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"w") as f:
@@ -1941,18 +1942,20 @@ def _u_mcs(fp):
 				if (not os.path.exists(f"{fp}/world-backup_{json['id']}")):
 					os.mkdir(f"{fp}/world-backup_{json['id']}")
 				for r,dl,fl in os.walk(f"{fp}/world"):
-					nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):]
+					r=r.replace("\\","/").strip("/")+"/"
+					nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):].strip("/")+"/"
 					for d in dl:
-						if (not os.path.exists(os.path.join(nr,d))):
-							os.mkdir(os.path.join(nr,d))
+						if (not os.path.exists(nr+d)):
+							os.mkdir(nr+d)
 					for f in fl:
-						if (not os.path.exists(os.path.join(nr,f))):
+						if (not os.path.exists(nr+f)):
 							try:
-								with open(os.path.join(r,f),"rb") as rf,open(os.path.join(nr,f),"wb") as wf:
+								with open(r+f,"rb") as rf,open(nr+f,"wb") as wf:
 									wf.write(rf.read())
 							except PermissionError:
-								if (os.path.exists(os.path.join(nr,f))):
-									os.remove(os.path.join(nr,f))
+								_print(f"Skipping File '{r+f}', Permission Error\x1b[38;2;100;100;100m...")
+								if (os.path.exists(nr+f)):
+									os.remove(nr+f)
 				dw=True
 		if (dw==True):
 			_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
@@ -2068,7 +2071,6 @@ if (len(sys.argv)==1):
 	_hotkey_handler._end=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-	atexit.register(user32.UnhookWindowsHookEx,kb_cb)
 	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
 	_register_hk("a",lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED))
 	_register_hk("q",lambda:subprocess.Popen([sys.executable,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE))
@@ -2082,7 +2084,7 @@ if (len(sys.argv)==1):
 	thr.daemon=True
 	thr.start()
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
-	for k in os.listdir("D:/K/Coding"):
+	for k in os.listdir(PROJECT_DIR):
 		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	thr=threading.Thread(target=_push_all_github_projects,name="github_project_push")
@@ -2090,11 +2092,15 @@ if (len(sys.argv)==1):
 	thr.daemon=True
 	thr.start()
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
-	msg=ctypes.wintypes.MSG()
-	while (not _hotkey_handler._end):
-		if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
-			user32.TranslateMessage(ctypes.byref(msg))
-			user32.DispatchMessageW(ctypes.byref(msg))
+	try:
+		msg=ctypes.wintypes.MSG()
+		while (not _hotkey_handler._end):
+			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
+				user32.TranslateMessage(ctypes.byref(msg))
+				user32.DispatchMessageW(ctypes.byref(msg))
+	except KeyboardInterrupt:
+		pass
+	user32.UnhookWindowsHookEx(kb_cb)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -2111,10 +2117,10 @@ else:
 		_blocker_msg_loop._msg=ctypes.wintypes.MSG()
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_handle_blocker_kb)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-		atexit.register(user32.UnhookWindowsHookEx,kb_cb)
 		user32.ShowCursor(0)
 		r.after(0,_blocker_msg_loop,r)
 		r.mainloop()
+		user32.UnhookWindowsHookEx(kb_cb)
 	elif (v==1):
 		ho=kernel32.GetStdHandle(-11)
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
@@ -2602,6 +2608,7 @@ else:
 			if (ud==True):
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
+				sys.__stdout__.flush()
 			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==7):
 		if (len(sys.argv)==2):
