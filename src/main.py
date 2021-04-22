@@ -42,7 +42,7 @@ ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+"
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 BROWSER_FILE_PATH="C:/Program Files/Google/Chrome Dev/Application/chrome.exe"
-CMD_FILE_PATH="cmd.exe"
+CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","C:\\Windows\\System32\\cmd.exe"))
 CONSOLE_APP_FRAME_RATE=60
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
@@ -2057,6 +2057,8 @@ kernel32.SetConsoleTitleW("")
 hwnd=kernel32.GetConsoleWindow()
 user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,user32.LoadImageW(0,__file_dir__+CUSTOM_ICON_FILE_PATH,IMAGE_ICON,16,16,LR_LOADFROMFILE))
 user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,user32.LoadImageW(0,__file_dir__+CUSTOM_ICON_FILE_PATH,IMAGE_ICON,32,32,LR_LOADFROMFILE))
+if (len(GITHUB_TOKEN)!=40):
+	_print("\x1b[38;2;200;40;20mInvalid Github Token.\x1b[0m Project Push will Fail\x1b[38;2;100;100;100m...")
 if (len(sys.argv)==1):
 	ho=kernel32.GetStdHandle(-11)
 	csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
