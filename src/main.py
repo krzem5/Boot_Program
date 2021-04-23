@@ -1957,24 +1957,23 @@ def _u_mcs(fp):
 							fb=f.read(FILE_READ_CHUNK_SIZE)
 					_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
 					if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
-						_print(f"Creating Backup\x1b[38;2;100;100;100m...")
-						if (not os.path.exists(f"{fp}/world-backup_{json['id']}")):
-							os.mkdir(f"{fp}/world-backup_{json['id']}")
-						for r,dl,fl in os.walk(f"{fp}/world"):
-							r=r.replace("\\","/").strip("/")+"/"
-							nr=f"{fp}/world-backup_{json['id']}"+r[len(f"{fp}/world"):].strip("/")+"/"
-							for d in dl:
-								if (not os.path.exists(nr+d)):
-									os.mkdir(nr+d)
-							for f in fl:
-								if (not os.path.exists(nr+f)):
+						if (not os.path.exists(fp+"backup")):
+							os.mkdir(fp+"backup")
+						nm=f"backup/world-backup_{json['id']}"
+						while (os.path.exists(fp+nm+".zip")):
+							nm+="_"
+						nm+=".zip"
+						_print(f"Creating Backup ('{nm}')\x1b[38;2;100;100;100m...")
+						with zipfile.ZipFile(fp+nm,"w") as zf:
+							for r,dl,fl in os.walk(fp+"world"):
+								r=r.replace("\\","/").strip("/")+"/"
+								nr=r[len(fp+"world/"):]
+								for f in fl:
 									try:
-										with open(r+f,"rb") as rf,open(nr+f,"wb") as wf:
-											wf.write(rf.read())
+										with open(r+f,"rb") as rf:
+											zf.writestr(nr+f,rf.read())
 									except PermissionError:
 										_print(f"Skipping File '{r+f}', Permission Error\x1b[38;2;100;100;100m...")
-										if (os.path.exists(nr+f)):
-											os.remove(nr+f)
 						dw=True
 				if (dw==True):
 					_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
@@ -2103,10 +2102,11 @@ if (len(sys.argv)==1):
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
 	try:
 		msg=ctypes.wintypes.MSG()
+		msg_p=ctypes.byref(msg)
 		while (not _hotkey_handler._end):
-			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
-				user32.TranslateMessage(ctypes.byref(msg))
-				user32.DispatchMessageW(ctypes.byref(msg))
+			if (user32.PeekMessageW(msg_p,None,0,0,PM_REMOVE)!=0):
+				user32.TranslateMessage(msg_p)
+				user32.DispatchMessageW(msg_p)
 	except KeyboardInterrupt:
 		pass
 	user32.UnhookWindowsHookEx(kb_cb)
