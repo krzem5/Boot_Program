@@ -416,18 +416,6 @@ def _sha1_chunk(h,dt):
 
 
 
-def _single_sha1(dt):
-	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-	l=len(dt)
-	dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
-	i=0
-	while (i<len(dt)):
-		h=_sha1_chunk(h,dt[i:i+64])
-		i+=64
-	return f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"
-
-
-
 def _create_gitignore_pattern(p):
 	p=p.replace("\\","/").lower()
 	ol=[]
@@ -463,7 +451,7 @@ def _create_gitignore_pattern(p):
 						i+=1
 						k+=3
 					cl.append(p[i:j])
-					l="-".join([e.replace("\\",r"\\").replace("-",r"\-") for e in cl])
+					l="-".join([e.replace("\\","\\\\").replace("-","\\-") for e in cl])
 				else:
 					l=l.replace("\\","\\\\")
 				l=GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX.sub(r"\\\1",l)
@@ -578,8 +566,8 @@ def _get_project_tree(r_nm,sha,p):
 	for e in r["tree"]:
 		if (e["type"]=="tree"):
 			o.update(_get_project_tree(r_nm,e["sha"],p+"/"+e["path"]))
-		elif ((p+"/"+e["path"]).replace("./","")!="_"):
-			o[(p+"/"+e["path"]).replace("./","")]={"sz":e["size"],"sha":e["sha"]}
+		elif ((p+"/"+e["path"])[2:]!="_"):
+			o[(p+"/"+e["path"])[2:]]={"sz":e["size"],"sha":e["sha"]}
 	return o
 
 
