@@ -642,10 +642,10 @@ def _push_single_project(p,b_nm):
 			if (fp in list(r_t.keys())):
 				if (_is_binary(r+f)==False):
 					try:
-						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
-							with open(r+f,"r",encoding="cp1252") as rf:
-								h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-								dt=rf.read().replace("\r\n","\n")
+						with open(r+f,"r",encoding="cp1252") as rf:
+							h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+							dt=rf.read().replace("\r\n","\n")
+							if (len(dt)==r_t[fp]["sz"]):
 								dt=f"blob {len(dt)}\x00{dt}".encode("cp1252")
 								l=len(dt)
 								dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
