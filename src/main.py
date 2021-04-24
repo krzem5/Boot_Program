@@ -1,7 +1,6 @@
 import ctypes
 import ctypes.wintypes
 import fnmatch
-import hashlib
 import json
 import math
 import msvcrt
@@ -9,7 +8,6 @@ import os
 import re
 import regex
 import requests
-import socket
 import subprocess
 import sys
 import tarfile
@@ -392,6 +390,44 @@ def _print(*a,end="\n"):
 
 
 
+def _sha1_chunk(h,dt):
+	w=[]
+	for i in range(0,64,4):
+		w.append((dt[i]<<24)|(dt[i+1]<<16)|(dt[i+2]<<8)|dt[i+3])
+	for i in range(16,80):
+		v=w[i-3]^w[i-8]^w[i-14]^w[i-16]
+		w.append(((v<<1)|(v>>31))&0xffffffff)
+	a,b,c,d,e=h
+	for i in range(80):
+		if (i<20):
+			f=d^(b&c)^(b&d)
+			k=0x5a827999
+		elif (i<40):
+			f=b^c^d
+			k=0x6ed9eba1
+		elif (i<60):
+			f=(b&c)|(b&d)|(c&d)
+			k=0x8f1bbcdc
+		else:
+			f=b^c^d
+			k=0xca62c1d6
+		a,b,c,d,e=(((((a<<5)|(a>>27))&0xffffffff)+f+e+k+w[i])&0xffffffff,a,((b<<30)|(b>>2))&0xffffffff,c,d)
+	return [(h[0]+a)&0xffffffff,(h[1]+b)&0xffffffff,(h[2]+c)&0xffffffff,(h[3]+d)&0xffffffff,(h[4]+e)&0xffffffff]
+
+
+
+def _single_sha1(dt):
+	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+	l=len(dt)
+	dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+	i=0
+	while (i<len(dt)):
+		h=_sha1_chunk(h,dt[i:i+64])
+		i+=64
+	return f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"
+
+
+
 def _match_gitignore_path(gdt,fp):
 	ig=False
 	for p in gdt:
@@ -536,7 +572,7 @@ def _push_single_project(p,b_nm):
 					try:
 						with open(r+f,"r",encoding="cp1252") as rf:
 							dt=rf.read().replace("\r\n","\n")
-							if (len(dt)==r_t[fp]["sz"] and hashlib.sha1(f"blob {len(dt)}\x00{dt}".encode("cp1252")).hexdigest()==r_t[fp]["sha"]):
+							if (len(dt)==r_t[fp]["sz"] and _single_sha1(f"blob {len(dt)}\x00{dt}".encode("cp1252"))==r_t[fp]["sha"]):
 								cnt[1]+=1
 								bl.append([fp,None])
 								_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
@@ -544,14 +580,14 @@ def _push_single_project(p,b_nm):
 					except UnicodeDecodeError:
 						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
 							with open(r+f,"rb") as rf:
-								if (hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()).hexdigest()==r_t[fp]["sha"]):
+								if (_single_sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read())==r_t[fp]["sha"]):
 									cnt[1]+=1
 									bl.append([fp,None])
 									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 									continue
 				elif (os.stat(r+f).st_size==r_t[fp]["sz"]):
 					with open(r+f,"rb") as rf:
-						if (hashlib.sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()).hexdigest()==r_t[fp]["sha"]):
+						if (_single_sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read())==r_t[fp]["sha"]):
 							cnt[1]+=1
 							bl.append([fp,None])
 							_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
@@ -846,22 +882,13 @@ def _read_project_stats(fp,ll,hdt,db,el):
 
 
 def _arduino_clone_file(url,fp,sz):
-	sz=int(sz)
-	s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.connect((url.split("/")[2],80))
-	s.send(bytes(f"GET /{'/'.join(url.split('/')[3:])} HTTP/1.1\r\nHost: {url.split('/')[2]}\r\n\r\n","utf-8"))
-	bf=b""
-	while (not bf.endswith(b"\r\n\r\n")):
-		bf+=s.recv(1)
 	t=0
 	at=0
+	df=threading.current_thread()._df
 	threading.current_thread()._df=True
 	_print(f"{fp.split('/')[-1]} [....................] 0/{sz} 0%",end="")
-	with open(fp,"wb") as f:
-		while (t<sz):
-			dt=s.recv(1024)
-			if (len(dt)==0):
-				break
+	with requests.get(url,stream=True) as r,open(fp,"wb") as f:
+		for dt in r.iter_content(chunk_size=4096):
 			f.write(dt)
 			at+=len(dt)
 			if (at>sz):
@@ -870,8 +897,7 @@ def _arduino_clone_file(url,fp,sz):
 			p=int(t/sz*20)
 			_print(f"\x1b[0G\x1b[2K{fp.split('/')[-1]} [{'='*(p-1)}{('>' if p>0 and p<20 else '')}{'.'*(20-p)}] {t}/{sz} {float(t*10000//sz)/100}%",end="")
 	_print("\n",end="")
-	s.close()
-	threading.current_thread()._df=False
+	threading.current_thread()._df=df
 
 
 
@@ -974,7 +1000,7 @@ def _install_arduino_package(b,force=False):
 		for k in dt["assets"]:
 			if (k["name"].startswith(b+"-") and (k["name"].endswith(".zip") or k["name"].endswith(".tar.bz2")) and "mingw32" in re.sub(r"(\.zip|\.tar\.bz2)$","",k["name"][len(b)+1:])):
 				_print(f"Found Release '{k['name']}'.\nCloning to File '{TEMP_DIR}{k['name']}' ...")
-				_arduino_clone_file(k["browser_download_url"],f"{TEMP_DIR}{k['name']}",k["size"])
+				_arduino_clone_file(k["browser_download_url"],f"{TEMP_DIR}{k['name']}",int(k["size"]))
 				with open(f"{TEMP_DIR}{k['name']}","wb") as f:
 					f.write(requests.get(k["browser_download_url"]).content)
 				if (k["name"].endswith(".tar.bz2")):
@@ -1077,7 +1103,7 @@ def _install_arduino_package(b,force=False):
 		if (not os.path.exists(__file_base_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")):
 			os.mkdir(__file_base_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}")
 		_print(f"Cloning to File '{TEMP_DIR}{k[4]}' ...")
-		_arduino_clone_file(k[3],TEMP_DIR+"/"+k[4],k[6])
+		_arduino_clone_file(k[3],TEMP_DIR+"/"+k[4],int(k[6]))
 		if (k[4].endswith(".tar.bz2")):
 			_print("Using Extractor 'tar/r:bz2'\x1b[38;2;100;100;100m...")
 			_print("Extracting Files\x1b[38;2;100;100;100m...")
@@ -1181,7 +1207,7 @@ def _run_arduino_recipe(bp,pfx,sfx):
 
 
 
-def _compile_arduino_files(b,i_fp,o_fp,inc_l,rc):
+def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 	l=[[],[],[]]
 	for r,_,fl in os.walk(i_fp):
 		for f in fl:
@@ -1219,7 +1245,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
 	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
-	b_fp=f"{TEMP_DIR}arduino-build-{hashlib.new('md5',bytes(s_fp,'utf-8')).hexdigest()}/"
+	b_fp=f"{TEMP_DIR}arduino-build-{_single_sha1(bytes(s_fp,'utf-8'))}/"
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
@@ -1262,10 +1288,10 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 					bp[f"runtime.tools.{t}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 				bp[f"runtime.tools.{t}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
-	if (os.path.exists(f"{b_fp}build-properties.md5")):
-		with open(f"{b_fp}build-properties.md5","r") as f:
-			md5=f.read()
-		if (md5[:32]!=hashlib.new("md5",bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")).hexdigest()):
+	if (os.path.exists(f"{b_fp}build-properties.sha1")):
+		with open(f"{b_fp}build-properties.sha1","r") as f:
+			sha1=f.read()
+		if (sha1[:40]!=_single_sha1(bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8"))):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
 			dl=[]
 			for r,ndl,fl in os.walk(b_fp):
@@ -1277,8 +1303,8 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			for k in dl:
 				os.rmdir(k)
 	_print("Writing New Hash\x1b[38;2;100;100;100m...")
-	with open(f"{b_fp}build-properties.md5","w") as f:
-		f.write(hashlib.new("md5",bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")).hexdigest())
+	with open(f"{b_fp}build-properties.sha1","w") as f:
+		f.write(_single_sha1(bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")))
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.prebuild",".pattern")
 	l_off=0
@@ -1430,7 +1456,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		if (k==f"{m_fp[len(s_fp):]}.hex"):
 			with open(f"{o_fp}{m_fp[len(s_fp):].split('.')[0]}.hex","wb") as wf,open(f"{b_fp}{k}","rb") as rf:
 				wf.write(rf.read())
-		if (k not in ["core","build-properties.md5"]):
+		if (k not in ["core","build-properties.sha1"]):
 			os.remove(f"{b_fp}{k}")
 	return sz
 
@@ -1990,14 +2016,27 @@ def _u_mcs(fp):
 				if (os.path.exists(fp+"server.jar")):
 					dw=False
 					_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
-					h=hashlib.sha1()
+					h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+					hl=0
+					h_bf=b""
 					with open(f"{fp}/server.jar","rb") as f:
-						fb=f.read(FILE_READ_CHUNK_SIZE)
-						while (len(fb)>0):
-							h.update(fb)
-							fb=f.read(FILE_READ_CHUNK_SIZE)
-					_print(f"File Hash: {h.hexdigest()}, New Hash: {json['downloads']['server']['sha1']}")
-					if (h.hexdigest()!=json["downloads"]["server"]["sha1"]):
+						dt=f.read(FILE_READ_CHUNK_SIZE)
+						while (len(dt)>0):
+							hl+=len(dt)
+							h_bf+=dt
+							i=0
+							while (i+64<=len(h_bf)):
+								h=_sha1_chunk(h,h_bf[i:i+64])
+								i+=64
+							h_bf=h_bf[i:]
+							dt=f.read(FILE_READ_CHUNK_SIZE)
+					h_bf+=b"\x80"+b"\x00"*((56-(hl+1)%64)%64)+bytes([hl>>53,(hl>>45)&0xff,(hl>>37)&0xff,(hl>>29)&0xff,(hl>>21)&0xff,(hl>>13)&0xff,(hl>>5)&0xff,(hl<<3)&0xff])
+					i=0
+					while (i<len(h_bf)):
+						h=_sha1_chunk(h,h_bf[i:i+64])
+						i+=64
+					_print(f"File Hash: {h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}, New Hash: {json['downloads']['server']['sha1']}")
+					if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"!=json["downloads"]["server"]["sha1"]):
 						if (not os.path.exists(fp+"backup")):
 							os.mkdir(fp+"backup")
 						nm=f"backup/world-backup_{json['id']}"
