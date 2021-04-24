@@ -1,6 +1,5 @@
 import ctypes
 import ctypes.wintypes
-import fnmatch
 import json
 import math
 import msvcrt
@@ -55,6 +54,7 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
+GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
 JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk8_251/bin/java.exe"
 JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
@@ -428,26 +428,98 @@ def _single_sha1(dt):
 
 
 
+def _create_gitignore_pattern(p):
+	p=p.replace("\\","/").lower()
+	ol=[]
+	i=0
+	while (i<len(p)):
+		c=p[i]
+		i+=1
+		if (c=="*"):
+			if (len(ol)==0 or ol[-1] is not None):
+				ol.append(None)
+		elif (c=="?"):
+			ol.append(r".")
+		elif (c=="["):
+			j=i
+			if (j<len(p) and p[j]=="!"):
+				j+=1
+			if j<len(p) and p[j]=="]":
+				j+=1
+			while j<len(p) and p[j]!="]":
+				j+=1
+			if (j>=len(p)):
+				ol.append(r"\\[")
+			else:
+				l=p[i:j]
+				if ("--" in l):
+					cl=[]
+					k=(i+2 if p[i]=="!" else i+1)
+					while (True):
+						k=p[k:j].find("-")
+						if (k==-1):
+							break
+						cl.append(p[i:k])
+						i+=1
+						k+=3
+					cl.append(p[i:j])
+					l="-".join([e.replace("\\",r"\\").replace("-",r"\-") for e in cl])
+				else:
+					l=l.replace("\\","\\\\")
+				l=GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX.sub(r"\\\1",l)
+				i=j+1
+				if (l[0]=='!'):
+					ol.append(fr"[^{l[1:]}]")
+				elif (l[0] in ("^","[")):
+					ol.append(fr"[{chr(92)+l}]")
+				else:
+					ol.append(fr"[{l}]")
+		else:
+			ol.append(re.escape(c))
+	o=""
+	i=0
+	while (i<len(ol) and ol[i] is not None):
+		o+=ol[i]
+		i+=1
+	j=0
+	while (i<len(ol)):
+		i+=1
+		if (i==len(ol)):
+			o+=r".*"
+			break
+		l=""
+		while (i<len(ol) and ol[i] is not None):
+			l+=ol[i]
+			i+=1
+		if (i==len(ol)):
+			o+=r".*"+l
+		else:
+			o+=fr"(?=(?P<_tmp_{j}>.*?{l}))(?P=_tmp_{j})"
+			j+=1
+	return re.compile(fr"{o}\Z",re.S)
+
+
+
 def _match_gitignore_path(gdt,fp):
+	fnm=fp.lower().replace("\\","/").lower().split("/")
 	ig=False
 	for p in gdt:
 		if ((ig==False or p[0]==True)):
-			fnm=os.path.normpath(fp).replace(os.sep,"/").split("/")
-			if (len(fnm)<len(p[1].split("/"))):
+			if (len(fnm)<len(p[1])):
 				continue
-			if (len(p[1].split("/")[0])==0):
+			if (len(p[1][0].pattern)==2):
 				ok=True
-				for sr,sfnm in zip(p[1].split("/"),fnm):
-					if (fnmatch.fnmatch(sfnm,sr)==False):
+				for r,sfnm in zip(p[1],fnm):
+					if (r.match(sfnm) is None):
 						ok=False
 						break
 				if (ok==False):
 					continue
 			else:
 				ok=False
-				for i in range(0,len(fnm)-len(p[1].split("/"))+1):
-					for sr,sfnm in zip(p[1].split("/"),fnm[i:]):
-						if (fnmatch.fnmatch(sfnm,sr)==False):
+				for i in range(0,len(fnm)-len(p[1])+1):
+					for r,sfnm in zip(p[1],fnm[i:]):
+						if (r.match(sfnm) is None):
 							break
 					else:
 						ok=True
@@ -541,8 +613,8 @@ def _push_single_project(p,b_nm):
 				ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
-						gdt.append([iv,ln.replace("**/","")])
-					gdt.append([iv,ln])
+						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
+					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
 	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...")
 	msg=time.strftime("Push Update %m/%d/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
 	br=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/branches")
@@ -837,8 +909,8 @@ def _project_stats(p_fp,ll,hdt,db,el):
 				ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
 				if (len(ln)>0):
 					if ("**/" in ln):
-						gdt.append([iv,ln.replace("**/","")])
-					gdt.append([iv,ln])
+						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
+					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
 	if (el["__e__"]==1):
 		return
 	for r,_,fl in os.walk(p_fp):
