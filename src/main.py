@@ -642,24 +642,48 @@ def _push_single_project(p,b_nm):
 			if (fp in list(r_t.keys())):
 				if (_is_binary(r+f)==False):
 					try:
-						with open(r+f,"r",encoding="cp1252") as rf:
-							dt=rf.read().replace("\r\n","\n")
-							if (len(dt)==r_t[fp]["sz"] and _single_sha1(f"blob {len(dt)}\x00{dt}".encode("cp1252"))==r_t[fp]["sha"]):
-								cnt[1]+=1
-								bl.append([fp,None])
-								_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
-								continue
+						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
+							with open(r+f,"r",encoding="cp1252") as rf:
+								h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+								dt=f"blob {os.stat(r+f).st_size}\x00{rf.read()}".replace("\r\n","\n").encode("cp1252")
+								l=len(dt)
+								dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+								i=0
+								while (i<len(dt)):
+									h=_sha1_chunk(h,dt[i:i+64])
+									i+=64
+								if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
+									cnt[1]+=1
+									bl.append([fp,None])
+									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+									continue
 					except UnicodeDecodeError:
 						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
 							with open(r+f,"rb") as rf:
-								if (_single_sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read())==r_t[fp]["sha"]):
+								h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+								dt=f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()
+								l=len(dt)
+								dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+								i=0
+								while (i<len(dt)):
+									h=_sha1_chunk(h,dt[i:i+64])
+									i+=64
+								if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
 									cnt[1]+=1
 									bl.append([fp,None])
 									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 									continue
 				elif (os.stat(r+f).st_size==r_t[fp]["sz"]):
 					with open(r+f,"rb") as rf:
-						if (_single_sha1(f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read())==r_t[fp]["sha"]):
+						h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+						dt=f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()
+						l=len(dt)
+						dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+						i=0
+						while (i<len(dt)):
+							h=_sha1_chunk(h,dt[i:i+64])
+							i+=64
+						if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
 							cnt[1]+=1
 							bl.append([fp,None])
 							_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
@@ -1317,7 +1341,14 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
 	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
-	b_fp=f"{TEMP_DIR}arduino-build-{_single_sha1(bytes(s_fp,'utf-8'))}/"
+	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+	l=len(s_fp)
+	dt=bytes(s_fp,"utf-8")+b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+	i=0
+	while (i<len(dt)):
+		h=_sha1_chunk(h,dt[i:i+64])
+		i+=64
+	b_fp=f"{TEMP_DIR}arduino-build-{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}/"
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(b_fp)):
 		os.mkdir(b_fp)
@@ -1360,10 +1391,19 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 					bp[f"runtime.tools.{t}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 				bp[f"runtime.tools.{t}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
+	dt=b",".join([bytes(f"'{k}'='{v}'","utf-8") for k,v in bp.items() if not k.startswith("extra.time")])
+	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+	l=len(dt)
+	dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
+	i=0
+	while (i<len(dt)):
+		h=_sha1_chunk(h,dt[i:i+64])
+		i+=64
+	dt_h=f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"
 	if (os.path.exists(f"{b_fp}build-properties.sha1")):
 		with open(f"{b_fp}build-properties.sha1","r") as f:
 			sha1=f.read()
-		if (sha1[:40]!=_single_sha1(bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8"))):
+		if (sha1[:40]!=dt_h):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
 			dl=[]
 			for r,ndl,fl in os.walk(b_fp):
@@ -1376,7 +1416,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 				os.rmdir(k)
 	_print("Writing New Hash\x1b[38;2;100;100;100m...")
 	with open(f"{b_fp}build-properties.sha1","w") as f:
-		f.write(_single_sha1(bytes([(k,v) for k,v in bp.items() if not k.startswith("extra.time")].__repr__(),"utf-8")))
+		f.write(dt_h)
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.prebuild",".pattern")
 	l_off=0
@@ -2284,10 +2324,9 @@ else:
 		hwnd=user32.CreateWindowExW(WS_EX_TOPMOST,"screen_blocker_window_class","Screen Blocker",WS_VISIBLE,0,0,100,100,None,None,kernel32.GetModuleHandleW(None),None)
 		user32.SetWindowLongPtrW(hwnd,GWL_STYLE,WS_VISIBLE)
 		user32.SetWindowLongPtrW(hwnd,GWL_EXSTYLE,WS_EX_TOPMOST)
-		cm=user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST)
 		mi=ctypes.wintypes.MONITORINFO()
 		mi.cbSize=ctypes.sizeof(ctypes.wintypes.MONITORINFO)
-		user32.GetMonitorInfoW(cm,ctypes.byref(mi))
+		user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),ctypes.byref(mi))
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
 		_handle_blocker_kb._hwnd=hwnd
 		_handle_blocker_kb._c_func=ctypes.wintypes.LowLevelKeyboardProc(_handle_blocker_kb)
