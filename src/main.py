@@ -2210,7 +2210,7 @@ def _handle_blocker_kb(c,wp,lp):
 
 
 
-def _blocker_window_proc(hwnd,msg,wp,lp):
+def _blocker_wnd_proc(hwnd,msg,wp,lp):
 	if (msg==WM_KILLFOCUS):
 		user32.SetFocus(hwnd)
 		return 0
@@ -2298,7 +2298,7 @@ else:
 		wc=ctypes.wintypes.WNDCLASSEXW()
 		wc.cbSize=ctypes.sizeof(ctypes.wintypes.WNDCLASSEXW)
 		wc.style=0
-		wc.lpfnWndProc=ctypes.wintypes.WNDPROC(_blocker_window_proc)
+		wc.lpfnWndProc=ctypes.wintypes.WNDPROC(_blocker_wnd_proc)
 		wc.cbClsExtra=0
 		wc.cbWndExtra=0
 		wc.hInstance=kernel32.GetModuleHandleW(None)
@@ -2311,6 +2311,7 @@ else:
 		user32.RegisterClassExW(ctypes.byref(wc)),kernel32.GetLastError()
 		shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
 		hwnd=user32.CreateWindowExW(WS_EX_TOPMOST,"screen_blocker_window_class","Screen Blocker",WS_VISIBLE,0,0,100,100,None,None,kernel32.GetModuleHandleW(None),None)
+		user32.SetFocus(hwnd)
 		user32.SetWindowLongPtrW(hwnd,GWL_STYLE,WS_VISIBLE)
 		user32.SetWindowLongPtrW(hwnd,GWL_EXSTYLE,WS_EX_TOPMOST)
 		mi=ctypes.wintypes.MONITORINFO()
@@ -2328,6 +2329,7 @@ else:
 				user32.DispatchMessageW(ctypes.byref(msg))
 		user32.UnregisterClassW("screen_blocker_window_class",kernel32.GetModuleHandleW(None))
 	elif (v==1):
+		user32.SetFocus(hwnd)
 		ho=kernel32.GetStdHandle(-11)
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
@@ -2398,6 +2400,7 @@ else:
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 	elif (v==2):
+		user32.SetFocus(hwnd)
 		ho=kernel32.GetStdHandle(-11)
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
@@ -2514,6 +2517,7 @@ else:
 			while (True):
 				pass
 	elif (v==3):
+		user32.SetFocus(hwnd)
 		threading.current_thread()._dpt=True
 		_init_arduino_cache()
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
@@ -2539,6 +2543,7 @@ else:
 		except Exception as e:
 			traceback.print_exception(None,e,e.__traceback__)
 	elif (v==4):
+		user32.SetFocus(hwnd)
 		if (len(sys.argv)==2):
 			threading.current_thread()._nm="github_project_push_remote"
 			threading.current_thread()._dpt=True
@@ -2604,6 +2609,7 @@ else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			sys.exit(1)
 	elif (v==6):
+		user32.SetFocus(hwnd)
 		ll=None
 		hdt=None
 		db=None
