@@ -566,7 +566,7 @@ def _get_project_tree(r_nm,sha,p):
 	for e in r["tree"]:
 		if (e["type"]=="tree"):
 			o.update(_get_project_tree(r_nm,e["sha"],p+"/"+e["path"]))
-		elif ((p+"/"+e["path"])[2:]!="_"):
+		else:
 			o[(p+"/"+e["path"])[2:]]={"sz":e["size"],"sha":e["sha"]}
 	return o
 
@@ -576,15 +576,18 @@ def _push_single_project(p,b_nm):
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
 	with open(__file_base_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
-		gr_dt=f.read().strip().replace("\r","").split("\n")
+		gr_dt={k.strip().split(":")[0]:k.strip().split(":")[1] for k in f.read().strip().split("\n") if len(k)>0}
+	cr=False
 	if (nm not in gr_dt):
+		cr=True
+		gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
 		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...")
 		try:
 			_github_api_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			return False
-	_print(f"\x1b[38;2;100;100;100mParsing Github Ignore File\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File\x1b[38;2;100;100;100m...")
 	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -605,16 +608,23 @@ def _push_single_project(p,b_nm):
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
 	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...")
 	msg=time.strftime("Push Update %m/%d/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
-	br=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/branches")
-	br=[e["name"] for e in br]
-	br=("main" if "main" in br else ("master" if "master" in br else ("main" if len(br)==0 else br[0])))
+	br=gr_dt[nm]
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...")
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
 		_github_api_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
-	r_t=_get_project_tree(nm,bt_sha,".")
+	_print(f"\x1b[38;2;100;100;100mReading Recursive Tree...")
+	t_dt=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees/{bt_sha}?recursive=true")
+	if (t_dt["truncated"]):
+		_print(f"\x1b[38;2;118;42;38mRecursive Tree Truncated. \x1b[38;2;100;100;100mFalling Back to Standard Tree...")
+		r_t=_get_project_tree(nm,bt_sha,".")
+	else:
+		r_t={}
+		for k in t_dt["tree"]:
+			if (k["type"]=="blob"):
+				r_t[k["path"]]={"sz":k["size"],"sha":k["sha"]}
 	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
 	bl=[]
 	cnt=[0,0,0,0]
@@ -622,11 +632,12 @@ def _push_single_project(p,b_nm):
 	for r,_,fl in os.walk(p):
 		r=r.replace("\\","/").strip("/")+"/"
 		for f in fl:
-			fp=(r+f)[len(p):]
+			fp=r[len(p):]+f
 			if (_match_gitignore_path(gdt,fp)==True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
 				continue
+			f_sz=os.stat(r+f).st_size
 			if (fp in list(r_t.keys())):
 				if (_is_binary(r+f)==False):
 					try:
@@ -647,10 +658,10 @@ def _push_single_project(p,b_nm):
 									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 									continue
 					except UnicodeDecodeError:
-						if (os.stat(r+f).st_size==r_t[fp]["sz"]):
+						if (f_sz==r_t[fp]["sz"]):
 							with open(r+f,"rb") as rf:
 								h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-								dt=f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()
+								dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
 								l=len(dt)
 								dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
 								i=0
@@ -662,10 +673,10 @@ def _push_single_project(p,b_nm):
 									bl.append([fp,None])
 									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
 									continue
-				elif (os.stat(r+f).st_size==r_t[fp]["sz"]):
+				elif (f_sz==r_t[fp]["sz"]):
 					with open(r+f,"rb") as rf:
 						h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-						dt=f"blob {os.stat(r+f).st_size}\x00".encode("cp1252")+rf.read()
+						dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
 						l=len(dt)
 						dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
 						i=0
@@ -679,7 +690,7 @@ def _push_single_project(p,b_nm):
 							continue
 			cnt[0]+=1
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
-			dt=f"File too Large (size = {os.stat(os.path.join(r,f)).st_size} b)"
+			dt=f"File too Large (size = {f_sz} b)"
 			b_sha=False
 			if (os.stat(r+f).st_size<=50*1024*1024):
 				b64=True
@@ -693,10 +704,9 @@ def _push_single_project(p,b_nm):
 				if (b64==True):
 					if (len(dt)*4//3>GITHUB_MAX_FILE_SIZE):
 						b_sha=False
-						dt="File too Large (size = %d b)"%(len(dt))
 					else:
 						b_sha=True
-						with open(os.path.join(r,f),"rb") as rbf:
+						with open(r+f,"rb") as rbf:
 							dt=""
 							i=0
 							b_dt=rbf.read()
@@ -729,20 +739,17 @@ def _push_single_project(p,b_nm):
 		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload")
-	if (nm not in gr_dt):
+	if (cr==True):
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
 		with open(__file_base_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"w") as f:
-			f.write("\n".join(gr_dt)+f"\n{nm}")
+			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 	return True
 
 
 
-def _push_all_github_projects(r=False,fr=False):
-	if (r==False):
-		_print(f"Starting Global Github Project Push\x1b[38;2;100;100;100m...")
-	threading.current_thread()._df=True
-	tm=int((time.time()//86400+3)//7)
+def _push_all_github_projects(fr=False):
+	tm=int((time.time()//86400+4)//7)
 	t=[0,0]
 	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as f:
 		b_dt=f.read().replace("\r\n","\n").split("\n")
@@ -772,9 +779,7 @@ def _push_all_github_projects(r=False,fr=False):
 				return
 			f.write("Boot_Program\n")
 			f.flush()
-	threading.current_thread()._df=False
-	if (r==False):
-		_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
+	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
 
 
@@ -2295,13 +2300,14 @@ if (len(sys.argv)==1):
 else:
 	v=int(sys.argv[1])
 	if (v==0):
+		mg=kernel32.GetModuleHandleW(None)
 		wc=ctypes.wintypes.WNDCLASSEXW()
 		wc.cbSize=ctypes.sizeof(ctypes.wintypes.WNDCLASSEXW)
 		wc.style=0
 		wc.lpfnWndProc=ctypes.wintypes.WNDPROC(_blocker_wnd_proc)
 		wc.cbClsExtra=0
 		wc.cbWndExtra=0
-		wc.hInstance=kernel32.GetModuleHandleW(None)
+		wc.hInstance=mh
 		wc.hIcon=None
 		wc.hCursor=None
 		wc.hbrBackground=gdi32.CreateSolidBrush(0x00000000)
@@ -2310,7 +2316,7 @@ else:
 		wc.hIconSm=None
 		user32.RegisterClassExW(ctypes.byref(wc)),kernel32.GetLastError()
 		shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
-		hwnd=user32.CreateWindowExW(WS_EX_TOPMOST,"screen_blocker_window_class","Screen Blocker",WS_VISIBLE,0,0,100,100,None,None,kernel32.GetModuleHandleW(None),None)
+		hwnd=user32.CreateWindowExW(WS_EX_TOPMOST,"screen_blocker_window_class","Screen Blocker",WS_VISIBLE,0,0,100,100,None,None,mh,None)
 		user32.SetFocus(hwnd)
 		user32.SetWindowLongPtrW(hwnd,GWL_STYLE,WS_VISIBLE)
 		user32.SetWindowLongPtrW(hwnd,GWL_EXSTYLE,WS_EX_TOPMOST)
@@ -2320,14 +2326,14 @@ else:
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
 		_handle_blocker_kb._hwnd=hwnd
 		_handle_blocker_kb._c_func=ctypes.wintypes.LowLevelKeyboardProc(_handle_blocker_kb)
-		user32.SetWindowsHookExW(WH_KEYBOARD_LL,_handle_blocker_kb._c_func,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+		user32.SetWindowsHookExW(WH_KEYBOARD_LL,_handle_blocker_kb._c_func,mh,ctypes.wintypes.DWORD(0))
 		user32.ShowCursor(0)
 		msg=ctypes.wintypes.MSG()
 		while (_handle_blocker_kb._hwnd is not None):
 			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
-		user32.UnregisterClassW("screen_blocker_window_class",kernel32.GetModuleHandleW(None))
+		user32.UnregisterClassW("screen_blocker_window_class",mh)
 	elif (v==1):
 		user32.SetFocus(hwnd)
 		ho=kernel32.GetStdHandle(-11)
@@ -2413,7 +2419,7 @@ else:
 			nci.dwSize=ci.dwSize
 			nci.bVisible=0
 			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-			rl=[e.split("-")[:2] for e in os.listdir("D:/K/Coding")]
+			rl=[e.split("-")[:2] for e in os.listdir(PROJECT_DIR)]
 			tl=[]
 			for k in rl:
 				if (k[0] not in tl):
@@ -2547,21 +2553,20 @@ else:
 		if (len(sys.argv)==2):
 			threading.current_thread()._nm="github_project_push_remote"
 			threading.current_thread()._dpt=True
-			_push_all_github_projects(r=True)
+			_push_all_github_projects()
 		else:
 			if (sys.argv[2]=="*"):
 				threading.current_thread()._nm="github_project_push_all"
 				threading.current_thread()._dpt=True
-				_push_all_github_projects(r=True,fr=True)
+				_push_all_github_projects(fr=True)
 			else:
 				threading.current_thread()._nm="github_project_push_single"
 				threading.current_thread()._dpt=True
-				sys.argv[2]=sys.argv[2].replace("\\","/")
 				threading.current_thread()._df=True
+				sys.argv[2]=sys.argv[2].replace("\\","/")
 				_push_single_project(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
-		threading.current_thread()._nm="arduino_runner"
 		threading.current_thread()._dpt=True
 		_init_arduino_cache()
 		if (len(sys.argv)<3):
@@ -2573,13 +2578,10 @@ else:
 				sys.exit(1)
 			bl=_list_arduino_boards()
 			mx_l=[max([(4,4,4,8)[i]]+[len(b[k]) for b in bl])+2 for i,k in enumerate(("name","fqbn","arch","location"))]
-			threading.current_thread()._df=True
-			threading.current_thread()._dph=True
 			o=f"┌{'─'*mx_l[0]}┬{'─'*mx_l[1]}┬{'─'*mx_l[2]}┬{'─'*mx_l[3]}┐\n│{'Name'.center(mx_l[0])}│{'FQBN'.center(mx_l[1])}│{'Arch'.center(mx_l[2])}│{'Location'.center(mx_l[3])}│\n├{'─'*mx_l[0]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[1]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[2]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[3]}┤"
 			for k in bl:
 				o+=f"\n│{k['name'].center(mx_l[0])}│{k['fqbn'].center(mx_l[1])}│{k['arch'].center(mx_l[2])}│{k['location'].center(mx_l[3])}│"
-			o+=f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘"
-			_print(o)
+			print(o+f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘")
 		elif (sys.argv[2]=="install"):
 			threading.current_thread()._dph=True
 			if (len(sys.argv)<4):
@@ -2590,7 +2592,7 @@ else:
 					continue
 				k=k.split(":")
 				if (len(k)>3):
-					_print(f"\x1b[38;2;200;40;20mInvalid Package Name '{':'.join(k)}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
+					_print(f"\x1b[38;2;200;40;20mInvalid Package Name '{':'.join(k)}'\x1b[38;2;200;40;20m.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 				if (len(k)==1):
 					_install_arduino_package(k[0],force=(True if "--force" in sys.argv[3:] else False))
 				else:
