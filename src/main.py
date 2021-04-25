@@ -383,7 +383,7 @@ def _print(*a,end="\n"):
 					i+=len(o)-1
 			i+=1
 	tm=time.time()+UTC_OFFSET
-	t=(f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "+(f"[{threading.current_thread()._nm}] " if not hasattr(threading.current_thread(),"_dpt") or threading.current_thread()._dpt==False else "") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
+	t=(f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "+(f"[{threading.current_thread()._nm}] " if hasattr(threading.current_thread(),"_p_nm") and threading.current_thread().p_nm==True else "") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	STDOUT_LOCK.acquire()
 	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m"+end)
 	STDOUT_LOCK.release()
@@ -625,6 +625,8 @@ def _push_single_project(p,b_nm):
 		for k in t_dt["tree"]:
 			if (k["type"]=="blob"):
 				r_t[k["path"]]={"sz":k["size"],"sha":k["sha"]}
+			else:
+				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'{k['path']}'\x1b[38;2;100;100;100m...")
 	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
 	bl=[]
 	cnt=[0,0,0,0]
@@ -1667,7 +1669,6 @@ def _create_project(t,nm,op):
 	if (not os.path.exists(p)):
 		cr=True
 		os.mkdir(p)
-	cr=True
 	b_fp=__file_base_dir__+f"templates/{t.lower()}/"
 	for r,dl,fl in os.walk(b_fp):
 		r=r.replace("\\","/").strip("/")+"/"
@@ -2258,6 +2259,7 @@ if (len(sys.argv)==1):
 	kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 	kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 	threading.current_thread()._nm="__main__"
+	threading.current_thread()._p_nm=True
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	move_to_desktop.move_to_desktop(hwnd,2)
 	move_to_desktop.switch_to_desktop(0)
@@ -2277,6 +2279,7 @@ if (len(sys.argv)==1):
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
 	thr=threading.Thread(target=_u_mcs,args=(__file_base_dir__+"mc_server",),name="minecraft_server_updater")
 	thr._nm="minecraft_server_updater"
+	thr._p_nm=True
 	thr.daemon=True
 	thr.start()
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
@@ -2285,6 +2288,7 @@ if (len(sys.argv)==1):
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
 	thr=threading.Thread(target=_push_all_github_projects,name="github_project_push")
 	thr._nm="github_project_push"
+	thr._p_nm=True
 	thr.daemon=True
 	thr.start()
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
@@ -2524,7 +2528,6 @@ else:
 				pass
 	elif (v==3):
 		user32.SetFocus(hwnd)
-		threading.current_thread()._dpt=True
 		_init_arduino_cache()
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		ho=kernel32.GetStdHandle(-11)
@@ -2552,22 +2555,18 @@ else:
 		user32.SetFocus(hwnd)
 		if (len(sys.argv)==2):
 			threading.current_thread()._nm="github_project_push_remote"
-			threading.current_thread()._dpt=True
 			_push_all_github_projects()
 		else:
 			if (sys.argv[2]=="*"):
 				threading.current_thread()._nm="github_project_push_all"
-				threading.current_thread()._dpt=True
 				_push_all_github_projects(fr=True)
 			else:
 				threading.current_thread()._nm="github_project_push_single"
-				threading.current_thread()._dpt=True
 				threading.current_thread()._df=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				_push_single_project(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
 				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
-		threading.current_thread()._dpt=True
 		_init_arduino_cache()
 		if (len(sys.argv)<3):
 			_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
@@ -2829,6 +2828,5 @@ else:
 			threading.current_thread()._nm="minecraft_server_updater"
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			threading.current_thread()._dpt=True
 			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
 			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
