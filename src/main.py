@@ -44,7 +44,7 @@ CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
 FILE_READ_CHUNK_SIZE=16384
 GITHUB_API_QUOTA=5000
-GITHUB_CREATED_PROJECT_LIST_FILE_PATH="data/github-created.dt"
+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH="data/github-branches.dt"
 GITHUB_DEFAULT_BRANCH_NAME="main"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json"
@@ -384,7 +384,7 @@ def _print(*a,end="\n"):
 					i+=len(o)-1
 			i+=1
 	tm=time.time()+UTC_OFFSET
-	t=(f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "+(f"[{threading.current_thread()._nm}] " if hasattr(threading.current_thread(),"_p_nm") and threading.current_thread().p_nm==True else "") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
+	t=(f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "+(f"[{threading.current_thread()._nm}] " if hasattr(threading.current_thread(),"_p_nm") and threading.current_thread()._p_nm==True else "") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
 	STDOUT_LOCK.acquire()
 	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m"+end)
 	STDOUT_LOCK.release()
@@ -576,7 +576,7 @@ def _get_project_tree(r_nm,sha,p):
 def _push_single_project(p,b_nm):
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
-	with open(__file_base_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"r") as f:
+	with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"r") as f:
 		gr_dt={k.strip().split(":")[0]:k.strip().split(":")[1] for k in f.read().strip().split("\n") if len(k)>0}
 	cr=False
 	if (nm not in gr_dt):
@@ -745,7 +745,7 @@ def _push_single_project(p,b_nm):
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload")
 	if (cr==True):
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
-		with open(__file_base_dir__+GITHUB_CREATED_PROJECT_LIST_FILE_PATH,"w") as f:
+		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
 			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
 	return True
@@ -753,6 +753,7 @@ def _push_single_project(p,b_nm):
 
 
 def _push_all_github_projects(fr=False):
+	threading.current_thread()._df=True
 	tm=int((time.time()//86400+4)//7)
 	t=[0,0]
 	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as f:
@@ -783,6 +784,7 @@ def _push_all_github_projects(fr=False):
 				return
 			f.write("Boot_Program\n")
 			f.flush()
+	threading.current_thread()._df=False
 	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
 
