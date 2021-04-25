@@ -45,6 +45,7 @@ EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
 FILE_READ_CHUNK_SIZE=16384
 GITHUB_API_QUOTA=5000
 GITHUB_CREATED_PROJECT_LIST_FILE_PATH="data/github-created.dt"
+GITHUB_DEFAULT_BRANCH_NAME="main"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
@@ -2305,7 +2306,7 @@ if (len(sys.argv)==1):
 else:
 	v=int(sys.argv[1])
 	if (v==0):
-		mg=kernel32.GetModuleHandleW(None)
+		mh=kernel32.GetModuleHandleW(None)
 		wc=ctypes.wintypes.WNDCLASSEXW()
 		wc.cbSize=ctypes.sizeof(ctypes.wintypes.WNDCLASSEXW)
 		wc.style=0
