@@ -622,11 +622,12 @@ def _push_single_project(p,b_nm):
 		r_t=_get_project_tree(nm,bt_sha,".")
 	else:
 		r_t={}
+		_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'.'\x1b[38;2;100;100;100m...")
 		for k in t_dt["tree"]:
 			if (k["type"]=="blob"):
 				r_t[k["path"]]={"sz":k["size"],"sha":k["sha"]}
 			else:
-				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'{k['path']}'\x1b[38;2;100;100;100m...")
+				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'./{k['path']}'\x1b[38;2;100;100;100m...")
 	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
 	bl=[]
 	cnt=[0,0,0,0]
