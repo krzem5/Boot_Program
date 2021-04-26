@@ -556,7 +556,7 @@ def _github_api_request(m,**kw):
 	o=r.json()
 	if (type(o)==dict and "message" in o.keys() and o["message"]=="Server Error"):
 		print(o)
-		raise RuntimeError
+		sys.exit(1)
 	return o
 
 
@@ -1134,7 +1134,7 @@ def _install_arduino_package(b,force=False):
 						zf.extractall(__file_base_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-					raise RuntimeError(f"Unknown File Extension '{k['name'][len(k['name'].split('.')[0]):]}'.")
+					sys.exit(1)
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
 				os.remove(f"{TEMP_DIR}{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
@@ -1564,7 +1564,8 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 		sys.exit(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
-		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
+		print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}'\x1b[38;2;200;40;20m isn't Installed.")
+		sys.exit(1)
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(h_fp+"boards.txt","r") as hb_f:
@@ -1646,7 +1647,8 @@ def _open_project_file(d,e,*f):
 def _create_project(t,nm,op):
 	t=t.lower()
 	if (t not in VALID_PROGRAM_TYPES):
-		raise RuntimeError(f"Unknown Type '{t}'")
+		print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'\x1b[38;2;200;40;20m.")
+		sys.exit(1)
 	nm=nm.replace("_"," ").lower().title().replace(" ","_")
 	p=PROJECT_DIR+f"{t.title()}-{nm}/"
 	cr=False
@@ -2642,7 +2644,8 @@ else:
 				if (e["path"]=="samples"):
 					t=requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{e['sha']}?recursive=1").json()
 					if (t["truncated"]==True):
-						raise RuntimeError("Samples Tree Truncated")
+						print(f"\x1b[38;2;200;40;20mSamples Tree Truncated")
+						sys.exit(1)
 					for k in t["tree"]:
 						if (k["type"]!="blob"):
 							continue
