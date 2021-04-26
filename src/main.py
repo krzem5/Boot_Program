@@ -81,6 +81,7 @@ SERIAL_BAUD=9600
 SERIAL_TIMEOUT=5000
 SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
 SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
+SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
 STDOUT_LOCK=threading.Lock()
 TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").strip("/")+"/"
 UTC_OFFSET=7200
@@ -646,7 +647,7 @@ def _push_single_project(p,b_nm):
 				if (_is_binary(r+f)==False):
 					try:
 						with open(r+f,"r",encoding="cp1252") as rf:
-							h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+							h=SHA1_START_VALUE.copy()
 							dt=rf.read().replace("\r\n","\n")
 							if (len(dt)==r_t[fp]["sz"]):
 								dt=f"blob {len(dt)}\x00{dt}".encode("cp1252")
@@ -664,7 +665,7 @@ def _push_single_project(p,b_nm):
 					except UnicodeDecodeError:
 						if (f_sz==r_t[fp]["sz"]):
 							with open(r+f,"rb") as rf:
-								h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+								h=SHA1_START_VALUE.copy()
 								dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
 								l=len(dt)
 								dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
@@ -679,7 +680,7 @@ def _push_single_project(p,b_nm):
 									continue
 				elif (f_sz==r_t[fp]["sz"]):
 					with open(r+f,"rb") as rf:
-						h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+						h=SHA1_START_VALUE.copy()
 						dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
 						l=len(dt)
 						dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
@@ -1341,7 +1342,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
 	if (not os.path.isdir(s_fp)):
 		raise RuntimeError("Sketch Path must Be a Directory.")
-	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+	h=SHA1_START_VALUE.copy()
 	l=len(s_fp)
 	dt=bytes(s_fp,"utf-8")+b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
 	i=0
@@ -1392,7 +1393,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 				bp[f"runtime.tools.{t}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
 	dt=b",".join([bytes(f"'{k}'='{v}'","utf-8") for k,v in bp.items() if not k.startswith("extra.time")])
-	h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+	h=SHA1_START_VALUE.copy()
 	l=len(dt)
 	dt+=b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
 	i=0
@@ -1834,7 +1835,15 @@ class _Serial_UI:
 								self._p_s[2].hEvent=kernel32.CreateEventW(None,1,0,None)
 								self._p_s[3].hEvent=kernel32.CreateEventW(None,0,0,None)
 								self._m=1
-				self._draw_table({"name":("Name","#8ae8c6"),"arch":("Arch","#dbdf0c"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")},self._pl,s=self._pi)
+				tb_h={"name":("Name","#8ae8c6"),"arch":("Arch","#dbdf0c"),"fqbn":("FQBN","#e386d0"),"location":("Location","#59c51e")}
+				mx_l=[max([len(tb_h[list(tb_h.keys())[i]][0])]+[len(e[k]) for e in self._pl])+2 for i,k in enumerate(list(tb_h.keys()))]
+				off=((self._sz[0]-9-(sum(mx_l)+len(list(tb_h.keys()))+1))//2,3)
+				self._set(off[0],off[1],"\x1b[38;2;156;156;156m┌"+"┬".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┐")
+				self._set(off[0],off[1]+1,"\x1b[38;2;156;156;156m│"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{min(255,int(tb_h[e][1][1:3],16)+65)};{min(255,int(tb_h[e][1][3:5],16)+65)};{min(255,int(tb_h[e][1][5:7],16)+65)}m"+tb_h[e][0].center(mx_l[i]," ") for i,e in enumerate(list(tb_h.keys()))])+"\x1b[38;2;156;156;156m│")
+				self._set(off[0],off[1]+2,"\x1b[38;2;156;156;156m├"+"┼".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┤")
+				for i,k in enumerate(self._pl):
+					self._set(off[0],off[1]+i+3,"\x1b[38;2;156;156;156m│"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{max(0,int(tb_h[e][1][1:3],16)-(0 if i%2==0 else 65))};{max(0,int(tb_h[e][1][3:5],16)-(0 if i%2==0 else 65))};{max(0,int(tb_h[e][1][5:7],16)-(0 if i%2==0 else 65))}m"+("\x1b[48;2;37;37;37m" if i==self._pi else "")+k[e].center(mx_l[j]," ") for j,e in enumerate(list(tb_h.keys()))])+"\x1b[48;2;24;24;24m\x1b[38;2;156;156;156m│")
+				self._set(off[0],off[1]+len(self._pl)+3,"\x1b[38;2;156;156;156m└"+"┴".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┘")
 			elif (self._m==1):
 				n_dt=False
 				inp_ch=False
@@ -2037,18 +2046,6 @@ class _Serial_UI:
 
 
 
-	def _draw_table(self,nm,d,s=-1):
-		mx_l=[max([len(nm[list(nm.keys())[i]][0])]+[len(e[k]) for e in d])+2 for i,k in enumerate(list(nm.keys()))]
-		off=((self._sz[0]-9-(sum(mx_l)+len(list(nm.keys()))+1))//2,3)
-		self._set(off[0],off[1],"\x1b[38;2;156;156;156m┌"+"┬".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┐")
-		self._set(off[0],off[1]+1,"\x1b[38;2;156;156;156m│"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{min(255,int(nm[e][1][1:3],16)+65)};{min(255,int(nm[e][1][3:5],16)+65)};{min(255,int(nm[e][1][5:7],16)+65)}m"+nm[e][0].center(mx_l[i]," ") for i,e in enumerate(list(nm.keys()))])+"\x1b[38;2;156;156;156m│")
-		self._set(off[0],off[1]+2,"\x1b[38;2;156;156;156m├"+"┼".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┤")
-		for i,k in enumerate(d):
-			self._set(off[0],off[1]+i+3,"\x1b[38;2;156;156;156m│"+"\x1b[38;2;156;156;156m│".join([f"\x1b[38;2;{max(0,int(nm[e][1][1:3],16)-(0 if i%2==0 else 65))};{max(0,int(nm[e][1][3:5],16)-(0 if i%2==0 else 65))};{max(0,int(nm[e][1][5:7],16)-(0 if i%2==0 else 65))}m"+("\x1b[48;2;37;37;37m" if i==s else "")+k[e].center(mx_l[j]," ") for j,e in enumerate(list(nm.keys()))])+"\x1b[48;2;24;24;24m\x1b[38;2;156;156;156m│")
-		self._set(off[0],off[1]+len(d)+3,"\x1b[38;2;156;156;156m└"+"┴".join(["─"*mx_l[i] for i in range(0,len(mx_l))])+"┘")
-
-
-
 	def _set(self,x,y,v):
 		i=0
 		j=0
@@ -2127,7 +2124,7 @@ def _u_mcs(fp):
 				if (os.path.exists(fp+"server.jar")):
 					dw=False
 					_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
-					h=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
+					h=SHA1_START_VALUE.copy()
 					hl=0
 					h_bf=b""
 					with open(f"{fp}/server.jar","rb") as f:
