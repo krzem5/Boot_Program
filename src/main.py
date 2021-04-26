@@ -1332,37 +1332,29 @@ def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 
 def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	fqbn=fqbn.split(":")
-	s_fp=os.path.abspath(s_fp).replace("\\","/")
-	if (s_fp[-1]!="/"):
-		s_fp+="/"
-	o_fp=os.path.abspath(o_fp).replace("\\","/")
-	if (o_fp[-1]!="/"):
-		o_fp+="/"
+	s_fp=os.path.abspath(s_fp).replace("\\","/").strip("/")+"/"
+	o_fp=os.path.abspath(o_fp).replace("\\","/").strip("/")+"/"
 	if (not os.path.exists(s_fp)):
-		raise RuntimeError(f"Sketch {s_fp} doesn't Exist.")
+		_print(f"\x1b[38;2;200;40;20mSketch '{s_fp}'\x1b[38;2;200;40;20m doesn't Exist.")
+		sys.exit(1)
 	if (not os.path.isdir(s_fp)):
-		raise RuntimeError("Sketch Path must Be a Directory.")
-	h=SHA1_START_VALUE.copy()
-	l=len(s_fp)
-	dt=bytes(s_fp,"utf-8")+b"\x80"+b"\x00"*((56-(l+1)%64)%64)+bytes([l>>53,(l>>45)&0xff,(l>>37)&0xff,(l>>29)&0xff,(l>>21)&0xff,(l>>13)&0xff,(l>>5)&0xff,(l<<3)&0xff])
-	i=0
-	while (i<len(dt)):
-		h=_sha1_chunk(h,dt[i:i+64])
-		i+=64
-	b_fp=f"{TEMP_DIR}arduino-build-{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}/"
-	_print(f"Compiling Sketch '{s_fp}' to Directory '{b_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(b_fp)):
-		os.mkdir(b_fp)
-	m_fp=f"{s_fp}main.ino"
+		_print("\x1b[38;2;200;40;20mSketch Path must Be a Directory.")
+		sys.exit(1)
+	_print(f"Compiling Sketch '{s_fp}' to Directory '{o_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
+	if (not os.path.exists(o_fp)):
+		os.mkdir(o_fp)
+	m_fp=s_fp+"main.ino"
 	_print("Searching For Main File\x1b[38;2;100;100;100m...")
 	if (os.path.exists(m_fp)==False or os.path.isdir(m_fp)==True):
-		raise RuntimeError("Sketch doesn't Contain a Main Program")
+		_print("\x1b[38;2;200;40;20mSketch doesn't Contain a Main Program")
+		sys.exit(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
-		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
+		_print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}'\x1b[38;2;200;40;20m isn't Installed.")
+		sys.exit(1)
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
-	with open(f"{h_fp}boards.txt","r") as hb_f:
+	with open(h_fp+"boards.txt","r") as hb_f:
 		h_pm={}
 		for k in hb_f.read().replace("\r\n","\n").split("\n"):
 			if (len(k.strip())==0 or k.strip()[0]=="#"):
@@ -1371,13 +1363,14 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 				h_pm[k.split(".")[0]]={}
 			h_pm[k.split(".")[0]][".".join(k.split("=")[0].split(".")[1:])]=k[len(k.split("=")[0])+1:]
 	if (fqbn[2] not in list(h_pm.keys())):
-		raise RuntimeError(f"Invalid FQBN '{':'.join(fqbn)}'.")
+		_print(f"\x1b[38;2;200;40;20mInvalid FQBN '{':'.join(fqbn)}'\x1b[38;2;200;40;20m.")
+		sys.exit(1)
 	_print(f"Reading '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
-	with open(f"{h_fp}platform.txt","r") as hp_f:
+	with open(h_fp+"platform.txt","r") as hp_f:
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
-	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",b_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
-	bp.update({"build.core.path":f"{h_fp}cores/{bp['build.core']}","build.system.path":f"{h_fp}system","runtime.platform.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",h_fp),"runtime.hardware.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":__file_base_dir__+"","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else f"{h_fp}variants/{bp['build.variant']}"),"build.source.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(int(time.time())),"extra.time.zone":"0","extra.time.dst":"0"})
+	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",o_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
+	bp.update({"build.core.path":h_fp+"cores/"+bp["build.core"],"build.system.path":h_fp+"system","runtime.platform.path":ARDUINO_DIRECTORY_PATH_REGEX.sub(r"",h_fp),"runtime.hardware.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":__file_base_dir__+"","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else h_fp+"variants/"+bp["build.variant"]),"build.source.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(int(time.time())),"extra.time.zone":"0","extra.time.dst":"0"})
 	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.debug"]
@@ -1401,13 +1394,13 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		h=_sha1_chunk(h,dt[i:i+64])
 		i+=64
 	dt_h=f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"
-	if (os.path.exists(f"{b_fp}build-properties.sha1")):
-		with open(f"{b_fp}build-properties.sha1","r") as f:
+	if (os.path.exists(o_fp+"build-properties.sha1")):
+		with open(o_fp+"build-properties.sha1","r") as f:
 			sha1=f.read()
 		if (sha1[:40]!=dt_h):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
 			dl=[]
-			for r,ndl,fl in os.walk(b_fp):
+			for r,ndl,fl in os.walk(o_fp):
 				r=r.replace("\\","/").strip("/")+"/"
 				for d in ndl:
 					dl.insert(0,r+d)
@@ -1416,14 +1409,14 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			for k in dl:
 				os.rmdir(k)
 	_print("Writing New Hash\x1b[38;2;100;100;100m...")
-	with open(f"{b_fp}build-properties.sha1","w") as f:
+	with open(o_fp+"build-properties.sha1","w") as f:
 		f.write(dt_h)
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.prebuild",".pattern")
 	l_off=0
 	nh_inc=False
 	_print("Bundling Sketch Files\x1b[38;2;100;100;100m...")
-	with open(b_fp+m_fp.split("/")[-1]+".cpp","wb") as bf:
+	with open(o_fp+m_fp.split("/")[-1]+".cpp","wb") as bf:
 		src=b""
 		for r,_,fl in os.walk(s_fp):
 			for fp in fl:
@@ -1457,7 +1450,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			for d in dl:
 				if (os.path.exists(os.path.join(d[0],k))):
 					_print(f"Found Included Sketch File '{os.path.join(d[0],k)}'\x1b[38;2;100;100;100m...")
-					with open(b_fp+"/"+os.path.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(os.path.join(d[0],k),"rb") as rf:
+					with open(o_fp+"/"+os.path.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(os.path.join(d[0],k),"rb") as rf:
 						dt=rf.read().replace(b"\r\n",b"\n")
 						for e in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(src,"utf-8").lower()):
 							if (e!="arduino.h" and e not in l):
@@ -1472,53 +1465,53 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		for k in r_dl:
 			inc_l.remove(k)
 	inc_l.append(bp["build.core.path"])
-	inc_l.append(b_fp)
+	inc_l.append(o_fp)
 	if (bp["build.variant.path"]!=""):
 		inc_l.append(bp["build.variant.path"])
 	_print("Generating Preprocessor Properties\x1b[38;2;100;100;100m...")
-	pd={**bp,"source_file":b_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":b_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
+	pd={**bp,"source_file":o_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":o_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
 	if ("recipe.preproc.macros" not in list(pd.keys())):
 		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
 	p=subprocess.run([e for e in _split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"]+["-DARDUINO_LIB_DISCOVERY_PHASE"])
 	if (p.returncode!=0):
 		sys.exit(p.returncode)
-	os.remove(b_fp+m_fp.split("/")[-1]+".cpp")
+	os.remove(o_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
 	_print("Compiling Files\x1b[38;2;100;100;100m...")
-	s_of=_compile_arduino_files(bp,b_fp,b_fp,inc_l,False)+(_compile_arduino_files(bp,f"{b_fp}src/",f"{b_fp}src/",inc_l,True) if os.path.exists(f"{b_fp}src/") else [])
+	s_of=_compile_arduino_files(bp,o_fp,o_fp,inc_l,False)+(_compile_arduino_files(bp,o_fp+"src",o_fp+"src",inc_l,True) if os.path.exists(o_fp+"src") else [])
 	_print("Running Recipe 'recipe.hooks.sketch.postbuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.sketch.postbuild",".pattern")
 	_print("Running Recipe 'recipe.hooks.core.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.core.prebuild",".pattern")
 	c_inc_l=[bp["build.core.path"]]+([bp["build.variant.path"]] if bp["build.variant.path"]!="" else [])
 	_print("Buliding Core\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(f"{b_fp}core/")):
+	if (not os.path.exists(o_fp+"core")):
 		_print("\x1b[38;2;200;40;20mPrebuild Core not Found.\x1b[0m Rebuilding\x1b[38;2;100;100;100m...")
-		os.mkdir(f"{b_fp}core/")
+		os.mkdir(o_fp+"core")
 		_print("Compiling Core Variant Files\x1b[38;2;100;100;100m...")
-		v_of=(_compile_arduino_files(bp,bp["build.variant.path"],f"{b_fp}core",c_inc_l,True) if bp["build.variant.path"]!="" else [])
+		v_of=(_compile_arduino_files(bp,bp["build.variant.path"],o_fp+"core",c_inc_l,True) if bp["build.variant.path"]!="" else [])
 		_print("Compiling Core Files\x1b[38;2;100;100;100m...")
 		pr=False
-		for c_of in _compile_arduino_files(bp,bp["build.core.path"],f"{b_fp}core",c_inc_l,True):
+		for c_of in _compile_arduino_files(bp,bp["build.core.path"],o_fp+"core",c_inc_l,True):
 			if (pr==False):
 				_print("Archiving Core Files\x1b[38;2;100;100;100m...")
 			pr=True
-			p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"archive_file":"core.a","archive_file_path":f"{b_fp}core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
+			p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"archive_file":"core.a","archive_file_path":o_fp+"core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
 			if (p.returncode!=0):
 				sys.exit(p.returncode)
 			os.remove(c_of)
 			os.remove(c_of[:-2]+".d")
 	else:
 		_print("Collecting Core Variant Files\x1b[38;2;100;100;100m...")
-		v_of=[e for e in os.listdir(f"{b_fp}core/") if e.endswith(".o")]
+		v_of=[e for e in os.listdir(o_fp+"core/") if e.endswith(".o")]
 	_print("Running Recipe 'recipe.hooks.core.postbuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.core.postbuild",".pattern")
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.linking.prelink",".pattern")
 	_print("Linking Files\x1b[38;2;100;100;100m...")
-	p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":f"{b_fp}core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
+	p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
 	if (p.returncode!=0):
 		sys.exit(p.returncode)
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
@@ -1553,43 +1546,28 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			_print(f"Global variables use {sz[1]} bytes ({sz[1]*100//int(bp['upload.maximum_data_size'])}%) of dynamic memory, leaving {int(bp['upload.maximum_data_size'])-sz[1]} bytes for local variables. Maximum is {bp['upload.maximum_data_size']} bytes.")
 		else:
 			_print(f"Global variables use {sz[1]} bytes of dynamic memory.")
-	if (os.path.exists(o_fp)):
-		dl=[]
-		for r,ndl,fl in os.walk(o_fp):
-			r=r.replace("\\","/").strip("/")+"/"
-			for d in ndl:
-				dl.insert(0,r+d)
-			for f in fl:
-				os.remove(r+f)
-		for k in dl:
-			os.rmdir(k)
-	else:
-		os.mkdir(o_fp)
-	for k in os.listdir(b_fp):
-		if (k==f"{m_fp[len(s_fp):]}.hex"):
-			with open(f"{o_fp}{m_fp[len(s_fp):].split('.')[0]}.hex","wb") as wf,open(f"{b_fp}{k}","rb") as rf:
-				wf.write(rf.read())
-		if (k not in ["core","build-properties.sha1"]):
-			os.remove(f"{b_fp}{k}")
+	for k in os.listdir(o_fp):
+		if (k not in ["core",m_fp[len(s_fp):]+".hex","build-properties.sha1"]):
+			os.remove(o_fp+k)
 	return sz
 
 
 
-def _upload_to_arduino(b_fp,p,fqbn,bb,vu,inc_l):
+def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 	fqbn=fqbn.split(":")
-	b_fp=os.path.abspath(b_fp).replace("\\","/")
-	if (b_fp[-1]!="/"):
-		b_fp+="/"
+	o_fp=os.path.abspath(o_fp).replace("\\","/")
+	if (o_fp[-1]!="/"):
+		o_fp+="/"
 	_print("Searching For Build Directory\x1b[38;2;100;100;100m...")
-	if (not os.path.exists(b_fp)):
+	if (not os.path.exists(o_fp)):
 		_print("\x1b[38;2;200;40;20mSketch Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-		return
+		sys.exit(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		raise RuntimeError(f"Package '{fqbn[0]}:{fqbn[1]}' isn't Installed.")
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
-	with open(f"{h_fp}boards.txt","r") as hb_f:
+	with open(h_fp+"boards.txt","r") as hb_f:
 		h_pm={}
 		for k in hb_f.read().replace("\r\n","\n").split("\n"):
 			if (len(k.strip())==0 or k.strip()[0]=="#"):
@@ -1598,10 +1576,11 @@ def _upload_to_arduino(b_fp,p,fqbn,bb,vu,inc_l):
 				h_pm[k.split(".")[0]]={}
 			h_pm[k.split(".")[0]][".".join(k.split("=")[0].split(".")[1:])]=k[len(k.split("=")[0])+1:]
 	if (fqbn[2] not in list(h_pm.keys())):
-		raise RuntimeError(f"Invalid FQBN '{':'.join(fqbn)}'.")
+		_print(f"\x1b[38;2;200;40;20mInvalid FQBN '{':'.join(fqbn)}'\x1b[38;2;200;40;20m.")
+		sys.exit(1)
 	h_pm=h_pm[fqbn[2]]
 	_print(f"Reading File '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
-	with open(f"{h_fp}platform.txt","r") as hp_f:
+	with open(h_fp+"platform.txt","r") as hp_f:
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Generating Upload Properties\x1b[38;2;100;100;100m...")
 	up={**p_pm,**h_pm,"serial.port":p,"serial.port.file":p,"runtime.platform.path":h_fp}
@@ -1615,7 +1594,7 @@ def _upload_to_arduino(b_fp,p,fqbn,bb,vu,inc_l):
 		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/")
 	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.path"]=__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}"
 	if (bb==False):
-		up.update({"build.path":b_fp,"build.project_name":[e.split(".")[0] for e in os.listdir(b_fp) if e[-4:]==".hex"][0]})
+		up.update({"build.path":o_fp,"build.project_name":[e.split(".")[0] for e in os.listdir(o_fp) if e[-4:]==".hex"][0]})
 		_print("Setting Board in Bootloader Mode\x1b[38;2;100;100;100m...")
 		if (bool(up.get("upload.use_1200bps_touch","False"))==True):
 			_print("\x1b[38;2;200;40;20m1200Bps Touch not Implemented Yet.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
