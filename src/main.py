@@ -697,7 +697,7 @@ def _push_single_project(p,b_nm):
 			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
 			dt=f"File too Large (size = {f_sz} b)"
 			b_sha=False
-			if (os.stat(r+f).st_size<=50*1024*1024):
+			if (os.stat(r+f).st_size<=GITHUB_MAX_FILE_SIZE):
 				b64=True
 				if (_is_binary(r+f)==False):
 					try:
@@ -2208,13 +2208,13 @@ def _blocker_wnd_proc(hwnd,msg,wp,lp):
 
 def _check_close(t):
 	if (user32.MessageBoxW(None,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
-		hToken=ctypes.wintypes.HANDLE()
+		th=ctypes.wintypes.HANDLE()
 		tkp=ctypes.wintypes.TOKEN_PRIVILEGES()
-		advapi32.OpenProcessToken(kernel32.GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,ctypes.byref(hToken))
+		advapi32.OpenProcessToken(kernel32.GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,ctypes.byref(th))
 		advapi32.LookupPrivilegeValueW(None,SE_SHUTDOWN_NAME,ctypes.byref(tkp.Privileges[0].Luid))
 		tkp.PrivilegeCount=1
 		tkp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED
-		advapi32.AdjustTokenPrivileges(hToken,False,ctypes.byref(tkp),0,None,None)
+		advapi32.AdjustTokenPrivileges(th,False,ctypes.byref(tkp),0,None,None)
 		if (t==0):
 			user32.ExitWindowsEx(EWX_LOGOFF,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
 		else:
