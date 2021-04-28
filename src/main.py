@@ -2183,13 +2183,13 @@ def _hotkey_handler(c,wp,lp):
 
 
 
-def _handle_blocker_kb(c,wp,lp):
+def _screen_blocker_keyboard_handler(c,wp,lp):
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 		if (dt.vk_code==0x1b):
-			user32.DestroyWindow(_handle_blocker_kb._hwnd)
-			user32.UnhookWindowsHookEx(_handle_blocker_kb._c_func)
-			_handle_blocker_kb._hwnd=None
+			user32.DestroyWindow(_screen_blocker_keyboard_handler._hwnd)
+			user32.UnhookWindowsHookEx(_screen_blocker_keyboard_handler._c_func)
+			_screen_blocker_keyboard_handler._hwnd=None
 		else:
 			return -1
 	except Exception as e:
@@ -2198,7 +2198,7 @@ def _handle_blocker_kb(c,wp,lp):
 
 
 
-def _blocker_wnd_proc(hwnd,msg,wp,lp):
+def _screen_blocker_wnd_proc(hwnd,msg,wp,lp):
 	if (msg==WM_KILLFOCUS):
 		user32.SetFocus(hwnd)
 		return 0
@@ -2290,7 +2290,7 @@ else:
 		wc=ctypes.wintypes.WNDCLASSEXW()
 		wc.cbSize=ctypes.sizeof(ctypes.wintypes.WNDCLASSEXW)
 		wc.style=0
-		wc.lpfnWndProc=ctypes.wintypes.WNDPROC(_blocker_wnd_proc)
+		wc.lpfnWndProc=ctypes.wintypes.WNDPROC(_screen_blocker_wnd_proc)
 		wc.cbClsExtra=0
 		wc.cbWndExtra=0
 		wc.hInstance=mh
@@ -2310,12 +2310,12 @@ else:
 		mi.cbSize=ctypes.sizeof(ctypes.wintypes.MONITORINFO)
 		user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),ctypes.byref(mi))
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
-		_handle_blocker_kb._hwnd=hwnd
-		_handle_blocker_kb._c_func=ctypes.wintypes.LowLevelKeyboardProc(_handle_blocker_kb)
-		user32.SetWindowsHookExW(WH_KEYBOARD_LL,_handle_blocker_kb._c_func,mh,ctypes.wintypes.DWORD(0))
+		_screen_blocker_keyboard_handler._hwnd=hwnd
+		_screen_blocker_keyboard_handler._c_func=ctypes.wintypes.LowLevelKeyboardProc(_screen_blocker_keyboard_handler)
+		user32.SetWindowsHookExW(WH_KEYBOARD_LL,_screen_blocker_keyboard_handler._c_func,mh,ctypes.wintypes.DWORD(0))
 		user32.ShowCursor(0)
 		msg=ctypes.wintypes.MSG()
-		while (_handle_blocker_kb._hwnd is not None):
+		while (_screen_blocker_keyboard_handler._hwnd is not None):
 			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
