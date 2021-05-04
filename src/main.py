@@ -1645,17 +1645,24 @@ def _open_project_file(d,e,*f):
 
 
 def _create_project(t,nm,op):
-	t=t.lower()
-	if (t not in VALID_PROGRAM_TYPES):
-		print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'\x1b[38;2;200;40;20m.")
-		sys.exit(1)
-	nm=nm.replace("_"," ").lower().title().replace(" ","_")
-	p=PROJECT_DIR+f"{t.title()}-{nm}/"
-	cr=False
-	if (not os.path.exists(p)):
-		cr=True
-		os.mkdir(p)
-	b_fp=__file_base_dir__+f"templates/{t.lower()}/"
+	if (nm is not None):
+		t=t.lower()
+		if (t not in VALID_PROGRAM_TYPES):
+			print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'\x1b[38;2;200;40;20m.")
+			sys.exit(1)
+		nm=nm.replace("_"," ").lower().title().replace(" ","_")
+		p=PROJECT_DIR+f"{t.title()}-{nm}/"
+		cr=False
+		if (not os.path.exists(p)):
+			cr=True
+			os.mkdir(p)
+		b_fp=__file_base_dir__+f"templates/{t.lower()}/"
+	else:
+		p=__file_base_dir__
+		b_fp=__file_base_dir__+"templates/python/"
+		t="python"
+		nm="Boot_Program"
+		cr=False
 	for r,dl,fl in os.walk(b_fp):
 		r=r.replace("\\","/").strip("/")+"/"
 		pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
@@ -1673,7 +1680,6 @@ def _create_project(t,nm,op):
 			if (f[0]=="."):
 				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (op==True):
-		p=PROJECT_DIR+t.title()+"-"+nm+"/"
 		subprocess.run([EDITOR_FILE_PATH,"--add",p])
 		if (t=="arduino"):
 			_open_project_file(p,"ino",p+"src/main.ino")
@@ -2406,11 +2412,11 @@ else:
 			nci.bVisible=0
 			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 			rl=[e.split("-")[:2] for e in os.listdir(PROJECT_DIR)]
-			tl=[]
+			tl=["Boot"]
 			for k in rl:
 				if (k[0] not in tl):
 					tl.append(k[0])
-			l={}
+			l={"boot":[""]}
 			for k in rl:
 				if (k[0].lower() not in list(l.keys())):
 					l[k[0].lower()]=[]
@@ -2445,7 +2451,7 @@ else:
 						pri_s=""
 						u=True
 					elif (k==b"\t"):
-						if ((len(pr[bfi])>0 or pri!=-1) and len((l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))>0):
+						if (bf[0].lower()!="boot" and (len(pr[bfi])>0 or pri!=-1) and len((l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))>0):
 							al=([e for e in (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())) if e.lower().startswith(pri_s)] if pri_s!="" else (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))
 							if (len(al)>0):
 								if (pri==-1):
@@ -2465,6 +2471,10 @@ else:
 							pri_s=""
 							u=True
 					elif (k==b"\r" or k==b"\n"):
+						if (bf[0].lower()=="boot"):
+							_create_project(__file_base_dir__,None,True)
+							e=True
+							break
 						if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
 							e=False
 							for k in l.get(bf[0].lower(),[]):
@@ -2492,11 +2502,8 @@ else:
 							if (k.lower().startswith(bf[1].lower())):
 								pr[1]=k[len(bf[1]):]
 								break
-					elif (len(bf[0])>0):
-						for k in list(l.keys()):
-							if (k.lower()==bf[0].lower()):
-								pr[1]=l[k][0]
-								break
+					elif (len(bf[0])>0 and bf[0].lower() in l):
+						pr[1]=l[bf[0].lower()][0]
 					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
 					ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
 					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
