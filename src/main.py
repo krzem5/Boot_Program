@@ -122,6 +122,7 @@ INVALID_HANDLE_VALUE=0xffffffffffffffff
 KEY_READ=0x20019
 LLKHF_ALTDOWN=0x20
 LLKHF_INJECTED=0x10
+LLKHF_UP=0x80
 LR_LOADFROMFILE=0x10
 MB_DEFBUTTON2=0x100
 MB_ICONQUESTION=0x20
@@ -2170,7 +2171,7 @@ def _u_mcs(fp):
 def _hotkey_handler(c,wp,lp):
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-		if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN):
+		if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
 			if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
 				_hotkey_handler._ig_alt=False
 			else:
