@@ -19,7 +19,7 @@ import zipfile
 
 
 __file__=os.path.abspath(__file__).replace("\\","/")
-__file_base_dir__=__file__[:-len(__file__.split("/")[-1])-4].strip("/")+"/"
+__file_base_dir__=__file__[:-len(__file__.split("/")[-1])-4].rstrip("/")+"/"
 if (not os.path.exists(__file_base_dir__+"data")):
 	os.mkdir(__file_base_dir__+"data")
 
@@ -82,8 +82,7 @@ SERIAL_TIMEOUT=5000
 SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
 SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
 SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-STDOUT_LOCK=threading.Lock()
-TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").strip("/")+"/"
+TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
 UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=[k.lower() for k in os.listdir(__file_base_dir__+"templates")]
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
@@ -361,7 +360,6 @@ user32.UnregisterClassW.restype=ctypes.wintypes.BOOL
 
 
 def _print(*a,end="\n"):
-	global STDOUT_LOCK
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
@@ -386,10 +384,8 @@ def _print(*a,end="\n"):
 					i+=len(o)-1
 			i+=1
 	tm=time.time()+UTC_OFFSET
-	t=(f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "+(f"[{threading.current_thread()._nm}] " if hasattr(threading.current_thread(),"_p_nm") and threading.current_thread()._p_nm==True else "") if not hasattr(threading.current_thread(),"_dph") or threading.current_thread()._dph==False else "")
-	STDOUT_LOCK.acquire()
+	t=f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "
 	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m"+end)
-	STDOUT_LOCK.release()
 
 
 
@@ -634,9 +630,9 @@ def _push_single_project(p,b_nm):
 	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
 	bl=[]
 	cnt=[0,0,0,0]
-	p=os.path.abspath(p).replace("\\","/").strip("/")+"/"
+	p=os.path.abspath(p).replace("\\","/").rstrip("/")+"/"
 	for r,_,fl in os.walk(p):
-		r=r.replace("\\","/").strip("/")+"/"
+		r=r.replace("\\","/").rstrip("/")+"/"
 		for f in fl:
 			fp=r[len(p):]+f
 			if (_match_gitignore_path(gdt,fp)==True):
@@ -940,7 +936,7 @@ def _project_stats(p_fp,ll,hdt,db,el):
 	if (el["__e__"]==1):
 		return
 	for r,_,fl in os.walk(p_fp):
-		r=r.replace("\\","/").strip("/")+"/"
+		r=r.replace("\\","/").rstrip("/")+"/"
 		if (el["__ig__"]==True and r[len(p_fp):].strip("/")[:4]=="docs"):
 			continue
 		if (el["__e__"]==1):
@@ -984,7 +980,7 @@ def _arduino_clone_file(url,fp,sz):
 	at=0
 	df=threading.current_thread()._df
 	threading.current_thread()._df=True
-	_print(f"{fp.split('/')[-1]} [....................] 0/{sz} 0%",end="")
+	sys.__stdout__.write(f"{fp.split('/')[-1]} [....................] 0/{sz} 0%")
 	with requests.get(url,stream=True) as r,open(fp,"wb") as f:
 		for dt in r.iter_content(chunk_size=4096):
 			f.write(dt)
@@ -993,8 +989,9 @@ def _arduino_clone_file(url,fp,sz):
 				sz=at
 			t=min(t+len(dt),sz)
 			p=int(t/sz*20)
-			_print(f"\x1b[0G\x1b[2K{fp.split('/')[-1]} [{'='*(p-1)}{('>' if p>0 and p<20 else '')}{'.'*(20-p)}] {t}/{sz} {float(t*10000//sz)/100}%",end="")
-	_print("\n",end="")
+			sys.__stdout__.write(f"\x1b[0G\x1b[2K{fp.split('/')[-1]} [{'='*(p-1)}{('>' if p>0 and p<20 else '')}{'.'*(20-p)}] {t}/{sz} {float(t*10000//sz)/100}%")
+			sys.__stdout__.flush()
+	sys.__stdout__.write("\n")
 	threading.current_thread()._df=df
 
 
@@ -1121,7 +1118,7 @@ def _install_arduino_package(b,force=False):
 						rm_fp=__file_base_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"
 						dl=[rm_fp]
 						for r,ndl,fl in os.walk(rm_fp):
-							r=r.replace("\\","/").strip("/")+"/"
+							r=r.replace("\\","/").rstrip("/")+"/"
 							for d in ndl:
 								dl.insert(0,r+d)
 							for f in fl:
@@ -1222,7 +1219,7 @@ def _install_arduino_package(b,force=False):
 				rm_fp=__file_base_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"
 				dl=[rm_fp]
 				for r,ndl,fl in os.walk(rm_fp):
-					r=r.replace("\\","/").strip("/")+"/"
+					r=r.replace("\\","/").rstrip("/")+"/"
 					for d in ndl:
 						dl.insert(0,r+d)
 					for f in fl:
@@ -1333,8 +1330,8 @@ def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 
 def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	fqbn=fqbn.split(":")
-	s_fp=os.path.abspath(s_fp).replace("\\","/").strip("/")+"/"
-	o_fp=os.path.abspath(o_fp).replace("\\","/").strip("/")+"/"
+	s_fp=os.path.abspath(s_fp).replace("\\","/").rstrip("/")+"/"
+	o_fp=os.path.abspath(o_fp).replace("\\","/").rstrip("/")+"/"
 	if (not os.path.exists(s_fp)):
 		_print(f"\x1b[38;2;200;40;20mSketch '{s_fp}'\x1b[38;2;200;40;20m doesn't Exist.")
 		sys.exit(1)
@@ -1402,7 +1399,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
 			dl=[]
 			for r,ndl,fl in os.walk(o_fp):
-				r=r.replace("\\","/").strip("/")+"/"
+				r=r.replace("\\","/").rstrip("/")+"/"
 				for d in ndl:
 					dl.insert(0,r+d)
 				for f in fl:
@@ -1637,7 +1634,7 @@ def _open_project_file(d,e,*f):
 	if (ok):
 		return
 	for r,_,fl in os.walk(d):
-		r=r.replace("\\","/").strip("/")+"/"
+		r=r.replace("\\","/").rstrip("/")+"/"
 		for f in fl:
 			if (f.endswith(e)):
 				subprocess.run([EDITOR_FILE_PATH,r+f])
@@ -1665,7 +1662,7 @@ def _create_project(t,nm,op):
 		nm="Boot_Program"
 		cr=False
 	for r,dl,fl in os.walk(b_fp):
-		r=r.replace("\\","/").strip("/")+"/"
+		r=r.replace("\\","/").rstrip("/")+"/"
 		pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
 		if (cr==False and r!=b_fp):
 			break
@@ -2031,6 +2028,7 @@ class _Serial_UI:
 						self._set(4,self._sz[1]//2,"\x1b[38;2;115;80;55m"+"[No Data]".center(self._sz[0]-9))
 			if (ud==True):
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join(self._o)+"\x1b[0m")
+				sys.__stdout__.flush()
 
 
 
@@ -2098,7 +2096,7 @@ class _Serial_UI:
 
 
 def _u_mcs(fp):
-	fp=os.path.abspath(fp).replace("\\","/").strip("/")+"/"
+	fp=os.path.abspath(fp).replace("\\","/").rstrip("/")+"/"
 	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(fp)):
 		_print("\x1b[38;2;200;40;20mMinecraft Server Folder Missing.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
@@ -2112,37 +2110,53 @@ def _u_mcs(fp):
 				if (os.path.exists(fp+"server.jar")):
 					dw=False
 					_print("Inspecting Current Version\x1b[38;2;100;100;100m...")
-					h=SHA1_START_VALUE.copy()
-					hl=0
-					h_bf=b""
-					with open(f"{fp}/server.jar","rb") as f:
-						dt=f.read(FILE_READ_CHUNK_SIZE)
-						while (len(dt)>0):
-							hl+=len(dt)
-							h_bf+=dt
-							i=0
-							while (i+64<=len(h_bf)):
-								h=_sha1_chunk(h,h_bf[i:i+64])
-								i+=64
-							h_bf=h_bf[i:]
+					sz=os.stat(fp+"server.jar").st_size
+					_print(f"File Size: {sz}, New Size: {json['downloads']['server']['size']}")
+					if (sz!=json["downloads"]["server"]["size"]):
+						dw=True
+					else:
+						h=SHA1_START_VALUE.copy()
+						hl=0
+						h_bf=b""
+						j=0
+						lp=-1
+						with open(fp+"server.jar","rb") as f:
 							dt=f.read(FILE_READ_CHUNK_SIZE)
-					h_bf+=b"\x80"+b"\x00"*((56-(hl+1)%64)%64)+bytes([hl>>53,(hl>>45)&0xff,(hl>>37)&0xff,(hl>>29)&0xff,(hl>>21)&0xff,(hl>>13)&0xff,(hl>>5)&0xff,(hl<<3)&0xff])
-					i=0
-					while (i<len(h_bf)):
-						h=_sha1_chunk(h,h_bf[i:i+64])
-						i+=64
-					_print(f"File Hash: {h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}, New Hash: {json['downloads']['server']['sha1']}")
-					if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"!=json["downloads"]["server"]["sha1"]):
+							while (len(dt)>0):
+								j+=FILE_READ_CHUNK_SIZE
+								if (j>sz):
+									j=sz
+								p=int(j*100/sz)
+								if (p>lp):
+									lp=p
+									_print(f"\x1b[38;2;100;100;100m{p}% Hashed...")
+								hl+=len(dt)
+								h_bf+=dt
+								i=0
+								while (i+64<=len(h_bf)):
+									h=_sha1_chunk(h,h_bf[i:i+64])
+									i+=64
+								h_bf=h_bf[i:]
+								dt=f.read(FILE_READ_CHUNK_SIZE)
+						h_bf+=b"\x80"+b"\x00"*((56-(hl+1)%64)%64)+bytes([hl>>53,(hl>>45)&0xff,(hl>>37)&0xff,(hl>>29)&0xff,(hl>>21)&0xff,(hl>>13)&0xff,(hl>>5)&0xff,(hl<<3)&0xff])
+						i=0
+						while (i<len(h_bf)):
+							h=_sha1_chunk(h,h_bf[i:i+64])
+							i+=64
+						_print(f"File Hash: {h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}, New Hash: {json['downloads']['server']['sha1']}")
+						if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"!=json["downloads"]["server"]["sha1"]):
+							dw=True
+					if (dw==True):
 						if (not os.path.exists(fp+"backup")):
 							os.mkdir(fp+"backup")
-						nm=f"backup/world-backup_{json['id']}"
+						nm="backup/world-backup_"+json["id"]
 						while (os.path.exists(fp+nm+".zip")):
 							nm+="_"
 						nm+=".zip"
 						_print(f"Creating Backup ('{nm}')\x1b[38;2;100;100;100m...")
 						with zipfile.ZipFile(fp+nm,"w") as zf:
 							for r,dl,fl in os.walk(fp+"world"):
-								r=r.replace("\\","/").strip("/")+"/"
+								r=r.replace("\\","/").rstrip("/")+"/"
 								nr=r[len(fp+"world/"):]
 								for f in fl:
 									try:
@@ -2154,7 +2168,7 @@ def _u_mcs(fp):
 				if (dw==True):
 					_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
 					r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
-					with open(f"{fp}/server.jar","wb") as f:
+					with open(fp+"server.jar","wb") as f:
 						while (True):
 							dt=r.read(FILE_READ_CHUNK_SIZE)
 							f.write(dt)
@@ -2247,8 +2261,6 @@ if (len(sys.argv)==1):
 	csbi.dwCursorPosition.Y=0
 	kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 	kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
-	threading.current_thread()._nm="__main__"
-	threading.current_thread()._p_nm=True
 	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	move_to_desktop.move_to_desktop(hwnd,2)
 	move_to_desktop.switch_to_desktop(0)
@@ -2258,28 +2270,23 @@ if (len(sys.argv)==1):
 	_hotkey_handler._end=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-	_print("Registering Hotkey\x1b[38;2;100;100;100m...")
+	_print("Registering Hotkeys\x1b[38;2;100;100;100m...")
 	_hotkey_handler._hk[VK_KEYS["a"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 	_hotkey_handler._hk[VK_KEYS["end"]]=lambda:_check_close(1)
 	_hotkey_handler._hk[VK_KEYS["home"]]=lambda:_check_close(0)
 	_hotkey_handler._hk[VK_KEYS["i"]]=lambda:subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk[VK_KEYS["q"]]=lambda:subprocess.Popen([sys.executable,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk[VK_KEYS["r"]]=lambda:subprocess.Popen([sys.executable,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
-	thr=threading.Thread(target=_u_mcs,args=(__file_base_dir__+"mc_server",),name="minecraft_server_updater")
-	thr._nm="minecraft_server_updater"
-	thr._p_nm=True
-	thr.daemon=True
-	thr.start()
+	subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
 	for k in os.listdir(PROJECT_DIR):
 		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-	thr=threading.Thread(target=_push_all_github_projects,name="github_project_push")
-	thr._nm="github_project_push"
-	thr._p_nm=True
-	thr.daemon=True
-	thr.start()
+	subprocess.Popen([sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
 	try:
 		msg=ctypes.wintypes.MSG()
@@ -2543,18 +2550,16 @@ else:
 	elif (v==4):
 		user32.SetFocus(hwnd)
 		if (len(sys.argv)==2):
-			threading.current_thread()._nm="github_project_push_remote"
+			move_to_desktop.move_to_desktop(hwnd,2)
 			_push_all_github_projects()
 		else:
 			if (sys.argv[2]=="*"):
-				threading.current_thread()._nm="github_project_push_all"
 				_push_all_github_projects(fr=True)
 			else:
-				threading.current_thread()._nm="github_project_push_single"
 				threading.current_thread()._df=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				_push_single_project(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
-				input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
+		input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		_init_arduino_cache()
 		if (len(sys.argv)<3):
@@ -2571,7 +2576,6 @@ else:
 				o+=f"\n│{k['name'].center(mx_l[0])}│{k['fqbn'].center(mx_l[1])}│{k['arch'].center(mx_l[2])}│{k['location'].center(mx_l[3])}│"
 			print(o+f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘")
 		elif (sys.argv[2]=="install"):
-			threading.current_thread()._dph=True
 			if (len(sys.argv)<4):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 				sys.exit(1)
@@ -2709,7 +2713,7 @@ else:
 		nci.bVisible=0
 		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
-		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").strip("/")+"/"),ll,hdt,db,el))
+		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el))
 		thr.daemon=True
 		thr.start()
 		elc=0
@@ -2814,9 +2818,10 @@ else:
 				sys.__stdout__.flush()
 			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==7):
+		move_to_desktop.move_to_desktop(hwnd,2)
 		if (len(sys.argv)==2):
-			threading.current_thread()._nm="minecraft_server_updater"
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			move_to_desktop.move_to_desktop(kernel32.GetConsoleWindow(),2)
-			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2]+"/server.jar","--nogui"],cwd=sys.argv[2])
+			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2])
+	elif (v==8):
+		move_to_desktop.switch_to_desktop(int(sys.argv[2]))
