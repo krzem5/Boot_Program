@@ -2474,7 +2474,6 @@ else:
 					elif (k==b"\r" or k==b"\n"):
 						if (bf[0].lower()=="boot"):
 							_create_project(__file_base_dir__,None,True)
-							e=True
 							break
 						if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
 							e=False
