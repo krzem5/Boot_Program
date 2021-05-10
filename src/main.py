@@ -12,7 +12,6 @@ import sys
 import tarfile
 import threading
 import time
-import traceback
 import yaml
 import zipfile
 
@@ -37,6 +36,7 @@ ARDUINO_OS_TYPE="windows"
 ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+")""",re.M)
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+BLENDER_FILE_PATH="C:/Program Files/Blender Foundation/Blender/blender.exe"
 BROWSER_FILE_PATH="C:/Program Files/Google/Chrome Dev/Application/chrome.exe"
 CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","C:\\Windows\\System32\\cmd.exe"))
 CONSOLE_APP_FRAME_RATE=60
@@ -58,6 +58,7 @@ GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
 JAVA_RUNTIME_FILE_PATH=os.getenv("JAVA_HOME","C:/Program Files/Java/jdk8_251/").replace("\\","/").rstrip("/")+"/bin/java.exe"
 JAVA_RUNTIME_MEMORY="8G"
+MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
 PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0-9a-fA-F]+\b")
@@ -85,6 +86,7 @@ SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
 TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
 UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
+VIRTUALBOX_FILE_PATH="C:/Program Files/Oracle/VirtualBox/VirtualBox.exe"
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 
@@ -1107,8 +1109,7 @@ def _install_arduino_package(b,force=False):
 								try:
 									with open(fp,"rb") as rf,open(__file_base_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}","wb") as wf:
 										wf.write(rf.read())
-								except Exception as e:
-									traceback.print_exception(None,e,e.__traceback__)
+								except (OSError,IOError,PermissionError) as e:
 									_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_base_dir__}arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 						rm_fp=__file_base_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}/{b}"
 						dl=[rm_fp]
@@ -1208,8 +1209,7 @@ def _install_arduino_package(b,force=False):
 						try:
 							with open(fp,"rb") as rf,open(__file_base_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}","wb") as wf:
 								wf.write(rf.read())
-						except Exception as e:
-							traceback.print_exception(None,e,e.__traceback__)
+						except (OSError,IOError,PermissionError) as e:
 							_print(f"\x1b[38;2;200;40;20mError while Copying File '{fp}' to '{__file_base_dir__}arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{fp[off:]}'.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 				rm_fp=__file_base_dir__+f"arduino/packages/{k[0]}/{k[5]}/{k[1]}/{k[2]}/{k[1]}"
 				dl=[rm_fp]
@@ -2178,38 +2178,30 @@ def _u_mcs(fp):
 
 
 def _hotkey_handler(c,wp,lp):
-	try:
-		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-		if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
-			if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
-				_hotkey_handler._ig_alt=False
-			else:
-				vk=dt.vk_code
-				if (dt.scan_code==0x21d and vk==0xa2):
-					_hotkey_handler._ig_alt=True
-				if (vk in VK_SAME_KEYS):
-					vk=VK_SAME_KEYS[vk]
-				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
-						_hotkey_handler._hk[vk]()
-	except KeyboardInterrupt:
-		_hotkey_handler._end=True
-	except Exception as e:
-		traceback.print_exception(None,e,e.__traceback__)
+	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
+	if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
+		if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
+			_hotkey_handler._ig_alt=False
+		else:
+			vk=dt.vk_code
+			if (dt.scan_code==0x21d and vk==0xa2):
+				_hotkey_handler._ig_alt=True
+			if (vk in VK_SAME_KEYS):
+				vk=VK_SAME_KEYS[vk]
+			if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_KEYS["ctrl"])!=0 and user32.GetAsyncKeyState(VK_KEYS["shift"])!=0 and user32.GetAsyncKeyState(VK_KEYS["alt"])!=0):
+					_hotkey_handler._hk[vk]()
 	return user32.CallNextHookEx(None,c,wp,lp)
 
 
 
 def _screen_blocker_keyboard_handler(c,wp,lp):
-	try:
-		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-		if (dt.vk_code==0x1b):
-			user32.DestroyWindow(_screen_blocker_keyboard_handler._hwnd)
-			user32.UnhookWindowsHookEx(_screen_blocker_keyboard_handler._c_func)
-			_screen_blocker_keyboard_handler._hwnd=None
-		else:
-			return -1
-	except Exception as e:
-		traceback.print_exception(None,e,e.__traceback__)
+	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
+	if (dt.vk_code==0x1b):
+		user32.DestroyWindow(_screen_blocker_keyboard_handler._hwnd)
+		user32.UnhookWindowsHookEx(_screen_blocker_keyboard_handler._c_func)
+		_screen_blocker_keyboard_handler._hwnd=None
+	else:
+		return -1
 	return user32.CallNextHookEx(None,c,wp,lp)
 
 
@@ -2338,68 +2330,65 @@ else:
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
-		try:
-			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-			nci.dwSize=ci.dwSize
-			nci.bVisible=0
-			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-			bf=""
-			u=True
-			ll=0
-			while (True):
-				if (msvcrt.kbhit()==True):
-					k=msvcrt.getch()
-					if (k==b"\xe0"):
-						msvcrt.getch()
-					elif (k==b"\x03"):
+		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		nci.dwSize=ci.dwSize
+		nci.bVisible=0
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+		bf=""
+		u=True
+		ll=0
+		while (True):
+			if (msvcrt.kbhit()==True):
+				k=msvcrt.getch()
+				if (k==b"\xe0"):
+					msvcrt.getch()
+				elif (k==b"\x03"):
+					break
+				elif (k==b"\x08"):
+					bf=bf[:-1]
+					u=True
+				elif (k==b"\r" or k==b"\n"):
+					if (bf=="blender"):
+						subprocess.Popen(BLENDER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
-					elif (k==b"\x08"):
-						bf=bf[:-1]
-						u=True
-					elif (k==b"\r" or k==b"\n"):
-						if (bf=="blender"):
-							subprocess.Popen("C:/Program Files/Blender Foundation/Blender/blender.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="chrome"):
-							subprocess.Popen(BROWSER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="minecraft"):
-							subprocess.Popen("C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="serial"):
-							subprocess.Popen([sys.executable,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="stats"):
-							subprocess.Popen([sys.executable,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="sublime"):
-							subprocess.Popen(EDITOR_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="vm"):
-							subprocess.Popen("C:/Program Files/Oracle/VirtualBox/VirtualBox.exe",creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="work"):
-							subprocess.Popen([sys.executable,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-							break
-						elif (bf=="" or bf=="exit"):
-							break
-						bf=""
-						u=True
-					elif (ord(k)>31 and ord(k)<127):
-						bf+=str(k,"utf-8")
-						u=True
-				if (u==True):
-					u=False
-					ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
-					sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
-					sys.__stdout__.flush()
-					ll=ln
-				time.sleep(1/CONSOLE_APP_FRAME_RATE)
-		except Exception as e:
-			traceback.print_exception(None,e,e.__traceback__)
+					elif (bf=="chrome"):
+						subprocess.Popen(BROWSER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="minecraft"):
+						subprocess.Popen(MINECRAFT_LAUNCHER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="serial"):
+						subprocess.Popen([sys.executable,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="stats"):
+						subprocess.Popen([sys.executable,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="sublime"):
+						subprocess.Popen(EDITOR_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="vm"):
+						subprocess.Popen(VIRTUALBOX_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="work"):
+						subprocess.Popen([sys.executable,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="" or bf=="exit"):
+						break
+					bf=""
+					u=True
+				elif (ord(k)>31 and ord(k)<127):
+					bf+=str(k,"utf-8")
+					u=True
+			if (u==True):
+				u=False
+				ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
+				sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+				sys.__stdout__.flush()
+				ll=ln
+			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==2):
 		user32.SetFocus(hwnd)
 		ho=kernel32.GetStdHandle(-11)
@@ -2409,114 +2398,109 @@ else:
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
-		try:
-			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-			nci.dwSize=ci.dwSize
-			nci.bVisible=0
-			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-			rl=[e.split("-")[:2] for e in os.listdir(PROJECT_DIR)]
-			tl=["Boot"]
-			for k in rl:
-				if (k[0] not in tl):
-					tl.append(k[0])
-			l={"boot":[""]}
-			for k in rl:
-				if (k[0].lower() not in list(l.keys())):
-					l[k[0].lower()]=[]
-				l[k[0].lower()].append(k[1].replace("_"," ").title().replace(" ","_"))
-			bf=["",""]
-			ll=0
-			pr=["",""]
-			pri=-1
-			pri_s=""
-			u=True
-			bfi=0
-			cr=False
-			while (True):
-				if (msvcrt.kbhit()==True):
-					k=msvcrt.getch()
-					if (k==b"\xe0"):
-						msvcrt.getch()
-					if (cr==True):
-						if (k in b"yY"):
-							_create_project(bf[0],bf[1],True)
-							break
-						cr=False
-						u=True
-					elif (k in b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):
-						bf[bfi]+=str(k,"utf-8")
-						pri=-1
-						pri_s=""
-						u=True
-					elif (k==b"-"):
-						bfi=1-bfi
-						pri=-1
-						pri_s=""
-						u=True
-					elif (k==b"\t"):
-						if (bf[0].lower()!="boot" and (len(pr[bfi])>0 or pri!=-1) and len((l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))>0):
-							al=([e for e in (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())) if e.lower().startswith(pri_s)] if pri_s!="" else (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))
-							if (len(al)>0):
-								if (pri==-1):
-									pri_s=bf[bfi].lower()
-									bf[bfi]=(bf[bfi]+pr[bfi]).replace("_"," ").title().replace(" ","_")
-									pr=0
-								else:
-									bf[bfi]=al[pri].replace("_"," ").title().replace(" ","_")
-								pri=(pri+1)%len(al)
-								u=True
-					elif (k==b"\x08"):
-						if (len(bf[bfi])>0):
-							bf[bfi]=bf[bfi][:-1]
-							if (bfi==0):
-								bf[1]=""
-							pri=-1
-							pri_s=""
-							u=True
-					elif (k==b"\r" or k==b"\n"):
-						if (bf[0].lower()=="boot"):
-							_create_project(__file_base_dir__,None,True)
-							break
-						if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
-							e=False
-							for k in l.get(bf[0].lower(),[]):
-								if (k.lower()==bf[1].lower()):
-									_create_project(bf[0],bf[1],True)
-									e=True
-									break
-							if (e==True):
-								break
-							cr=True
-							u=True
-					elif (k==b"\x03"):
+		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		nci.dwSize=ci.dwSize
+		nci.bVisible=0
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+		rl=[e.split("-")[:2] for e in os.listdir(PROJECT_DIR)]
+		tl=["Boot"]
+		for k in rl:
+			if (k[0] not in tl):
+				tl.append(k[0])
+		l={"boot":[""]}
+		for k in rl:
+			if (k[0].lower() not in list(l.keys())):
+				l[k[0].lower()]=[]
+			l[k[0].lower()].append(k[1].replace("_"," ").title().replace(" ","_"))
+		bf=["",""]
+		ll=0
+		pr=["",""]
+		pri=-1
+		pri_s=""
+		u=True
+		bfi=0
+		cr=False
+		while (True):
+			if (msvcrt.kbhit()==True):
+				k=msvcrt.getch()
+				if (k==b"\xe0"):
+					msvcrt.getch()
+				if (cr==True):
+					if (k in b"yY"):
+						_create_project(bf[0],bf[1],True)
 						break
-				if (u==True):
-					pr=["",""]
-					if (len(bf[0])>0):
-						for k in tl:
-							if (k.lower().startswith(bf[0].lower())):
-								pr[0]=k[len(bf[0]):]
-								break
-					else:
-						pr=rl[0][:]
-					if (len(bf[1])>0):
+					cr=False
+					u=True
+				elif (k in b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):
+					bf[bfi]+=str(k,"utf-8")
+					pri=-1
+					pri_s=""
+					u=True
+				elif (k==b"-"):
+					bfi=1-bfi
+					pri=-1
+					pri_s=""
+					u=True
+				elif (k==b"\t"):
+					if (bf[0].lower()!="boot" and (len(pr[bfi])>0 or pri!=-1) and len((l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))>0):
+						al=([e for e in (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())) if e.lower().startswith(pri_s)] if pri_s!="" else (l.get(bf[0].lower(),[]) if bfi==1 else list(l.keys())))
+						if (len(al)>0):
+							if (pri==-1):
+								pri_s=bf[bfi].lower()
+								bf[bfi]=(bf[bfi]+pr[bfi]).replace("_"," ").title().replace(" ","_")
+								pr=0
+							else:
+								bf[bfi]=al[pri].replace("_"," ").title().replace(" ","_")
+							pri=(pri+1)%len(al)
+							u=True
+				elif (k==b"\x08"):
+					if (len(bf[bfi])>0):
+						bf[bfi]=bf[bfi][:-1]
+						if (bfi==0):
+							bf[1]=""
+						pri=-1
+						pri_s=""
+						u=True
+				elif (k==b"\r" or k==b"\n"):
+					if (bf[0].lower()=="boot"):
+						_create_project(__file_base_dir__,None,True)
+						break
+					if (bf[0].lower() in list(l.keys()) and len(bf[1])>0):
+						e=False
 						for k in l.get(bf[0].lower(),[]):
-							if (k.lower().startswith(bf[1].lower())):
-								pr[1]=k[len(bf[1]):]
+							if (k.lower()==bf[1].lower()):
+								_create_project(bf[0],bf[1],True)
+								e=True
 								break
-					elif (len(bf[0])>0 and bf[0].lower() in l):
-						pr[1]=l[bf[0].lower()][0]
-					o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
-					ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
-					sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
-					sys.__stdout__.flush()
-					ll=ln
-					u=False
-				time.sleep(1/CONSOLE_APP_FRAME_RATE)
-		except Exception as e:
-			traceback.print_exception(None,e,e.__traceback__)
-			while (True):
-				pass
+						if (e==True):
+							break
+						cr=True
+						u=True
+				elif (k==b"\x03"):
+					break
+			if (u==True):
+				pr=["",""]
+				if (len(bf[0])>0):
+					for k in tl:
+						if (k.lower().startswith(bf[0].lower())):
+							pr[0]=k[len(bf[0]):]
+							break
+				else:
+					pr=rl[0][:]
+				if (len(bf[1])>0):
+					for k in l.get(bf[0].lower(),[]):
+						if (k.lower().startswith(bf[1].lower())):
+							pr[1]=k[len(bf[1]):]
+							break
+				elif (len(bf[0])>0 and bf[0].lower() in l):
+					pr[1]=l[bf[0].lower()][0]
+				o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
+				ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
+				sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
+				sys.__stdout__.flush()
+				ll=ln
+				u=False
+			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==3):
 		user32.SetFocus(hwnd)
 		_init_arduino_cache()
@@ -2528,20 +2512,17 @@ else:
 		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
 		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
 		ui=_Serial_UI((sbi.dwMaximumWindowSize.X+1,sbi.dwMaximumWindowSize.Y+1))
-		try:
-			kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-			kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.dwMaximumWindowSize.X,sbi.dwMaximumWindowSize.Y))
-			kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
-			kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-			kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-			nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-			nci.dwSize=ci.dwSize
-			nci.bVisible=0
-			kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-			ui.loop()
-		except Exception as e:
-			traceback.print_exception(None,e,e.__traceback__)
+		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.dwMaximumWindowSize.X,sbi.dwMaximumWindowSize.Y))
+		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
+		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
+		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		nci.dwSize=ci.dwSize
+		nci.bVisible=0
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+		ui.loop()
 	elif (v==4):
 		user32.SetFocus(hwnd)
 		if (len(sys.argv)==2):
