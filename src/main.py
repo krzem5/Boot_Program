@@ -56,12 +56,12 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
-JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk8_251/bin/java.exe"
+JAVA_RUNTIME_FILE_PATH=os.getenv("JAVA_HOME","C:/Program Files/Java/jdk8_251/").replace("\\","/").rstrip("/")+"/bin/java.exe"
 JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
-PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0123456789abcdefABCDEF]+\b")
-PROJECT_DIR="D:/K/Coding/"
+PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0-9a-fA-F]+\b")
+PROJECT_DIR=os.path.abspath(__file_base_dir__+"../K/Coding").replace("\\","/").rstrip("/")+"/"
 REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
@@ -76,15 +76,15 @@ REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ 
 REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
 REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
 REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
-ROOT_FILE_PATH="D:/K/"
+ROOT_FILE_PATH=os.path.abspath(__file_base_dir__+"../K").replace("\\","/").rstrip("/")+"/"
 SERIAL_BAUD=9600
 SERIAL_TIMEOUT=5000
-SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"VID_([0-9a-f]{4})\+PID_([0-9a-f]{4})",re.I)
-SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"VID_([0-9a-f]{4})&PID_([0-9a-f]{4})",re.I)
+SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"vif_([0-9a-f]{4})\+pid_([0-9a-f]{4})")
+SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"vif_([0-9a-f]{4})&pid_([0-9a-f]{4})")
 SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
 TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
 UTC_OFFSET=7200
-VALID_PROGRAM_TYPES=[k.lower() for k in os.listdir(__file_base_dir__+"templates")]
+VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
 VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 
@@ -1049,7 +1049,7 @@ def _list_arduino_boards(p=True):
 				continue
 			hw_id=ctypes.create_unicode_buffer(250)
 			setupapi.SetupDiGetDeviceRegistryPropertyW(di_g,ctypes.byref(di),SPDRP_HARDWAREID,None,ctypes.byref(hw_id),ctypes.sizeof(hw_id)-1,None)
-			m=(SERIAL_VALID_DEVICE_NAME_USB_REGEX if hw_id.value[:3]=="USB" else SERIAL_VALID_DEVICE_NAME_REGEX).search(hw_id.value)
+			m=(SERIAL_VALID_DEVICE_NAME_USB_REGEX if hw_id.value[:3]=="USB" else SERIAL_VALID_DEVICE_NAME_REGEX).search(hw_id.value.lower())
 			if (m is not None):
 				f_nm=f"vid_pid-0x{hex(int(m.group(1),16))[2:].rjust(4,'0')}-0x{hex(int(m.group(2),16))[2:].rjust(4,'0')}.json"
 				r=None
@@ -2655,7 +2655,7 @@ else:
 				if (e["path"]=="samples"):
 					t=requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{e['sha']}?recursive=1").json()
 					if (t["truncated"]==True):
-						print(f"\x1b[38;2;200;40;20mSamples Tree Truncated")
+						input("\x1b[38;2;200;40;20mSamples Tree Truncated")
 						sys.exit(1)
 					for k in t["tree"]:
 						if (k["type"]!="blob"):
@@ -2737,6 +2737,7 @@ else:
 				elif (c[0]==b"a"):
 					if (el["__e__"]==0):
 						el["__e__"]=1
+					thr.join()
 					thr=None
 				elif (c[0]==b"\xe0" and c[1]==b"H" and vs>0):
 					vs-=1
@@ -2746,7 +2747,7 @@ else:
 					ud=True
 			if (thr is None and el["__e__"]==2):
 				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
-				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2]),ll,hdt,db,el))
+				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el))
 				thr.daemon=True
 				thr.start()
 			if (elc!=el["__tcnt__"]):
