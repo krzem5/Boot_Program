@@ -2808,6 +2808,6 @@ else:
 		if (len(sys.argv)==2):
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2])
+			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
 	elif (v==8):
 		move_to_desktop.switch_to_desktop(int(sys.argv[2]))
