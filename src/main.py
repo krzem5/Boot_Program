@@ -359,7 +359,7 @@ user32.UnregisterClassW.restype=ctypes.wintypes.BOOL
 
 
 
-def _print(*a,end="\n"):
+def _print(*a,df=False):
 	def _r_color_f(m):
 		if (m.group(0)[0]=="'"):
 			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
@@ -370,7 +370,7 @@ def _print(*a,end="\n"):
 		else:
 			return f"\x1b[38;2;227;204;59m{m.group(0)}\x1b[0m"
 	a=" ".join([str(e) for e in a])
-	if (not hasattr(threading.current_thread(),"_df") or not threading.current_thread()._df):
+	if (df==False):
 		i=0
 		while (i<len(a)):
 			m=REMOVE_COLOR_FORMATTING_REGEX.match(a[i:])
@@ -385,7 +385,7 @@ def _print(*a,end="\n"):
 			i+=1
 	tm=time.time()+UTC_OFFSET
 	t=f"\x1b[38;2;50;50;50m[{str(int((tm//3600)%24)).rjust(2,'0')}:{str(int((tm//60)%60)).rjust(2,'0')}:{str(int(tm%60)).rjust(2,'0')}]\x1b[0m "
-	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m"+end)
+	sys.__stdout__.write(t+a.replace("\n","\n"+" "*len(REMOVE_COLOR_FORMATTING_REGEX.sub(r"",t)))+"\x1b[0m\n")
 
 
 
@@ -559,7 +559,7 @@ def _github_api_request(m,**kw):
 
 
 def _get_project_tree(r_nm,sha,p):
-	_print(f"\x1b[38;2;100;100;100mReading Tree \x1b[38;2;65;118;46m'{p}'\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mReading Tree \x1b[38;2;65;118;46m'{p}'\x1b[38;2;100;100;100m...",df=True)
 	r=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
 	o={}
 	for e in r["tree"]:
@@ -580,13 +580,13 @@ def _push_single_project(p,b_nm):
 	if (nm not in gr_dt):
 		cr=True
 		gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
-		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...")
+		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
 		try:
 			_github_api_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
 		except requests.exceptions.ConnectionError:
-			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
 			return False
-	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File\x1b[38;2;100;100;100m...",df=True)
 	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -605,29 +605,29 @@ def _push_single_project(p,b_nm):
 					if ("**/" in ln):
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...",df=True)
 	msg=time.strftime("Push Update %m/%d/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
 	br=gr_dt[nm]
-	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...")
+	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
 		_github_api_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
-	_print(f"\x1b[38;2;100;100;100mReading Recursive Tree...")
+	_print(f"\x1b[38;2;100;100;100mReading Recursive Tree...",df=True)
 	t_dt=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees/{bt_sha}?recursive=true")
 	if (t_dt["truncated"]):
-		_print(f"\x1b[38;2;118;42;38mRecursive Tree Truncated. \x1b[38;2;100;100;100mFalling Back to Standard Tree...")
+		_print(f"\x1b[38;2;118;42;38mRecursive Tree Truncated. \x1b[38;2;100;100;100mFalling Back to Standard Tree...",df=True)
 		r_t=_get_project_tree(nm,bt_sha,".")
 	else:
 		r_t={}
-		_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'.'\x1b[38;2;100;100;100m...")
+		_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'.'\x1b[38;2;100;100;100m...",df=True)
 		for k in t_dt["tree"]:
 			if (k["type"]=="blob"):
 				r_t[k["path"]]={"sz":k["size"],"sha":k["sha"]}
 			else:
-				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'./{k['path']}'\x1b[38;2;100;100;100m...")
-	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...")
+				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'./{k['path']}'\x1b[38;2;100;100;100m...",df=True)
+	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...",df=True)
 	bl=[]
 	cnt=[0,0,0,0]
 	p=os.path.abspath(p).replace("\\","/").rstrip("/")+"/"
@@ -637,7 +637,7 @@ def _push_single_project(p,b_nm):
 			fp=r[len(p):]+f
 			if (_match_gitignore_path(gdt,fp)==True):
 				cnt[2]+=1
-				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m")
+				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m",df=True)
 				continue
 			f_sz=os.stat(r+f).st_size
 			if (fp in list(r_t.keys())):
@@ -657,7 +657,7 @@ def _push_single_project(p,b_nm):
 								if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
 									cnt[1]+=1
 									bl.append([fp,None])
-									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m",df=True)
 									continue
 					except UnicodeDecodeError:
 						if (f_sz==r_t[fp]["sz"]):
@@ -673,7 +673,7 @@ def _push_single_project(p,b_nm):
 								if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
 									cnt[1]+=1
 									bl.append([fp,None])
-									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m",df=True)
 									continue
 				elif (f_sz==r_t[fp]["sz"]):
 					with open(r+f,"rb") as rf:
@@ -688,10 +688,10 @@ def _push_single_project(p,b_nm):
 						if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"==r_t[fp]["sha"]):
 							cnt[1]+=1
 							bl.append([fp,None])
-							_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m")
+							_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m",df=True)
 							continue
 			cnt[0]+=1
-			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m")
+			_print(f"\x1b[38;2;70;210;70m+ {b_nm}/{fp}\x1b[0m",df=True)
 			dt=f"File too Large (size = {f_sz} b)"
 			b_sha=False
 			if (os.stat(r+f).st_size<=GITHUB_MAX_FILE_SIZE):
@@ -733,25 +733,24 @@ def _push_single_project(p,b_nm):
 				rm=False
 				break
 		if (rm==True):
-			_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m")
+			_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m",df=True)
 			cnt[3]+=1
 			bl.append([None,{"path":fp,"mode":"100644","type":"blob","sha":None}])
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
-		_print(f"\x1b[38;2;100;100;100mUploading Changes\x1b[38;2;100;100;100m...")
+		_print(f"\x1b[38;2;100;100;100mUploading Changes\x1b[38;2;100;100;100m...",df=True)
 		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 	else:
-		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload")
+		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
 	if (cr==True):
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
 		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
 			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
-	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m")
+	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	return True
 
 
 
 def _push_all_github_projects(f=False):
-	threading.current_thread()._df=True
 	tm=int((time.time()//86400+4)//7)
 	t=[0,0]
 	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as rf:
@@ -782,7 +781,6 @@ def _push_all_github_projects(f=False):
 				return
 			wf.write("Boot_Program\n")
 			wf.flush()
-	threading.current_thread()._df=False
 	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
 
@@ -978,8 +976,6 @@ def _read_project_stats(fp,ll,hdt,db,el):
 def _arduino_clone_file(url,fp,sz):
 	t=0
 	at=0
-	df=threading.current_thread()._df
-	threading.current_thread()._df=True
 	sys.__stdout__.write(f"{fp.split('/')[-1]} [....................] 0/{sz} 0%")
 	with requests.get(url,stream=True) as r,open(fp,"wb") as f:
 		for dt in r.iter_content(chunk_size=4096):
@@ -992,7 +988,6 @@ def _arduino_clone_file(url,fp,sz):
 			sys.__stdout__.write(f"\x1b[0G\x1b[2K{fp.split('/')[-1]} [{'='*(p-1)}{('>' if p>0 and p<20 else '')}{'.'*(20-p)}] {t}/{sz} {float(t*10000//sz)/100}%")
 			sys.__stdout__.flush()
 	sys.__stdout__.write("\n")
-	threading.current_thread()._df=df
 
 
 
@@ -2562,7 +2557,6 @@ else:
 				else:
 					_push_all_github_projects(f=True)
 			else:
-				threading.current_thread()._df=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
 				_push_single_project(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
 		input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
