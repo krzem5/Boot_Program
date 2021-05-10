@@ -588,7 +588,7 @@ def _push_single_project(p,b_nm):
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
 			return False
-	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File\x1b[38;2;100;100;100m...",df=True)
+	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File...",df=True)
 	with open(os.path.join(p,".gitignore"),"r") as f:
 		gdt=[]
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -607,7 +607,7 @@ def _push_single_project(p,b_nm):
 					if ("**/" in ln):
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	_print(f"\x1b[38;2;100;100;100mFetching Tree Data\x1b[38;2;100;100;100m...",df=True)
+	_print(f"\x1b[38;2;100;100;100mFetching Tree Data...",df=True)
 	msg=time.strftime("Push Update %m/%d/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
 	br=gr_dt[nm]
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
@@ -629,7 +629,7 @@ def _push_single_project(p,b_nm):
 				r_t[k["path"]]={"sz":k["size"],"sha":k["sha"]}
 			else:
 				_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'./{k['path']}'\x1b[38;2;100;100;100m...",df=True)
-	_print(f"\x1b[38;2;100;100;100mCreating Commit\x1b[38;2;100;100;100m...",df=True)
+	_print(f"\x1b[38;2;100;100;100mCreating Commit...",df=True)
 	bl=[]
 	cnt=[0,0,0,0]
 	p=os.path.abspath(p).replace("\\","/").rstrip("/")+"/"
@@ -735,26 +735,30 @@ def _push_single_project(p,b_nm):
 				rm=False
 				break
 		if (rm==True):
-			_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m",df=True)
-			cnt[3]+=1
+			if (fp!="_"):
+				_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m",df=True)
+				cnt[3]+=1
 			bl.append([None,{"path":fp,"mode":"100644","type":"blob","sha":None}])
+	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
-		_print(f"\x1b[38;2;100;100;100mUploading Changes\x1b[38;2;100;100;100m...",df=True)
+		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
 		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
 	if (cr==True):
+		_print(f"\x1b[38;2;100;100;100mDeleting Temporary File...",df=True)
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
 		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
 			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
-	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	return True
 
 
 
 def _push_all_github_projects(f=False):
 	tm=int((time.time()//86400+4)//7)
-	t=[0,0]
+	uc=0
+	sc=0
 	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as rf:
 		b_dt=rf.read().replace("\r\n","\n").split("\n")
 	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"w") as wf:
@@ -764,26 +768,26 @@ def _push_all_github_projects(f=False):
 		wf.flush()
 		for p in sorted(os.listdir(PROJECT_DIR)):
 			if (f==False and p in b_dt[1:]):
-				t[1]+=1
+				sc+=1
 				wf.write(p+"\n")
 				wf.flush()
 				continue
-			t[0]+=1
+			uc+=1
 			if (_push_single_project(PROJECT_DIR+p,p)==False):
 				return
 			wf.write(p+"\n")
 			wf.flush()
 		if (f==False and "Boot_Program" in b_dt[1:]):
-			t[1]+=1
+			sc+=1
 			wf.write("Boot_Program\n")
 			wf.flush()
 		else:
-			t[0]+=1
+			uc+=1
 			if (_push_single_project(__file_base_dir__,"Boot_Program")==False):
 				return
 			wf.write("Boot_Program\n")
 			wf.flush()
-	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
+	_print(f"Finished Github Project Push Check, {uc} Projects Updated, {sc} Skipped.")
 
 
 
