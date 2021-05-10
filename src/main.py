@@ -750,38 +750,38 @@ def _push_single_project(p,b_nm):
 
 
 
-def _push_all_github_projects(fr=False):
+def _push_all_github_projects(f=False):
 	threading.current_thread()._df=True
 	tm=int((time.time()//86400+4)//7)
 	t=[0,0]
-	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as f:
-		b_dt=f.read().replace("\r\n","\n").split("\n")
-	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"w") as f:
+	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as rf:
+		b_dt=rf.read().replace("\r\n","\n").split("\n")
+	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"w") as wf:
 		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
 			b_dt=[None]
-		f.write(str(tm)+"\n")
-		f.flush()
+		wf.write(str(tm)+"\n")
+		wf.flush()
 		for p in sorted(os.listdir(PROJECT_DIR)):
-			if (fr==False and p in b_dt[1:]):
+			if (f==False and p in b_dt[1:]):
 				t[1]+=1
-				f.write(p+"\n")
-				f.flush()
+				wf.write(p+"\n")
+				wf.flush()
 				continue
 			t[0]+=1
 			if (_push_single_project(PROJECT_DIR+p,p)==False):
 				return
-			f.write(p+"\n")
-			f.flush()
-		if (fr==False and "Boot_Program" in b_dt[1:]):
+			wf.write(p+"\n")
+			wf.flush()
+		if (f==False and "Boot_Program" in b_dt[1:]):
 			t[1]+=1
-			f.write("Boot_Program\n")
-			f.flush()
+			wf.write("Boot_Program\n")
+			wf.flush()
 		else:
 			t[0]+=1
 			if (_push_single_project(__file_base_dir__,"Boot_Program")==False):
 				return
-			f.write("Boot_Program\n")
-			f.flush()
+			wf.write("Boot_Program\n")
+			wf.flush()
 	threading.current_thread()._df=False
 	_print(f"Finished Github Project Push Check, {t[0]} Projects Updated, {t[1]} Skipped.")
 
@@ -2551,10 +2551,16 @@ else:
 		user32.SetFocus(hwnd)
 		if (len(sys.argv)==2):
 			move_to_desktop.move_to_desktop(hwnd,2)
-			_push_all_github_projects()
+			if (os.getenv("DISABLE_BULK_PROJECT_PUSH") is not None):
+				_print("\x1b[38;2;200;40;20mProject Push Diabled.")
+			else:
+				_push_all_github_projects()
 		else:
 			if (sys.argv[2]=="*"):
-				_push_all_github_projects(fr=True)
+				if (os.getenv("DISABLE_BULK_PROJECT_PUSH") is not None):
+					_print("\x1b[38;2;200;40;20mProject Push Diabled.")
+				else:
+					_push_all_github_projects(f=True)
 			else:
 				threading.current_thread()._df=True
 				sys.argv[2]=sys.argv[2].replace("\\","/")
