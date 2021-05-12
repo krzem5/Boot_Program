@@ -56,7 +56,7 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
-JAVA_RUNTIME_FILE_PATH=os.getenv("JAVA_HOME","C:/Program Files/Java/jdk8_251/").replace("\\","/").rstrip("/")+"/bin/java.exe"
+JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk-16.0.1/bin/java.exe"
 JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe"
 MINECRAFT_SKIP_UPDATE=["1.16.5-rc1","1.16.5","21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
