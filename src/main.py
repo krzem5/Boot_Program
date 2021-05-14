@@ -56,8 +56,8 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
-JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk-16.0.1/bin/java.exe"
-JAVA_RUNTIME_MEMORY="8G"
+MINECRAFT_JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk-16.0.1/bin/java.exe"
+MINECRAFT_JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe"
 MINECRAFT_SKIP_UPDATE=["21w06a","21w07a","21w08a","21w08b","21w10a","21w11a","21w13a","21w14a"]
 MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
@@ -2808,6 +2808,6 @@ else:
 		if (len(sys.argv)==2):
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			subprocess.run([JAVA_RUNTIME_FILE_PATH,"-Xms"+JAVA_RUNTIME_MEMORY,"-Xmx"+JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
+			subprocess.run([MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
 	elif (v==8):
 		move_to_desktop.switch_to_desktop(int(sys.argv[2]))
