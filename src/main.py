@@ -2277,7 +2277,7 @@ if (len(sys.argv)==1):
 	for k in os.listdir(PROJECT_DIR):
 		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
 	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-	subprocess.Popen([sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
 	try:
 		msg=ctypes.wintypes.MSG()
