@@ -964,6 +964,10 @@ def _project_stats(p_fp,ll,hdt,db,el):
 					el[l]=[0,0]
 				sz=os.stat(r+f).st_size
 				el[l][0]+=sz
+				with open(r+f,"rb") as fo:
+					for k in fo.read().replace(b"\r\n",b"\n").split(b"\n"):
+						if (len(k.strip())>0):
+							el[l][1]+=1
 				el["__tcnt__"]+=sz
 
 
@@ -2709,6 +2713,7 @@ else:
 		elcf_sz=0
 		ud=False
 		f=True
+		ln_f=False
 		o0=[]
 		o1=[]
 		vs=0
@@ -2721,6 +2726,9 @@ else:
 					break
 				elif (c[0]==b"t"):
 					f=not f
+					elc=-1
+				elif (c[0]==b"l"):
+					ln_f=not ln_f
 					elc=-1
 				elif (c[0]==b"a"):
 					if (el["__e__"]==0):
@@ -2755,7 +2763,7 @@ else:
 					ud=True
 					pl={k:(v,v*10000//pt/100) for k,v in sorted(pl.items(),key=lambda e:-e[1])}
 					pvl=max([len(str(int(e[1]))) for e in pl.values()])
-					pvll=max([len(str(int(e[1]))) for e in pll.values()])
+					pvll=max([len(str(e)) for e in pll.values()])
 					ptvl=max([len(str(e[0])) for e in pl.values()])
 					o0=[f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
 					np=0
@@ -2787,11 +2795,18 @@ else:
 						o0[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
 					o0[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
 					o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sbi.dwMaximumWindowSize.X-8)}╣   ")
-					bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
-					for k,v in pl.items():
-						bw=round(v[0]*bs)/2
-						cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
-						o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   ")
+					if (ln_f==False):
+						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
+						for k,v in pl.items():
+							bw=round(v[0]*bs)/2
+							cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   ")
+					else:
+						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-24)*pt/mv)*2/pt
+						for k,v in pl.items():
+							bw=round(v[0]*bs)/2
+							cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m, {cl}{str(pll[k]).rjust(pvll,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-int(bw)-24)}\x1b[38;2;52;52;52m║   ")
 					o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sbi.dwMaximumWindowSize.X-8)}╝   ")
 					elcf=-1
 					elcf_sz=max(len(pl)+6,sbi.srWindow.Bottom+1)-len(pl)-5
