@@ -961,9 +961,9 @@ def _project_stats(p_fp,ll,hdt,db,el):
 				if (l is None):
 					continue
 				if (l not in el):
-					el[l]=0
+					el[l]=[0,0]
 				sz=os.stat(r+f).st_size
-				el[l]+=sz
+				el[l][0]+=sz
 				el["__tcnt__"]+=sz
 
 
@@ -2741,18 +2741,21 @@ else:
 			if (elc!=el["__tcnt__"]):
 				elc=el["__tcnt__"]
 				pl={}
+				pll={}
 				pt=0
 				pkl=0
 				for k,v in list(el.items()):
 					if (k[:2]=="__" or (f==True and ll[k][2] not in ["programming","markup"])):
 						continue
-					pl[k]=v
-					pt+=v
+					pl[k]=v[0]
+					pll[k]=v[1]
+					pt+=v[0]
 					pkl=max(pkl,len(k))
 				if (len(pl)!=0):
 					ud=True
 					pl={k:(v,v*10000//pt/100) for k,v in sorted(pl.items(),key=lambda e:-e[1])}
 					pvl=max([len(str(int(e[1]))) for e in pl.values()])
+					pvll=max([len(str(int(e[1]))) for e in pll.values()])
 					ptvl=max([len(str(e[0])) for e in pl.values()])
 					o0=[f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
 					np=0
