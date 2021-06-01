@@ -436,9 +436,9 @@ def _create_gitignore_pattern(p):
 			j=i
 			if (j<len(p) and p[j]=="!"):
 				j+=1
-			if j<len(p) and p[j]=="]":
+			if (j<len(p) and p[j]=="]"):
 				j+=1
-			while j<len(p) and p[j]!="]":
+			while (j<len(p) and p[j]!="]"):
 				j+=1
 			if (j>=len(p)):
 				ol.append(r"\\[")
