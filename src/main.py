@@ -611,7 +611,7 @@ def _push_single_project(p,b_nm):
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
 	_print(f"\x1b[38;2;100;100;100mFetching Tree Data...",df=True)
-	msg=time.strftime("Push Update %m/%d/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
+	msg=time.strftime("Push Update %d/%m/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
 	br=gr_dt[nm]
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
 	try:
