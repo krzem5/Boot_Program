@@ -56,6 +56,7 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
+HOTKEY_HANDLER_END_MESSAGE=0x401
 MINECRAFT_JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk-16.0.1/bin/java.exe"
 MINECRAFT_JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe"
@@ -136,7 +137,6 @@ MONITOR_DEFAULTTONEAREST=2
 NOPARITY=0
 ONESTOPBIT=0
 OPEN_EXISTING=3
-PM_REMOVE=1
 PROCESS_PER_MONITOR_DPI_AWARE=2
 PURGE_RXABORT=2
 PURGE_RXCLEAR=8
@@ -333,6 +333,8 @@ user32.ExitWindowsEx.argtypes=(ctypes.wintypes.UINT,ctypes.wintypes.DWORD)
 user32.ExitWindowsEx.restype=ctypes.wintypes.BOOL
 user32.GetAsyncKeyState.artypes=(ctypes.c_int,)
 user32.GetAsyncKeyState.restype=ctypes.wintypes.SHORT
+user32.GetMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint)
+user32.GetMessageW.restype=ctypes.wintypes.BOOL
 user32.GetMonitorInfoW.argtypes=(ctypes.wintypes.HMONITOR,ctypes.wintypes.LPMONITORINFO)
 user32.GetMonitorInfoW.restype=ctypes.wintypes.BOOL
 user32.LoadImageW.argtypes=(ctypes.wintypes.HINSTANCE,ctypes.wintypes.LPCWSTR,ctypes.c_uint,ctypes.c_int,ctypes.c_int,ctypes.c_uint)
@@ -341,8 +343,8 @@ user32.MessageBoxW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.LPCWSTR,ctypes
 user32.MessageBoxW.restype=ctypes.c_int
 user32.MonitorFromWindow.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.DWORD)
 user32.MonitorFromWindow.restype=ctypes.wintypes.HMONITOR
-user32.PeekMessageW.argtypes=(ctypes.wintypes.LPMSG,ctypes.wintypes.HWND,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint)
-user32.PeekMessageW.restype=ctypes.wintypes.BOOL
+user32.PostMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.UINT,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
+user32.PostMessageW.restype=ctypes.wintypes.BOOL
 user32.RegisterClassExW.argtypes=(ctypes.wintypes.PWNDCLASSEXW,)
 user32.RegisterClassExW.restype=ctypes.wintypes.ATOM
 user32.SendMessageW.argtypes=(ctypes.wintypes.HWND,ctypes.c_uint,ctypes.wintypes.WPARAM,ctypes.wintypes.LPARAM)
@@ -2189,18 +2191,21 @@ def _u_mcs(fp):
 
 
 def _hotkey_handler(c,wp,lp):
-	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-	if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
-		if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
-			_hotkey_handler._ig_alt=False
-		else:
-			vk=dt.vk_code
-			if (dt.scan_code==0x21d and vk==0xa2):
-				_hotkey_handler._ig_alt=True
-			if (vk in VK_SAME_KEYS):
-				vk=VK_SAME_KEYS[vk]
-			if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CTRL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_ALT)!=0):
-					_hotkey_handler._hk[vk]()
+	try:
+		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
+		if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
+			if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
+				_hotkey_handler._ig_alt=False
+			else:
+				vk=dt.vk_code
+				if (dt.scan_code==0x21d and vk==0xa2):
+					_hotkey_handler._ig_alt=True
+				if (vk in VK_SAME_KEYS):
+					vk=VK_SAME_KEYS[vk]
+				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CTRL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_ALT)!=0):
+						_hotkey_handler._hk[vk]()
+	except KeyboardInterrupt:
+		user32.PostMessageW(None,HOTKEY_HANDLER_END_MESSAGE,0,0)
 	return user32.CallNextHookEx(None,c,wp,lp)
 
 
@@ -2208,9 +2213,7 @@ def _hotkey_handler(c,wp,lp):
 def _screen_blocker_keyboard_handler(c,wp,lp):
 	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 	if (dt.vk_code==0x1b):
-		user32.DestroyWindow(_screen_blocker_keyboard_handler._hwnd)
-		user32.UnhookWindowsHookEx(_screen_blocker_keyboard_handler._c_func)
-		_screen_blocker_keyboard_handler._hwnd=None
+		_screen_blocker_keyboard_handler._end=True
 	else:
 		return -1
 	return user32.CallNextHookEx(None,c,wp,lp)
@@ -2259,37 +2262,34 @@ if (len(sys.argv)==1):
 	csbi.dwCursorPosition.Y=0
 	kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 	kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
-	_print("Starting Boot Sequence\x1b[38;2;100;100;100m...")
 	move_to_desktop.move_to_desktop(hwnd,2)
 	move_to_desktop.switch_to_desktop(0)
-	_print("Registering Hotkey Handler\x1b[38;2;100;100;100m...")
+	subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	for k in os.listdir(PROJECT_DIR):
+		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
+	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk={}
 	_hotkey_handler._ig_alt=False
-	_hotkey_handler._end=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-	_print("Registering Hotkeys\x1b[38;2;100;100;100m...")
-	_hotkey_handler._hk[VK_KEYS["a"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
+	_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk[VK_KEYS["end"]]=lambda:_check_close(1)
 	_hotkey_handler._hk[VK_KEYS["home"]]=lambda:_check_close(0)
 	_hotkey_handler._hk[VK_KEYS["i"]]=lambda:subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk[VK_KEYS["q"]]=lambda:subprocess.Popen([sys.executable,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk[VK_KEYS["r"]]=lambda:subprocess.Popen([sys.executable,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_print("Starting Minecraft Server\x1b[38;2;100;100;100m...")
-	subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_print("Upgrading All Projects\x1b[38;2;100;100;100m...")
-	for k in os.listdir(PROJECT_DIR):
-		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-	_print("Starting Github Project Push Check\x1b[38;2;100;100;100m...")
-	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_print("Starting Message Loop\x1b[38;2;100;100;100m...")
+	_hotkey_handler._hk[VK_KEYS["w"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 	try:
 		msg=ctypes.wintypes.MSG()
-		while (not _hotkey_handler._end):
-			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
+		while (True):
+			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
+			if (e==-1):
+				break
+			if (e!=0):
+				if (msg.message==HOTKEY_HANDLER_END_MESSAGE):
+					break
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
 	except KeyboardInterrupt:
@@ -2322,15 +2322,20 @@ else:
 		mi.cbSize=ctypes.sizeof(ctypes.wintypes.MONITORINFO)
 		user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),ctypes.byref(mi))
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
-		_screen_blocker_keyboard_handler._hwnd=hwnd
-		_screen_blocker_keyboard_handler._c_func=ctypes.wintypes.LowLevelKeyboardProc(_screen_blocker_keyboard_handler)
-		user32.SetWindowsHookExW(WH_KEYBOARD_LL,_screen_blocker_keyboard_handler._c_func,mh,ctypes.wintypes.DWORD(0))
+		_screen_blocker_keyboard_handler._end=False
+		c_func=ctypes.wintypes.LowLevelKeyboardProc(_screen_blocker_keyboard_handler)
+		user32.SetWindowsHookExW(WH_KEYBOARD_LL,c_func,mh,ctypes.wintypes.DWORD(0))
 		user32.ShowCursor(0)
 		msg=ctypes.wintypes.MSG()
-		while (_screen_blocker_keyboard_handler._hwnd is not None):
-			if (user32.PeekMessageW(ctypes.byref(msg),None,0,0,PM_REMOVE)!=0):
+		while (_screen_blocker_keyboard_handler._end==False):
+			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
+			if (e==-1):
+				break
+			if (e!=0):
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
+		user32.DestroyWindow(hwnd)
+		user32.UnhookWindowsHookEx(c_func)
 		user32.UnregisterClassW("screen_blocker_window_class",mh)
 	elif (v==1):
 		user32.SetFocus(hwnd)
