@@ -2187,7 +2187,7 @@ def _u_mcs(fp):
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Skipping Update Check\x1b[38;2;100;100;100m...")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.Popen([CMD_FILE_PATH,"/c",__executable__,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 
 
@@ -2378,16 +2378,16 @@ else:
 						subprocess.Popen(MINECRAFT_LAUNCHER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="serial"):
-						subprocess.Popen([sys.executable,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						subprocess.Popen([__executable__,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="stats"):
-						subprocess.Popen([sys.executable,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						subprocess.Popen([__executable__,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="sublime"):
 						subprocess.Popen(EDITOR_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="work"):
-						subprocess.Popen([sys.executable,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						subprocess.Popen([__executable__,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="" or bf=="exit"):
 						break
