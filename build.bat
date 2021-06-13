@@ -1,3 +1,3 @@
 @echo off
 cls
-python D:/boot/src/main.py
+python %~dp0src/main.py

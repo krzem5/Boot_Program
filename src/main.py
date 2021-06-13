@@ -19,6 +19,8 @@ import zipfile
 
 __file__=os.path.abspath(__file__).replace("\\","/")
 __file_base_dir__=__file__[:-len(__file__.split("/")[-1])-4].rstrip("/")+"/"
+__executable__=os.path.abspath(sys.executable).replace("\\","/")[:-len(sys.executable.split("/")[-1].split("\\")[-1])].rstrip("/")+"/python.exe"
+__headless_executable__=os.path.abspath(sys.executable).replace("\\","/")[:-len(sys.executable.split("/")[-1].split("\\")[-1])].rstrip("/")+"/pythonw.exe"
 if (not os.path.exists(__file_base_dir__+"data")):
 	os.mkdir(__file_base_dir__+"data")
 
@@ -2203,7 +2205,7 @@ def _hotkey_handler(c,wp,lp):
 					vk=VK_SAME_KEYS[vk]
 				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CTRL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_ALT)!=0):
 						_hotkey_handler._hk[vk]()
-	except KeyboardInterrupt:
+	except Exception:
 		user32.PostMessageW(None,HOTKEY_HANDLER_END_MESSAGE,0,0)
 	return user32.CallNextHookEx(None,c,wp,lp)
 
@@ -2212,7 +2214,7 @@ def _hotkey_handler(c,wp,lp):
 def _screen_blocker_keyboard_handler(c,wp,lp):
 	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
 	if (dt.vk_code==0x1b):
-		_screen_blocker_keyboard_handler._end=True
+		user32.PostMessageW(None,HOTKEY_HANDLER_END_MESSAGE,0,0)
 	else:
 		return -1
 	return user32.CallNextHookEx(None,c,wp,lp)
@@ -2251,36 +2253,37 @@ user32.SendMessageW(hwnd,WM_SETICON,ICON_BIG,user32.LoadImageW(0,__file_base_dir
 if (len(GITHUB_TOKEN)!=40):
 	_print("\x1b[38;2;200;40;20mInvalid Github Token.\x1b[0m Project Push will Fail\x1b[38;2;100;100;100m...")
 if (len(sys.argv)==1):
-	ho=kernel32.GetStdHandle(-11)
-	csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-	kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
-	fc=ctypes.wintypes.CHAR_INFO()
-	fc.Char.UnicodeChar=" "
-	fc.Attributes=csbi.wAttributes
-	csbi.dwCursorPosition.X=0
-	csbi.dwCursorPosition.Y=0
-	kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
-	kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
-	move_to_desktop.move_to_desktop(hwnd,2)
-	move_to_desktop.switch_to_desktop(0)
-	subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	for k in os.listdir(PROJECT_DIR):
-		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk={}
-	_hotkey_handler._ig_alt=False
-	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
-	user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-	_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([sys.executable,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["end"]]=lambda:_check_close(1)
-	_hotkey_handler._hk[VK_KEYS["home"]]=lambda:_check_close(0)
-	_hotkey_handler._hk[VK_KEYS["i"]]=lambda:subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["q"]]=lambda:subprocess.Popen([sys.executable,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["r"]]=lambda:subprocess.Popen([sys.executable,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-	_hotkey_handler._hk[VK_KEYS["w"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
-	try:
+	if (sys.executable.replace("\\","/")!=__headless_executable__):
+		subprocess.Popen([__headless_executable__,__file__],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	else:
+		ho=kernel32.GetStdHandle(-11)
+		csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
+		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
+		fc=ctypes.wintypes.CHAR_INFO()
+		fc.Char.UnicodeChar=" "
+		fc.Attributes=csbi.wAttributes
+		csbi.dwCursorPosition.X=0
+		csbi.dwCursorPosition.Y=0
+		kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
+		kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
+		move_to_desktop.switch_to_desktop(0)
+		subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		for k in os.listdir(PROJECT_DIR):
+			_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
+		subprocess.Popen([CMD_FILE_PATH,"/c",__executable__,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk={}
+		_hotkey_handler._ig_alt=False
+		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
+		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+		_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["end"]]=lambda:_check_close(1)
+		_hotkey_handler._hk[VK_KEYS["home"]]=lambda:_check_close(0)
+		_hotkey_handler._hk[VK_KEYS["i"]]=lambda:subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["q"]]=lambda:subprocess.Popen([__executable__,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["r"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[VK_KEYS["w"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 		msg=ctypes.wintypes.MSG()
 		while (True):
 			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
@@ -2291,9 +2294,7 @@ if (len(sys.argv)==1):
 					break
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
-	except KeyboardInterrupt:
-		pass
-	user32.UnhookWindowsHookEx(kb_cb)
+		user32.UnhookWindowsHookEx(kb_cb)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -2321,16 +2322,17 @@ else:
 		mi.cbSize=ctypes.sizeof(ctypes.wintypes.MONITORINFO)
 		user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),ctypes.byref(mi))
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
-		_screen_blocker_keyboard_handler._end=False
 		c_func=ctypes.wintypes.LowLevelKeyboardProc(_screen_blocker_keyboard_handler)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,c_func,mh,ctypes.wintypes.DWORD(0))
 		user32.ShowCursor(0)
 		msg=ctypes.wintypes.MSG()
-		while (_screen_blocker_keyboard_handler._end==False):
+		while (True):
 			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
 			if (e==-1):
 				break
 			if (e!=0):
+				if (msg.message==HOTKEY_HANDLER_END_MESSAGE):
+					break
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
 		user32.DestroyWindow(hwnd)
