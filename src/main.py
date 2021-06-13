@@ -20,7 +20,7 @@ import zipfile
 __file__=os.path.abspath(__file__).replace("\\","/")
 __file_base_dir__=__file__[:-len(__file__.split("/")[-1])-4].rstrip("/")+"/"
 __executable__=os.path.abspath(sys.executable).replace("\\","/")[:-len(sys.executable.split("/")[-1].split("\\")[-1])].rstrip("/")+"/python.exe"
-__headless_executable__=os.path.abspath(sys.executable).replace("\\","/")[:-len(sys.executable.split("/")[-1].split("\\")[-1])].rstrip("/")+"/pythonw.exe"
+__headless_executable__=__executable__[:-4]+"w.exe"
 if (not os.path.exists(__file_base_dir__+"data")):
 	os.mkdir(__file_base_dir__+"data")
 
@@ -39,7 +39,8 @@ ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+"
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 BLENDER_FILE_PATH="C:/Program Files/Blender Foundation/Blender/blender.exe"
-BROWSER_FILE_PATH="C:/Program Files/Google/Chrome Dev/Application/chrome.exe"
+GIMP_FILE_PATH="C:/Program Files/GIMP 2/bin/gimp-2.10.exe"
+CHROME_FILE_PATH="C:/Program Files/Google/Chrome Dev/Application/chrome.exe"
 CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","C:\\Windows\\System32\\cmd.exe"))
 CONSOLE_APP_FRAME_RATE=60
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
@@ -59,11 +60,14 @@ GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
 HOTKEY_HANDLER_END_MESSAGE=0x401
+JSON_STRING_ESCAPE_CHAR_BYTES_REGEX=re.compile(br'([\\"]|[^\x20-\x7e])')
+JSON_STRING_ESCAPE_CHAR_REGEX=re.compile(r'([\\"]|[^\x20-\x7e])')
+JSON_STRING_MIN_SURROGATE_PAIR=65536
 MINECRAFT_JAVA_RUNTIME_FILE_PATH="C:/Program Files/Java/jdk-16.0.1/bin/java.exe"
 MINECRAFT_JAVA_RUNTIME_MEMORY="8G"
 MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/MinecraftLauncher.exe"
 MINECRAFT_SKIP_UPDATE=[]
-MOVE_TO_DESKTOP_DLL_PATH="lib/move_to_desktop.dll"
+MOVE_TO_DESKTOP_LIBRARY_PATH="lib/move_to_desktop.dll"
 PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0-9a-fA-F]+\b")
 PROJECT_DIR=os.path.abspath(__file_base_dir__+"../K/Coding").replace("\\","/").rstrip("/")+"/"
 REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
@@ -217,7 +221,7 @@ ctypes.wintypes.PWNDCLASSEXW=ctypes.POINTER(ctypes.wintypes.WNDCLASSEXW)
 advapi32=ctypes.windll.advapi32
 gdi32=ctypes.windll.gdi32
 kernel32=ctypes.windll.kernel32
-move_to_desktop=ctypes.windll.LoadLibrary(__file_base_dir__+MOVE_TO_DESKTOP_DLL_PATH)
+move_to_desktop=ctypes.windll.LoadLibrary(__file_base_dir__+MOVE_TO_DESKTOP_LIBRARY_PATH)
 setupapi=ctypes.windll.setupapi
 shcore=ctypes.windll.shcore
 shell32=ctypes.windll.shell32
@@ -423,6 +427,46 @@ def _sha1_chunk(h,dt):
 
 
 
+def _encode_json_str(m):
+	c=ord(m.group(0))
+	if (c<JSON_STRING_MIN_SURROGATE_PAIR):
+		return f"\\u{c:04x}"
+	c-=JSON_STRING_MIN_SURROGATE_PAIR
+	return f"\\u{0xd800|((c>>10)&0x3ff):04x}\\u{0xdc00|(c&0x3ff):04x}"
+
+
+
+def _encode_json_str_bytes(m):
+	c=ord(m.group(0))
+	if (c<JSON_STRING_MIN_SURROGATE_PAIR):
+		return bytes(f"\\u{c:04x}","utf-8")
+	c-=JSON_STRING_MIN_SURROGATE_PAIR
+	return bytes(f"\\u{0xd800|((c>>10)&0x3ff):04x}\\u{0xdc00|(c&0x3ff):04x}","utf-8")
+
+
+
+def _encode_json(e):
+	if (type(e)==dict):
+		return "{"+",".join(["\""+(JSON_STRING_ESCAPE_CHAR_REGEX.sub(_encode_json_str,k) if type(k)==str else JSON_STRING_ESCAPE_CHAR_BYTES_REGEX.sub(_encode_json_str_bytes,k).decode("utf-8"))+"\":"+_encode_json(v) for k,v in e.items()])+"}"
+	elif (type(e)==list or type(e)==tuple):
+		return "["+",".join([_encode_json(k) for k in e])+"]"
+	elif (type(e)==str):
+		return "\""+JSON_STRING_ESCAPE_CHAR_REGEX.sub(_encode_json_str,e)+"\""
+	elif (type(e)==bytes):
+		return "\""+JSON_STRING_ESCAPE_CHAR_BYTES_REGEX.sub(_encode_json_str_bytes,e).decode("utf-8")+"\""
+	elif (type(e)==int or type(e)==float):
+		return str(e)
+	elif (e is True):
+		return "true"
+	elif (e is False):
+		return "false"
+	elif (e is None):
+		return "null"
+	else:
+		raise RuntimeError(f"Unable to Serialize Type '{e.__class__.__name__}'")
+
+
+
 def _create_gitignore_pattern(p):
 	p=p.replace("\\","/").lower()
 	ol=[]
@@ -556,6 +600,7 @@ def _github_api_request(m,**kw):
 	r=getattr(requests,m)(**kw)
 	if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
 		print(r.headers)
+		input()
 		sys.exit(1)
 	time.sleep(3600/GITHUB_API_QUOTA)
 	o=r.json()
@@ -566,16 +611,13 @@ def _github_api_request(m,**kw):
 
 
 
-def _get_project_tree(r_nm,sha,p):
+def _get_project_tree(r_nm,sha,p,o):
 	_print(f"\x1b[38;2;100;100;100mReading Tree \x1b[38;2;65;118;46m'{p}'\x1b[38;2;100;100;100m...",df=True)
-	r=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}",data=json.dumps({"recursive":"false"}))
-	o={}
-	for e in r["tree"]:
+	for e in _github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{r_nm}/git/trees/{sha}")["tree"]:
 		if (e["type"]=="tree"):
-			o.update(_get_project_tree(r_nm,e["sha"],p+"/"+e["path"]))
+			_get_project_tree(r_nm,e["sha"],p+"/"+e["path"],o)
 		else:
 			o[(p+"/"+e["path"])[2:]]={"sz":e["size"],"sha":e["sha"]}
-	return o
 
 
 
@@ -590,7 +632,7 @@ def _push_single_project(p,b_nm):
 		gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
 		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
 		try:
-			_github_api_request("post",url="https://api.github.com/user/repos",data=json.dumps({"name":nm,"description":nm.replace("-"," - ")}))
+			_github_api_request("post",url="https://api.github.com/user/repos",data=_encode_json({"name":nm,"description":nm.replace("-"," - ")}))
 		except requests.exceptions.ConnectionError:
 			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
 			return False
@@ -620,15 +662,15 @@ def _push_single_project(p,b_nm):
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	except KeyError:
-		_github_api_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"content":""}))
+		_github_api_request("put",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=f"{{\"message\":\"{msg}\",\"content\":\"\"}}")
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/ref/heads/{br}")["object"]["sha"]
 	_print(f"\x1b[38;2;100;100;100mReading Recursive Tree...",df=True)
 	t_dt=_github_api_request("get",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees/{bt_sha}?recursive=true")
+	r_t={}
 	if (t_dt["truncated"]):
 		_print(f"\x1b[38;2;118;42;38mRecursive Tree Truncated. \x1b[38;2;100;100;100mFalling Back to Standard Tree...",df=True)
-		r_t=_get_project_tree(nm,bt_sha,".")
+		_get_project_tree(nm,bt_sha,".",r_t)
 	else:
-		r_t={}
 		_print(f"\x1b[38;2;100;100;100mFound Tree \x1b[38;2;65;118;46m'.'\x1b[38;2;100;100;100m...",df=True)
 		for k in t_dt["tree"]:
 			if (k["type"]=="blob"):
@@ -717,7 +759,7 @@ def _push_single_project(p,b_nm):
 					else:
 						b_sha=True
 						with open(r+f,"rb") as rbf:
-							dt=""
+							dt="{\"content\":\""
 							i=0
 							b_dt=rbf.read()
 							while (i<len(b_dt)-2):
@@ -727,7 +769,7 @@ def _push_single_project(p,b_nm):
 								dt+=BASE64_ALPHABET[b_dt[i]>>2]+BASE64_ALPHABET[((b_dt[i]<<4)&0x3f)|(b_dt[i+1]>>4)]+BASE64_ALPHABET[(b_dt[i+1]<<2)&0x3f]+"="
 							elif (i==len(b_dt)-1):
 								dt+=BASE64_ALPHABET[b_dt[i]>>2]+BASE64_ALPHABET[(b_dt[i]<<4)&0x3f]+"=="
-							b=_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/blobs",data=json.dumps({"content":dt,"encoding":"base64"}))
+							b=_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/blobs",data=dt+"\",\"encoding\":\"base64\"}")
 							if (b is None):
 								b_sha=False
 								dt="Github Server Error"
@@ -748,13 +790,13 @@ def _push_single_project(p,b_nm):
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=json.dumps({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=json.dumps({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=json.dumps({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
 	if (cr==True):
 		_print(f"\x1b[38;2;100;100;100mDeleting Temporary File...",df=True)
-		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=json.dumps({"message":msg,"sha":GITHUB_EMPTY_FILE_HASH}))
+		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=f"{{\"message\":\"{msg}\",\"sha\":\"{GITHUB_EMPTY_FILE_HASH}\"}}")
 		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
 			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
 	return True
@@ -2372,10 +2414,16 @@ else:
 						subprocess.Popen(BLENDER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="chrome"):
-						subprocess.Popen(BROWSER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						subprocess.Popen(CHROME_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="gimp"):
+						subprocess.Popen(GIMP_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="minecraft"):
 						subprocess.Popen(MINECRAFT_LAUNCHER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						break
+					elif (bf=="open"):
+						subprocess.Popen([__executable__,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="serial"):
 						subprocess.Popen([__executable__,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
@@ -2385,9 +2433,6 @@ else:
 						break
 					elif (bf=="sublime"):
 						subprocess.Popen(EDITOR_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
-						break
-					elif (bf=="work"):
-						subprocess.Popen([__executable__,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 						break
 					elif (bf=="" or bf=="exit"):
 						break
@@ -2609,7 +2654,7 @@ else:
 				l_id_m[k]=len(ll)
 				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"w") as f:
-				f.write(json.dumps(ll,separators=(",",":"),indent=None))
+				f.write(_encode_json(ll))
 			hdt=[]
 			_hdt=yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader)
 			for k in _hdt["disambiguations"]:
@@ -2643,7 +2688,7 @@ else:
 						rl.append((e["language"],npl))
 				hdt.append((k["extensions"],rl))
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"w") as f:
-				f.write(json.dumps(hdt,separators=(",",":"),indent=None))
+				f.write(_encode_json(hdt))
 			t=requests.get("https://api.github.com/repos/github/linguist/branches/master",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).json()["commit"]["commit"]["tree"]["sha"]
 			db={"tokens_total":0,"languages_total":0,"tokens":{},"language_tokens":{},"languages":{},"filenames":{}}
 			for e in requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{t}").json()["tree"]:
@@ -2680,7 +2725,7 @@ else:
 							db["tokens_total"]+=1
 					break
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"w") as f:
-				f.write(json.dumps(db,indent=4).replace("    ","\t"))
+				f.write(_encode_json(db))
 		else:
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"r") as f:
 				ll=json.loads(f.read(),strict=False)
