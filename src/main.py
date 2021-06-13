@@ -2266,7 +2266,7 @@ if (len(sys.argv)==1):
 	subprocess.Popen([sys.executable,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	for k in os.listdir(PROJECT_DIR):
 		_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-	# subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.Popen([CMD_FILE_PATH,"/c",sys.executable,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
 	_hotkey_handler._hk={}
 	_hotkey_handler._ig_alt=False
 	kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
