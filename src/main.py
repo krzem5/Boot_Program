@@ -1,12 +1,12 @@
 import ctypes
 import ctypes.wintypes
-import json
 import math
 import msvcrt
 import os
 import re
 import regex
 import requests
+import struct
 import subprocess
 import sys
 import tarfile
@@ -74,9 +74,10 @@ REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
 REPO_STATS_IGNORE_REGEX=re.compile(r"""[ \t]*(\/\/|--|\#|%|\").*?$|/\*(?:.)*?\*/|<!--(?:.)*?-->|\{-(?:.)*?-\}|\(\*(?:.)*?\*\)|(?P<ml_c>[\'\"]|\'{3}|\"{3})(?:\\[\'\"]|.)*?(?P=ml_c)|(0x[0-9a-fA-F]([0-9a-fA-F]|\.)*|[0-9]([0-9]|\.)*)([uU][lL]{0,2}|([eE][-+][0-9]*)?[fFlL]*)""",re.M|re.S)
-REPO_STATS_LANGUAGE_LIST_FILE="data/git-languages.json"
-REPO_STATS_LANGUAGE_HEURISTIC_FILE="data/git-languages-h.json"
-REPO_STATS_LANGUAGE_DATABASE_FILE="data/git-languages-db.json"
+REPO_STATS_LANGUAGE_DATABASE_FILE="data/git-languages-db.db"
+REPO_STATS_LANGUAGE_HEURISTIC_FILE="data/git-languages-h.db"
+REPO_STATS_LANGUAGE_LIST_FILE="data/git-languages.db"
+REPO_STATS_LANGUAGE_TYPE=["data","programming","markup","prose"]
 REPO_STATS_LOG_ZERO_TOKENS=None
 REPO_STATS_MAX_READ=65536
 REPO_STATS_MAX_TOKEN_LEN=32
@@ -464,6 +465,128 @@ def _encode_json(e):
 		return "null"
 	else:
 		raise RuntimeError(f"Unable to Serialize Type '{e.__class__.__name__}'")
+
+
+
+def _decode_json_str(e):
+	i=0
+	o=""
+	while (e[i]!="\""):
+		if (e[i]!="\\"):
+			o+=e[i]
+		else:
+			i+=1
+			if (e[i] in ["\\'\""]):
+				o+=chr(e[i])
+			elif (e[i]=="b"):
+				o+="\b"
+			elif (e[i]=="f"):
+				o+="\f"
+			elif (e[i]=="n"):
+				o+="\n"
+			elif (e[i]=="r"):
+				o+="\r"
+			elif (e[i]=="t"):
+				o+="\t"
+			elif (e[i]=="v"):
+				o+="\v"
+			elif (e[i]=="x"):
+				v=0
+				i+=1
+				for _ in range(0,2):
+					v=v*16+(ord(e[i])-48 if ord(e[i])>47 and ord(e[i])<58 else (ord(e[i])-55 if ord(e[i])>64 and ord(e[i])<71 else ord(e[i])-87))
+					i+=1
+				o+=chr(v)
+				continue
+			elif (e[i]==b"u"):
+				v=0
+				i+=1
+				for _ in range(0,4):
+					v=v*16+(ord(e[i])-48 if ord(e[i])>47 and ord(e[i])<58 else (ord(e[i])-55 if ord(e[i])>64 and ord(e[i])<71 else ord(e[i])-87))
+					i+=1
+				o+=chr(v)
+				continue
+			else:
+				v=0
+				while (ord(e[i])>47 and ord(e[i])<56):
+					v=v*8+(ord(e[i])-48)
+					i+=1
+				o+=chr(v)
+				continue
+		i+=1
+	return (o,i)
+
+
+
+def _decode_json(e):
+	if (e[0]=="{"):
+		o={}
+		i=1
+		while (e[i]!="}"):
+			while (e[i-1]!="\""):
+				i+=1
+			k,j=_decode_json_str(e[i:])
+			i+=j+1
+			while (e[i-1]!=":"):
+				i+=1
+			v,j=_decode_json(e[i:])
+			o[k]=v
+			i+=j
+			while (e[i-1]!=","):
+				if (e[i]=="}"):
+					break
+				i+=1
+		return (o,i)
+	if (e[0]=="["):
+		o=[]
+		i=1
+		while (e[i]!="]"):
+			k,j=_decode_json(e[i:])
+			i+=j
+			o.append(k)
+			while (e[i-1]!=","):
+				if (e[i]=="]"):
+					break
+				i+=1
+		return (o,i)
+	if (e[0]=="\"" or e[0]=="'"):
+		o,i=_decode_json_str(e[1:])
+		return (o,i+1)
+	if (e[:4]=="true"):
+		return (True,4)
+	if (e[:5]=="false"):
+		return (False,5)
+	if (e[:4]=="null"):
+		return (None,4)
+	s=1
+	i=0
+	if (e[0]=="-"):
+		s=-1
+		i=1
+	o=0
+	while (ord(e[i])>47 and ord(e[i])<58):
+		o=o*10+(ord(e[i])-48)
+		i+=1
+	if (e[i]=="."):
+		pw=0.1
+		i+=1
+		while (ord(e[i])>47 and ord(e[i])<58):
+			o+=pw*(ord(e[i])-48)
+			pw*=0.1
+			i+=1
+		if (e[i]=="e"):
+			i+=1
+			pw_s=1
+			if (e[i]=="-"):
+				pw_s=-1
+				i+=1
+			pw=0
+			while (ord(e[i])>47 and ord(e[i])<58):
+				pw=pw*10+(ord(e[i])-48)
+				i+=1
+			o*=pow(10,pw*pw_s)
+	o*=s
+	return (o,i-1)
 
 
 
@@ -1123,7 +1246,7 @@ def _list_arduino_boards(p=True):
 						r=f.read()
 				if (len(r)==0):
 					continue
-				r=json.loads(r)
+				r=_decode_json(r)
 				o.append({"arch":r["architecture"],"fqbn":r["fqbn"],"name":r["name"],"location":nm.value.replace("\\","/").split("/")[-1]})
 			else:
 				continue
@@ -1204,7 +1327,7 @@ def _install_arduino_package(b,force=False):
 	else:
 		with open(__file_base_dir__+"arduino/cache/package_index.json","r") as f:
 			dt=f.read()
-	p={e["name"]:e for e in json.loads(dt)["packages"]}
+	p={e["name"]:e for e in _decode_json(dt)["packages"]}
 	dl=[b]
 	o=[]
 	while (len(dl)>0):
@@ -2647,16 +2770,42 @@ else:
 		ll=None
 		hdt=None
 		db=None
-		if (not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE) or not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE) or not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE)):
+		l_id_m={}
+		if (not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE)):
 			ll={}
-			l_id_m={}
-			for k,v in yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader).items():
+			for k,v in yaml.safe_load(requests.get("https://raw.githubusercontent.com/github/linguist/master/lib/linguist/languages.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content).items():
+				if (v["type"]=="nil"):
+					continue
 				l_id_m[k]=len(ll)
-				ll[k]=[([e.lower() for e in v["extensions"]] if "extensions" in v else []),(f"#{hex(REPO_STATS_DEFAULT_COLOR[0])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[1])[2:].rjust(2,'0')}{hex(REPO_STATS_DEFAULT_COLOR[2])[2:].rjust(2,'0')}" if "color" not in v else v["color"]),v["type"]]
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"w") as f:
-				f.write(_encode_json(ll))
+				ll[k]=[tuple(([e.lower() for e in v["extensions"]] if "extensions" in v else [])),(REPO_STATS_DEFAULT_COLOR if "color" not in v else (int(v["color"][1:3],16),int(v["color"][3:5],16),int(v["color"][5:7],16))),REPO_STATS_LANGUAGE_TYPE.index(v["type"])]
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"wb") as f:
+				f.write(struct.pack("<H",len(ll)))
+				for k,v in ll.items():
+					if (len(k)>63):
+						input("\x1b[38;2;200;40;20mLanguage Name Length Overflow")
+						sys.exit(1)
+					f.write(struct.pack(f"<BBBBB{len(k)}s",len(k)|(v[2]<<6),len(v[0]),v[1][0],v[1][1],v[1][2],bytes(k,"utf-8")))
+					for e in v[0]:
+						f.write(struct.pack(f"<B{len(e)}s",len(e),bytes(e,"utf-8")))
+		else:
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"rb") as f:
+				ll={}
+				i=struct.unpack("<H",f.read(2))[0]
+				for j in range(0,i):
+					kl=f.read(1)[0]
+					el=f.read(1)[0]
+					r=f.read(1)[0]
+					g=f.read(1)[0]
+					b=f.read(1)[0]
+					k=str(f.read(kl&63),"utf-8")
+					e=[]
+					for _ in range(0,el):
+						e.append(str(f.read(f.read(1)[0]),"utf-8"))
+					l_id_m[k]=j
+					ll[k]=(tuple(e),(r,g,b),kl>>6)
+		if (not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE)):
 			hdt=[]
-			_hdt=yaml.safe_load(requests.get("https://api.github.com/repos/github/linguist/contents/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content,Loader=yaml.safe_loader)
+			_hdt=yaml.safe_load(requests.get("https://raw.githubusercontent.com/github/linguist/master/lib/linguist/heuristics.yml",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content)
 			for k in _hdt["disambiguations"]:
 				rl=[]
 				for e in k["rules"]:
@@ -2684,11 +2833,62 @@ else:
 								se=se["pattern"]
 							if (type(se)==str):
 								se=[se]
-							npl.append((sse,pm) for sse in se)
+							npl.extend([(sse,pm) for sse in se])
 						rl.append((e["language"],npl))
-				hdt.append((k["extensions"],rl))
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"w") as f:
-				f.write(_encode_json(hdt))
+				hdt.append((tuple(k["extensions"]),rl))
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"wb") as f:
+				f.write(struct.pack("<B",len(hdt)))
+				for k in hdt:
+					f.write(struct.pack("<BB",len(k[0]),len(k[1])))
+					for e in k[0]:
+						f.write(struct.pack(f"<B{len(e)}s",len(e),bytes(e,"utf-8")))
+					for e in k[1]:
+						if (type(e[0])==str):
+							f.write(struct.pack(f"<BB{len(e[0])}s",len(e[0]),(len(e[1]) if e[1] is not None else 0),bytes(e[0],"utf-8")))
+						else:
+							f.write(struct.pack(f"<BB",len(e[0])|128,(len(e[1]) if e[1] is not None else 0)))
+							for v in e[0]:
+								f.write(struct.pack(f"<B{len(v)}s",len(v),bytes(v,"utf-8")))
+						if (e[1] is not None):
+							for i,v in enumerate(e[1]):
+								if (len(v[0])>32767):
+									input("\x1b[38;2;200;40;20mLanguage File Pattern Length Overflow")
+									sys.exit(1)
+								f.write(struct.pack(f"<H{len(v[0])}s",len(v[0])|(0 if v[1] else 32768),bytes(v[0],"utf-8")))
+								e[1][i]=(regex.compile(v[0],regex.M|regex.V1),v[1])
+		else:
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"rb") as f:
+				hdt=[]
+				i=f.read(1)[0]
+				while (i):
+					i-=1
+					el=f.read(1)[0]
+					dtl=f.read(1)[0]
+					e=[]
+					for _ in range(0,el):
+						e.append(str(f.read(f.read(1)[0]),"utf-8"))
+					dt=[]
+					for _ in range(0,dtl):
+						nml=f.read(1)[0]
+						pll=f.read(1)[0]
+						nm=None
+						if (nml&128):
+							nm=[]
+							for _ in range(0,nml&127):
+								nm.append(str(f.read(f.read(1)[0]),"utf-8"))
+							nm=tuple(nm)
+						else:
+							nm=str(f.read(nml),"utf-8")
+						if (pll==0):
+							dt.append((nm,None))
+						else:
+							pl=[]
+							for _ in range(0,pll):
+								l=struct.unpack("<H",f.read(2))[0]
+								pl.append((regex.compile(str(f.read(l&32767),"utf-8"),regex.M|regex.V1),(False if l&32768 else True)))
+							dt.append((nm,tuple(pl)))
+					hdt.append((tuple(e),tuple(dt)))
+		if (not os.path.exists(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE)):
 			t=requests.get("https://api.github.com/repos/github/linguist/branches/master",headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).json()["commit"]["commit"]["tree"]["sha"]
 			db={"tokens_total":0,"languages_total":0,"tokens":{},"language_tokens":{},"languages":{},"filenames":{}}
 			for e in requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{t}").json()["tree"]:
@@ -2724,17 +2924,35 @@ else:
 								db["tokens"][nm][t]+=1
 							db["tokens_total"]+=1
 					break
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"w") as f:
-				f.write(_encode_json(db))
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"wb") as f:
+				f.write(struct.pack("<IHH",db["tokens_total"],db["languages_total"],len(db["tokens"])))
+				for k,v in db["filenames"].items():
+					f.write(struct.pack(f"<BBBBH{len(k)}s",len(k),len(v),db["languages"][k],db["language_tokens"][k],len(db["tokens"][k]),bytes(k,"utf-8")))
+					for e in v:
+						ee=bytes(e,"utf-8")
+						f.write(struct.pack(f"<B{len(ee)}s",len(ee),ee))
+					for ek,ev in db["tokens"][k].items():
+						eek=bytes(ek,"utf-8")
+						f.write(struct.pack(f"<BH{len(eek)}s",len(eek),ev,eek))
 		else:
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"r") as f:
-				ll=json.loads(f.read(),strict=False)
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"r") as f:
-				hdt=json.loads(f.read(),strict=False)
-				for i,k in enumerate(hdt):
-					hdt[i]=(k[0],tuple((e[0],(tuple((regex.compile(sk,regex.M|regex.V1),sv) for sk,sv in e[1]) if e[1]!=None else None)) for e in k[1]))
-			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"r") as f:
-				db=json.loads(f.read(),strict=False)
+			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"rb") as f:
+				db={"filenames":{},"language_tokens":{},"languages":{},"tokens":{}}
+				db["tokens_total"],db["languages_total"],i=struct.unpack("<IHH",f.read(8))
+				while (i):
+					i-=1
+					kl,fnm_l,lc,ltc,tl=struct.unpack("<BBBBH",f.read(6))
+					k=str(f.read(kl),"utf-8")
+					db["languages"][k]=lc
+					db["language_tokens"][k]=ltc
+					fnm=[]
+					for _ in range(0,fnm_l):
+						fnm.append(str(f.read(f.read(1)[0]),"utf-8"))
+					db["filenames"][k]=tuple(fnm)
+					t={}
+					for _ in range(0,tl):
+						ln,v=struct.unpack("<BH",f.read(3))
+						t[str(f.read(ln),"utf-8")]=v
+					db["tokens"][k]=t
 		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		ho=kernel32.GetStdHandle(-11)
@@ -2801,7 +3019,7 @@ else:
 				pt=0
 				pkl=0
 				for k,v in list(el.items()):
-					if (k[:2]=="__" or (f==True and ll[k][2] not in ["programming","markup"])):
+					if (k[:2]=="__" or (f==True and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("programming") and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("markup"))):
 						continue
 					pl[k]=v[0]
 					pll[k]=v[1]
@@ -2824,7 +3042,7 @@ else:
 						bw=int(v[0]*(sbi.dwMaximumWindowSize.X-10)*2/pt)/2-np/2
 						if (bw<0):
 							bw=0
-						o0[2]+=(f"\x1b[48;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+						o0[2]+=(f"\x1b[48;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
 						if (si is None):
 							si=len(o0[1])-1
 						o0[2]+="█"*int(bw)
@@ -2847,13 +3065,13 @@ else:
 						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
 						for k,v in pl.items():
 							bw=round(v[0]*bs)/2
-							cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+							cl=f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
 							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   ")
 					else:
 						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-24)*pt/mv)*2/pt
 						for k,v in pl.items():
 							bw=round(v[0]*bs)/2
-							cl=f"\x1b[38;2;{int(ll[k][1][1:3],16)};{int(ll[k][1][3:5],16)};{int(ll[k][1][5:7],16)}m"
+							cl=f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
 							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m, {cl}{str(pll[k]).rjust(pvll,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-int(bw)-24)}\x1b[38;2;52;52;52m║   ")
 					o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sbi.dwMaximumWindowSize.X-8)}╝   ")
 					elcf=-1
