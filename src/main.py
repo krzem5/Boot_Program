@@ -96,7 +96,6 @@ UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
 VK_ALT=18
 VK_CTRL=17
-VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 VK_SHIFT=16
 
 
@@ -2365,8 +2364,6 @@ def _hotkey_handler(c,wp,lp):
 				vk=dt.vk_code
 				if (dt.scan_code==0x21d and vk==0xa2):
 					_hotkey_handler._ig_alt=True
-				if (vk in VK_SAME_KEYS):
-					vk=VK_SAME_KEYS[vk]
 				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CTRL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_ALT)!=0):
 						_hotkey_handler._hk[vk]()
 	except Exception:
