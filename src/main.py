@@ -96,7 +96,6 @@ UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
 VK_ALT=18
 VK_CTRL=17
-VK_KEYS={"cancel":0x03,"backspace":0x08,"tab":0x09,"clear":0x0c,"enter":0x0d,"shift":0x10,"ctrl":0x11,"alt":0x12,"pause":0x13,"capslock":0x14,"esc":0x1b,"spacebar":0x20,"pageup":0x21,"pagedown":0x22,"end":0x23,"home":0x24,"left":0x25,"up":0x26,"right":0x27,"down":0x28,"select":0x29,"print":0x2a,"execute":0x2b,"printscreen":0x2c,"insert":0x2d,"delete":0x2e,"help":0x2f,"0":0x30,"1":0x31,"2":0x32,"3":0x33,"4":0x34,"5":0x35,"6":0x36,"7":0x37,"8":0x38,"9":0x39,"a":0x41,"b":0x42,"c":0x43,"d":0x44,"e":0x45,"f":0x46,"g":0x47,"h":0x48,"i":0x49,"j":0x4a,"k":0x4b,"l":0x4c,"m":0x4d,"n":0x4e,"o":0x4f,"p":0x50,"q":0x51,"r":0x52,"s":0x53,"t":0x54,"u":0x55,"v":0x56,"w":0x57,"x":0x58,"y":0x59,"z":0x5a,"leftwindows":0xffff,"rightwindows":0xffff,"apps":0x5d,"sleep":0x5f,"*":0x6a,"+":0x6b,"separator":0x6c,"-":0x6d,"decimal":0x6e,"/":0x6f,"f1":0x70,"f2":0x71,"f3":0x72,"f4":0x73,"f5":0x74,"f6":0x75,"f7":0x76,"f8":0x77,"f9":0x78,"f10":0x79,"f11":0x7a,"f12":0x7b,"f13":0x7c,"f14":0x7d,"f15":0x7e,"f16":0x7f,"f17":0x80,"f18":0x81,"f19":0x82,"f20":0x83,"f21":0x84,"f22":0x85,"f23":0x86,"f24":0x87,"numlock":0x90,"scrolllock":0x91,"leftshift":0x10,"rightshift":0x10,"leftctrl":0x11,"rightctrl":0x11,"leftmenu":0x12,"rightmenu":0x12,"volumemute":0xad,"volumedown":0xae,"volumeup":0xaf,";":0xba,",":0xbc,".":0xbe,"`":0xc0,"[":0xdb,"\\":0xdc,"]":0xdd,"'":0xde,"windows":0xffff}
 VK_SAME_KEYS={0x5b:0xffff,0x5c:0xffff,0xa0:0x10,0xa2:0x11,0xa4:0x12,0xa5:0x12}
 VK_SHIFT=16
 
@@ -2440,15 +2439,15 @@ if (len(sys.argv)==1):
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-		_hotkey_handler._hk[VK_KEYS["1"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["2"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["3"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["end"]]=lambda:_check_close(1)
-		_hotkey_handler._hk[VK_KEYS["home"]]=lambda:_check_close(0)
-		_hotkey_handler._hk[VK_KEYS["i"]]=lambda:subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["q"]]=lambda:subprocess.Popen([__executable__,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["r"]]=lambda:subprocess.Popen([__headless_executable__,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[VK_KEYS["w"]]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
+		_hotkey_handler._hk[0x23]=lambda:_check_close(1)
+		_hotkey_handler._hk[0x24]=lambda:_check_close(0)
+		_hotkey_handler._hk[0x31]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x32]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x33]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x49]=lambda:subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x51]=lambda:subprocess.Popen([__executable__,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x52]=lambda:subprocess.Popen([__headless_executable__,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x57]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 		msg=ctypes.wintypes.MSG()
 		while (True):
 			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
