@@ -6,7 +6,6 @@ import os
 import re
 import regex
 import requests
-import struct
 import subprocess
 import sys
 import tarfile
@@ -69,7 +68,7 @@ MINECRAFT_LAUNCHER_FILE_PATH="C:/Program Files (x86)/Minecraft Launcher/Minecraf
 MINECRAFT_SKIP_UPDATE=[]
 MOVE_TO_DESKTOP_LIBRARY_PATH="lib/move_to_desktop.dll"
 PRINT_ADD_COLOR_REGEX=re.compile(r"'[^']*'|-?[0-9]+(?:\.[0-9]+)?(?:%|\b)|[0-9a-fA-F]+\b")
-PROJECT_DIR=os.path.abspath(__file_base_dir__+"../K/Coding").replace("\\","/").rstrip("/")+"/"
+PROJECT_DIR=os.path.abspath(__file_base_dir__+"../k/code").replace("\\","/").rstrip("/")+"/"
 REMOVE_COLOR_FORMATTING_REGEX=re.compile(r"\x1b\[[^m]*m")
 REPO_STATS_COMMON_REGEX=re.compile(r";|\{|\}|\(|\)|\[|\]|[\w\.\@\#\/\*]+|\<\<?|\+|\-|\*|\/|%|&&?|\|\|?")
 REPO_STATS_DEFAULT_COLOR=(240,240,240)
@@ -78,7 +77,6 @@ REPO_STATS_LANGUAGE_DATABASE_FILE="data/git-languages-db.db"
 REPO_STATS_LANGUAGE_HEURISTIC_FILE="data/git-languages-h.db"
 REPO_STATS_LANGUAGE_LIST_FILE="data/git-languages.db"
 REPO_STATS_LANGUAGE_TYPE=["data","programming","markup","prose"]
-REPO_STATS_LOG_ZERO_TOKENS=None
 REPO_STATS_MAX_READ=65536
 REPO_STATS_MAX_TOKEN_LEN=32
 REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ \t\v\n\r])",re.M|re.S)
@@ -832,6 +830,7 @@ def _push_single_project(p,b_nm):
 									continue
 					except UnicodeDecodeError:
 						if (f_sz==r_t[fp]["sz"]):
+							_print(f"\x1b[38;2;100;100;100mHashing Binary File \x1b[38;2;65;118;46m'{fp}'\x1b[38;2;100;100;100m ({f_sz} bytes)...",df=True)
 							with open(r+f,"rb") as rf:
 								h=SHA1_START_VALUE.copy()
 								dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
@@ -847,6 +846,7 @@ def _push_single_project(p,b_nm):
 									_print(f"\x1b[38;2;230;210;40m? {b_nm}/{fp}\x1b[0m",df=True)
 									continue
 				elif (f_sz==r_t[fp]["sz"]):
+					_print(f"\x1b[38;2;100;100;100mHashing Binary File \x1b[38;2;65;118;46m'{fp}'\x1b[38;2;100;100;100m ({f_sz} bytes)...",df=True)
 					with open(r+f,"rb") as rf:
 						h=SHA1_START_VALUE.copy()
 						dt=f"blob {f_sz}\x00".encode("cp1252")+rf.read()
@@ -1004,7 +1004,7 @@ def _tokenize_file(dt,el=None):
 
 
 
-def _project_stats_detect_file(r,f,ll,hdt,db):
+def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 	if (os.stat(r+f).st_size==0 or _is_binary(r+f)==True):
 		return None
 	o=list(ll.keys())
@@ -1081,13 +1081,13 @@ def _project_stats_detect_file(r,f,ll,hdt,db):
 			continue
 		lp=math.log(db["languages"][l]/db["languages_total"])
 		for k,v in tc.items():
-			lp+=v*(math.log(db["tokens"][l][k]/db["language_tokens"][l]) if k in db["tokens"][l] else REPO_STATS_LOG_ZERO_TOKENS)
+			lp+=v*(math.log(db["tokens"][l][k]/db["language_tokens"][l]) if k in db["tokens"][l] else ztl)
 		p.append((l,lp))
 	return sorted(p,key=lambda e:-e[1])[0][0]
 
 
 
-def _project_stats(p_fp,ll,hdt,db,el):
+def _project_stats(p_fp,ll,hdt,db,el,ztl):
 	gdt=[]
 	with open(p_fp+".gitignore","r") as f:
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -1121,7 +1121,7 @@ def _project_stats(p_fp,ll,hdt,db,el):
 				el["__cf__"]=r+f
 				if (el["__ig__"]==True and _match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
 					continue
-				l=_project_stats_detect_file(r,f,ll,hdt,db)
+				l=_project_stats_detect_file(r,f,ll,hdt,db,ztl)
 				if (el["__e__"]==1):
 					return
 				if (l is None):
@@ -1138,15 +1138,15 @@ def _project_stats(p_fp,ll,hdt,db,el):
 
 
 
-def _read_project_stats(fp,ll,hdt,db,el):
+def _read_project_stats(fp,ll,hdt,db,el,ztl):
 	if (fp is None):
 		for fp in os.listdir(PROJECT_DIR):
-			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
+			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el,ztl)
 			if (el["__e__"]==1):
 				break
-		_project_stats(__file_base_dir__,ll,hdt,db,el)
+		_project_stats(__file_base_dir__,ll,hdt,db,el,ztl)
 	else:
-		_project_stats(fp,ll,hdt,db,el)
+		_project_stats(fp,ll,hdt,db,el,ztl)
 	el["__cf__"]=None
 	el["__e__"]=2
 
@@ -2775,24 +2775,21 @@ else:
 				l_id_m[k]=len(ll)
 				ll[k]=[tuple(([e.lower() for e in v["extensions"]] if "extensions" in v else [])),(REPO_STATS_DEFAULT_COLOR if "color" not in v else (int(v["color"][1:3],16),int(v["color"][3:5],16),int(v["color"][5:7],16))),REPO_STATS_LANGUAGE_TYPE.index(v["type"])]
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"wb") as f:
-				f.write(struct.pack("<H",len(ll)))
+				f.write(bytearray([len(ll)&0xff,len(ll)>>8]))
 				for k,v in ll.items():
 					if (len(k)>63):
 						input("\x1b[38;2;200;40;20mLanguage Name Length Overflow")
 						sys.exit(1)
-					f.write(struct.pack(f"<BBBBB{len(k)}s",len(k)|(v[2]<<6),len(v[0]),v[1][0],v[1][1],v[1][2],bytes(k,"utf-8")))
+					f.write(bytearray([len(k)|(v[2]<<6),len(v[0]),v[1][0],v[1][1],v[1][2]])+bytes(k,"utf-8"))
 					for e in v[0]:
-						f.write(struct.pack(f"<B{len(e)}s",len(e),bytes(e,"utf-8")))
+						f.write(bytearray([len(e)])+bytes(e,"utf-8"))
 		else:
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_LIST_FILE,"rb") as f:
 				ll={}
-				i=struct.unpack("<H",f.read(2))[0]
+				bf=f.read(2)
+				i=(bf[0])|(bf[1]<<8)
 				for j in range(0,i):
-					kl=f.read(1)[0]
-					el=f.read(1)[0]
-					r=f.read(1)[0]
-					g=f.read(1)[0]
-					b=f.read(1)[0]
+					kl,el,r,g,b=f.read(5)
 					k=str(f.read(kl&63),"utf-8")
 					e=[]
 					for _ in range(0,el):
@@ -2833,24 +2830,24 @@ else:
 						rl.append((e["language"],npl))
 				hdt.append((tuple(k["extensions"]),rl))
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"wb") as f:
-				f.write(struct.pack("<B",len(hdt)))
+				f.write(bytearray([len(hdt)]))
 				for k in hdt:
-					f.write(struct.pack("<BB",len(k[0]),len(k[1])))
+					f.write(bytearray([len(k[0]),len(k[1])]))
 					for e in k[0]:
-						f.write(struct.pack(f"<B{len(e)}s",len(e),bytes(e,"utf-8")))
+						f.write(bytearray([len(e)])+bytes(e,"utf-8"))
 					for e in k[1]:
 						if (type(e[0])==str):
-							f.write(struct.pack(f"<BB{len(e[0])}s",len(e[0]),(len(e[1]) if e[1] is not None else 0),bytes(e[0],"utf-8")))
+							f.write(bytearray([len(e[0]),(len(e[1]) if e[1] is not None else 0)])+bytes(e[0],"utf-8"))
 						else:
-							f.write(struct.pack(f"<BB",len(e[0])|128,(len(e[1]) if e[1] is not None else 0)))
+							f.write(bytearray([len(e[0])|128,(len(e[1]) if e[1] is not None else 0)]))
 							for v in e[0]:
-								f.write(struct.pack(f"<B{len(v)}s",len(v),bytes(v,"utf-8")))
+								f.write(bytearray([len(v)])+bytes(v,"utf-8"))
 						if (e[1] is not None):
 							for i,v in enumerate(e[1]):
 								if (len(v[0])>32767):
 									input("\x1b[38;2;200;40;20mLanguage File Pattern Length Overflow")
 									sys.exit(1)
-								f.write(struct.pack(f"<H{len(v[0])}s",len(v[0])|(0 if v[1] else 32768),bytes(v[0],"utf-8")))
+								f.write(bytearray([len(v[0])&0xff,(len(v[0])>>8)|(0 if v[1] else 128)])+bytes(v[0],"utf-8"))
 								e[1][i]=(regex.compile(v[0],regex.M|regex.V1),v[1])
 		else:
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_HEURISTIC_FILE,"rb") as f:
@@ -2858,15 +2855,13 @@ else:
 				i=f.read(1)[0]
 				while (i):
 					i-=1
-					el=f.read(1)[0]
-					dtl=f.read(1)[0]
+					el,dtl=f.read(2)
 					e=[]
 					for _ in range(0,el):
 						e.append(str(f.read(f.read(1)[0]),"utf-8"))
 					dt=[]
 					for _ in range(0,dtl):
-						nml=f.read(1)[0]
-						pll=f.read(1)[0]
+						nml,pll=f.read(2)
 						nm=None
 						if (nml&128):
 							nm=[]
@@ -2880,7 +2875,8 @@ else:
 						else:
 							pl=[]
 							for _ in range(0,pll):
-								l=struct.unpack("<H",f.read(2))[0]
+								bf=f.read(2)
+								l=(bf[0])|(bf[1]<<8)
 								pl.append((regex.compile(str(f.read(l&32767),"utf-8"),regex.M|regex.V1),(False if l&32768 else True)))
 							dt.append((nm,tuple(pl)))
 					hdt.append((tuple(e),tuple(dt)))
@@ -2921,22 +2917,24 @@ else:
 							db["tokens_total"]+=1
 					break
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"wb") as f:
-				f.write(struct.pack("<IHH",db["tokens_total"],db["languages_total"],len(db["tokens"])))
+				f.write(bytearray([db["tokens_total"]&0xff,(db["tokens_total"]>>8)&0xff,(db["tokens_total"]>>16)&0xff,db["tokens_total"]>>24,db["languages_total"]&0xff,db["languages_total"]>>8,len(db["tokens"])&0xff,len(db["tokens"])>>8]))
 				for k,v in db["filenames"].items():
-					f.write(struct.pack(f"<BBBBH{len(k)}s",len(k),len(v),db["languages"][k],db["language_tokens"][k],len(db["tokens"][k]),bytes(k,"utf-8")))
+					f.write(bytearray([len(k),len(v),db["languages"][k],db["language_tokens"][k],len(db["tokens"][k])&0xff,len(db["tokens"][k])>>8])+bytes(k,"utf-8"))
 					for e in v:
 						ee=bytes(e,"utf-8")
-						f.write(struct.pack(f"<B{len(ee)}s",len(ee),ee))
+						f.write(bytearray([len(ee)])+ee)
 					for ek,ev in db["tokens"][k].items():
 						eek=bytes(ek,"utf-8")
-						f.write(struct.pack(f"<BH{len(eek)}s",len(eek),ev,eek))
+						f.write(bytearray([len(eek),ev&0xff,ev>>8])+eek)
 		else:
 			with open(__file_base_dir__+REPO_STATS_LANGUAGE_DATABASE_FILE,"rb") as f:
-				db={"filenames":{},"language_tokens":{},"languages":{},"tokens":{}}
-				db["tokens_total"],db["languages_total"],i=struct.unpack("<IHH",f.read(8))
+				bf=f.read(8)
+				db={"filenames":{},"language_tokens":{},"languages":{},"tokens":{},"tokens_total":(bf[0])|(bf[1]<<8)|(bf[2]<<16)|(bf[3]<<24),"languages_total":(bf[4])|(bf[5]<<8)}
+				i=(bf[6])|(bf[7]<<8)
 				while (i):
 					i-=1
-					kl,fnm_l,lc,ltc,tl=struct.unpack("<BBBBH",f.read(6))
+					kl,fnm_l,lc,ltc,tl,tl2=f.read(6)
+					tl|=tl2<<8
 					k=str(f.read(kl),"utf-8")
 					db["languages"][k]=lc
 					db["language_tokens"][k]=ltc
@@ -2946,10 +2944,10 @@ else:
 					db["filenames"][k]=tuple(fnm)
 					t={}
 					for _ in range(0,tl):
-						ln,v=struct.unpack("<BH",f.read(3))
+						ln,v,v2=f.read(3)
+						v|=v2<<8
 						t[str(f.read(ln),"utf-8")]=v
 					db["tokens"][k]=t
-		REPO_STATS_LOG_ZERO_TOKENS=math.log(1/db["languages_total"])
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		ho=kernel32.GetStdHandle(-11)
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
@@ -2966,8 +2964,9 @@ else:
 		nci.dwSize=ci.dwSize
 		nci.bVisible=0
 		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
+		ztl=-math.log(db["languages_total"])
 		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
-		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el))
+		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl))
 		thr.daemon=True
 		thr.start()
 		elc=0
@@ -3005,7 +3004,7 @@ else:
 					ud=True
 			if (thr is None and el["__e__"]==2):
 				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
-				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el))
+				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl))
 				thr.daemon=True
 				thr.start()
 			if (elc!=el["__tcnt__"]):
