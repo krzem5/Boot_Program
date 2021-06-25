@@ -1,6 +1,5 @@
 import ctypes
 import ctypes.wintypes
-import math
 import msvcrt
 import os
 import re
@@ -39,7 +38,7 @@ BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+
 BLENDER_FILE_PATH="C:/Program Files/Blender Foundation/Blender/blender.exe"
 GIMP_FILE_PATH="C:/Program Files/GIMP 2/bin/gimp-2.10.exe"
 CHROME_FILE_PATH="C:/Program Files/Google/Chrome Dev/Application/chrome.exe"
-CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","C:\\Windows\\System32\\cmd.exe"))
+CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","cmd.exe"))
 CONSOLE_APP_FRAME_RATE=60
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
@@ -254,8 +253,6 @@ kernel32.GetCommTimeouts.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCOMM
 kernel32.GetCommTimeouts.restype=ctypes.wintypes.BOOL
 kernel32.GetConsoleCursorInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_CURSOR_INFO)
 kernel32.GetConsoleCursorInfo.restype=ctypes.wintypes.BOOL
-kernel32.GetConsoleMode.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
-kernel32.GetConsoleMode.restype=ctypes.wintypes.BOOL
 kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.PCONSOLE_SCREEN_BUFFER_INFO)
 kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
 kernel32.GetConsoleWindow.argtypes=tuple()
@@ -714,18 +711,13 @@ def _is_binary(fp):
 
 
 def _github_api_request(m,**kw):
-	sl=True
-	if ("sl" in kw):
-		sl=kw["sl"]
-		del kw["sl"]
 	kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 	r=getattr(requests,m)(**kw)
 	if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
 		print(r.headers)
 		input()
 		sys.exit(1)
-	if (sl):
-		time.sleep(3600/GITHUB_API_QUOTA)
+	time.sleep(3600/GITHUB_API_QUOTA)
 	o=r.json()
 	if (type(o)==dict and "message" in o.keys() and o["message"]=="Server Error"):
 		print(o)
@@ -915,9 +907,8 @@ def _push_single_project(p,b_nm):
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}),sl=False)["sha"],"parents":[bt_sha]}),sl=False)["sha"],"force":True}),sl=False)
+		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
-		time.sleep(3*3600/GITHUB_API_QUOTA)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
 	if (cr==True):
@@ -1007,7 +998,7 @@ def _tokenize_file(dt,el=None):
 
 
 
-def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
+def _project_stats_detect_file(r,f,ll,hdt,db):
 	if (os.stat(r+f).st_size==0 or _is_binary(r+f)==True):
 		return None
 	o=list(ll.keys())
@@ -1068,19 +1059,22 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 			tc[t]=1
 		else:
 			tc[t]+=1
-	p=[]
+	mx=0
+	op=None
 	for l in o:
 		if (l not in db["languages"]):
 			continue
-		lp=math.log(db["languages"][l]/db["languages_total"])
+		lp=db["languages"][l]/db["languages_total"]
 		for k,v in tc.items():
-			lp+=v*(math.log(db["tokens"][l][k]/db["language_tokens"][l]) if k in db["tokens"][l] else ztl)
-		p.append((l,lp))
-	return sorted(p,key=lambda e:-e[1])[0][0]
+			lp*=(db["tokens"][l][k]/db["language_tokens"][l] if k in db["tokens"][l] else 1/db["languages_total"])**v
+		if (op is None or lp>mx):
+			mx=lp
+			op=l
+	return op
 
 
 
-def _project_stats(p_fp,ll,hdt,db,el,ztl):
+def _project_stats(p_fp,ll,hdt,db,el):
 	gdt=[]
 	with open(p_fp+".gitignore","r") as f:
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -1108,7 +1102,7 @@ def _project_stats(p_fp,ll,hdt,db,el,ztl):
 				if (_match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
 					continue
 				_print(f"\x1b[38;2;100;100;100mDetecting File \x1b[38;2;65;118;46m'{r+f}'\x1b[38;2;100;100;100m...",df=True)
-				l=_project_stats_detect_file(r,f,ll,hdt,db,ztl)
+				l=_project_stats_detect_file(r,f,ll,hdt,db)
 				if (l is None):
 					continue
 				if (l not in el):
@@ -1122,13 +1116,13 @@ def _project_stats(p_fp,ll,hdt,db,el,ztl):
 
 
 
-def _read_project_stats(fp,ll,hdt,db,el,ztl):
+def _read_project_stats(fp,ll,hdt,db,el):
 	if (fp is None):
 		for fp in os.listdir(PROJECT_DIR):
-			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el,ztl)
-		_project_stats(__file_base_dir__,ll,hdt,db,el,ztl)
+			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
+		_project_stats(__file_base_dir__,ll,hdt,db,el)
 	else:
-		_project_stats(fp,ll,hdt,db,el,ztl)
+		_project_stats(fp,ll,hdt,db,el)
 
 
 
@@ -2933,9 +2927,8 @@ else:
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
-		ztl=-math.log(db["languages_total"])
 		el={}
-		_read_project_stats((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl)
+		_read_project_stats((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el)
 		ud=False
 		f=True
 		ln_f=False
