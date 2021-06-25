@@ -9,7 +9,6 @@ import requests
 import subprocess
 import sys
 import tarfile
-import threading
 import time
 import yaml
 import zipfile
@@ -715,13 +714,18 @@ def _is_binary(fp):
 
 
 def _github_api_request(m,**kw):
+	sl=True
+	if ("sl" in kw):
+		sl=kw["sl"]
+		del kw["sl"]
 	kw["headers"]={**kw.get("headers",{}),"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Update API"}
 	r=getattr(requests,m)(**kw)
 	if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
 		print(r.headers)
 		input()
 		sys.exit(1)
-	time.sleep(3600/GITHUB_API_QUOTA)
+	if (sl):
+		time.sleep(3600/GITHUB_API_QUOTA)
 	o=r.json()
 	if (type(o)==dict and "message" in o.keys() and o["message"]=="Server Error"):
 		print(o)
@@ -911,8 +915,9 @@ def _push_single_project(p,b_nm):
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}),sl=False)["sha"],"parents":[bt_sha]}),sl=False)["sha"],"force":True}),sl=False)
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
+		time.sleep(3*3600/GITHUB_API_QUOTA)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
 	if (cr==True):
@@ -967,8 +972,6 @@ def _tokenize_file(dt,el=None):
 	ig=0
 	t=min(REPO_STATS_MAX_READ,len(dt))
 	while (i<t):
-		if (el!=None and el["__e__"]==1):
-			return []
 		sl=(True if i==0 or dt[i-1] in "\r\n" else False)
 		if (sl==True):
 			m=REPO_STATS_SHEBANG_REGEX.match(dt[i:])
@@ -1012,8 +1015,6 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 	for k in db["languages"]:
 		if (f in db["filenames"][k]):
 			c.append(k)
-	if (el["__e__"]==1):
-		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -1023,8 +1024,6 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 	for k in o:
 		if (ex in ll[k][0]):
 			c.append(k)
-	if (el["__e__"]==1):
-		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -1037,8 +1036,6 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 		return None
 	if (REPO_STATS_XML_REGEX.search("\n".join(dt.split("\n")[:2]))!=None):
 		return "XML"
-	if (el["__e__"]==1):
-		return None
 	c.clear()
 	for k in hdt:
 		if (ex in k[0]):
@@ -1056,8 +1053,6 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 				c.append(e[0])
 				break
 			break
-	if (el["__e__"]==1):
-		return None
 	if (len(c)>0):
 		o=c[:]
 	if (len(o)==1):
@@ -1065,8 +1060,6 @@ def _project_stats_detect_file(r,f,ll,hdt,db,ztl):
 	if (len(o)==0):
 		return None
 	tl=_tokenize_file(dt,el)
-	if (el["__e__"]==1):
-		return None
 	if (len(tl)==0):
 		return None
 	tc={}
@@ -1106,24 +1099,16 @@ def _project_stats(p_fp,ll,hdt,db,el,ztl):
 					if ("**/" in ln):
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	if (el["__e__"]==1):
-		return
 	for r,_,fl in os.walk(p_fp):
 		r=r.replace("\\","/").rstrip("/")+"/"
-		if (el["__ig__"]==True and r[len(p_fp):].strip("/")[:4]=="docs"):
+		if (r[len(p_fp):].strip("/")[:4]=="docs"):
 			continue
-		if (el["__e__"]==1):
-			return
 		if ("/build" not in r.lower()):
 			for f in fl:
-				if (el["__e__"]==1):
-					return
-				el["__cf__"]=r+f
-				if (el["__ig__"]==True and _match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
+				if (_match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
 					continue
+				_print(f"\x1b[38;2;100;100;100mDetecting File \x1b[38;2;65;118;46m'{r+f}'\x1b[38;2;100;100;100m...",df=True)
 				l=_project_stats_detect_file(r,f,ll,hdt,db,ztl)
-				if (el["__e__"]==1):
-					return
 				if (l is None):
 					continue
 				if (l not in el):
@@ -1134,7 +1119,6 @@ def _project_stats(p_fp,ll,hdt,db,el,ztl):
 					for k in fo.read().replace(b"\r\n",b"\n").split(b"\n"):
 						if (len(k.strip())>0):
 							el[l][1]+=1
-				el["__tcnt__"]+=sz
 
 
 
@@ -1142,13 +1126,9 @@ def _read_project_stats(fp,ll,hdt,db,el,ztl):
 	if (fp is None):
 		for fp in os.listdir(PROJECT_DIR):
 			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el,ztl)
-			if (el["__e__"]==1):
-				break
 		_project_stats(__file_base_dir__,ll,hdt,db,el,ztl)
 	else:
 		_project_stats(fp,ll,hdt,db,el,ztl)
-	el["__cf__"]=None
-	el["__e__"]=2
 
 
 
@@ -2951,8 +2931,16 @@ else:
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		ho=kernel32.GetStdHandle(-11)
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
-		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
+		ztl=-math.log(db["languages_total"])
+		el={}
+		_read_project_stats((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl)
+		ud=False
+		f=True
+		ln_f=False
+		o=[]
+		vs=0
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 		kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.srWindow.Right+1,sbi.srWindow.Bottom+1))
@@ -2960,24 +2948,10 @@ else:
 		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.SetConsoleCursorPosition(ho,ctypes.wintypes._COORD(0,0))
-		nci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
-		nci.dwSize=ci.dwSize
-		nci.bVisible=0
-		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(nci))
-		ztl=-math.log(db["languages_total"])
-		el={"__tcnt__":0,"__e__":False,"__cf__":None,"__ig__":True}
-		thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl))
-		thr.daemon=True
-		thr.start()
-		elc=0
-		elcf=None
-		elcf_sz=0
-		ud=False
-		f=True
-		ln_f=False
-		o0=[]
-		o1=[]
-		vs=0
+		ci=ctypes.wintypes.CONSOLE_CURSOR_INFO()
+		kernel32.GetConsoleCursorInfo(ho,ctypes.byref(ci))
+		ci.bVisible=0
+		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 		while (True):
 			if (msvcrt.kbhit()==True):
 				c=(msvcrt.getch(),None)
@@ -2987,34 +2961,23 @@ else:
 					break
 				elif (c[0]==b"t"):
 					f=not f
-					elc=-1
+					o.clear()
 				elif (c[0]==b"l"):
 					ln_f=not ln_f
-					elc=-1
-				elif (c[0]==b"a"):
-					if (el["__e__"]==0):
-						el["__e__"]=1
-					thr.join()
-					thr=None
+					o.clear()
 				elif (c[0]==b"\xe0" and c[1]==b"H" and vs>0):
 					vs-=1
 					ud=True
 				elif (c[0]==b"\xe0" and c[1]==b"P"):
 					vs+=1
 					ud=True
-			if (thr is None and el["__e__"]==2):
-				el={"__tcnt__":0,"__e__":0,"__cf__":None,"__ig__":not el["__ig__"]}
-				thr=threading.Thread(target=_read_project_stats,args=((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el,ztl))
-				thr.daemon=True
-				thr.start()
-			if (elc!=el["__tcnt__"]):
-				elc=el["__tcnt__"]
+			if (len(o)==0):
 				pl={}
 				pll={}
 				pt=0
 				pkl=0
 				for k,v in list(el.items()):
-					if (k[:2]=="__" or (f==True and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("programming") and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("markup"))):
+					if (f==True and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("programming") and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("markup")):
 						continue
 					pl[k]=v[0]
 					pll[k]=v[1]
@@ -3026,7 +2989,9 @@ else:
 					pvl=max([len(str(int(e[1]))) for e in pl.values()])
 					pvll=max([len(str(e)) for e in pll.values()])
 					ptvl=max([len(str(e[0])) for e in pl.values()])
-					o0=[f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}",f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ","\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ "]
+					o.append(f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}")
+					o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╔{'═'*(sbi.dwMaximumWindowSize.X-8)}╗   ")
+					o.append("\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ ")
 					np=0
 					ln=sbi.dwMaximumWindowSize.X-10
 					mv=0
@@ -3037,10 +3002,10 @@ else:
 						bw=int(v[0]*(sbi.dwMaximumWindowSize.X-10)*2/pt)/2-np/2
 						if (bw<0):
 							bw=0
-						o0[2]+=(f"\x1b[48;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
+						o[2]+=(f"\x1b[48;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m▌\x1b[0m" if np!=0 else "")+f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
 						if (si is None):
-							si=len(o0[1])-1
-						o0[2]+="█"*int(bw)
+							si=len(o[1])-1
+						o[2]+="█"*int(bw)
 						ln-=int(bw)+np
 						np=int((bw-int(bw))*2)
 						if (bw==0):
@@ -3048,41 +3013,34 @@ else:
 					if (ln!=0 or np!=0):
 						ln-=np
 						if (ln<0):
-							o0[2]=o0[2][:si]+o0[2][si-ln:]
+							o[2]=o[2][:si]+o[2][si-ln:]
 						if (ln<-1):
 							print(ln)
 							while (True):
 								pass
-						o0[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
-					o0[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
-					o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sbi.dwMaximumWindowSize.X-8)}╣   ")
+						o[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
+					o[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
+					o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sbi.dwMaximumWindowSize.X-8)}╣   ")
 					if (ln_f==False):
 						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
 						for k,v in pl.items():
 							bw=round(v[0]*bs)/2
 							cl=f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
-							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   ")
+							o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-int(bw)-22)}\x1b[38;2;52;52;52m║   ")
 					else:
 						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-24)*pt/mv)*2/pt
 						for k,v in pl.items():
 							bw=round(v[0]*bs)/2
 							cl=f"\x1b[38;2;{ll[k][1][0]};{ll[k][1][1]};{ll[k][1][2]}m"
-							o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m, {cl}{str(pll[k]).rjust(pvll,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-int(bw)-24)}\x1b[38;2;52;52;52m║   ")
-					o0.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sbi.dwMaximumWindowSize.X-8)}╝   ")
-					elcf=-1
-					elcf_sz=max(len(pl)+6,sbi.srWindow.Bottom+1)-len(pl)-5
-			if (el["__cf__"]!=elcf):
-				elcf=el["__cf__"]
-				ud=True
-				lc=(math.ceil(len(elcf)/sbi.dwMaximumWindowSize.X) if elcf!=None else 0)
-				o1=[" "*sbi.dwMaximumWindowSize.X for i in range(0,max(elcf_sz,lc))]
-				if (elcf!=None):
-					for i in range(0,lc):
-						o1[-lc+i]="\x1b[38;2;200;200;200m"+elcf[i*sbi.dwMaximumWindowSize.X:(i+1)*sbi.dwMaximumWindowSize.X]+(" "*(sbi.dwMaximumWindowSize.X-len(elcf)%sbi.dwMaximumWindowSize.X) if i==lc-1 else "")
-			vs=min(vs,max(len(o0)+len(o1)-sbi.srWindow.Bottom-1,0))
+							o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ║ {cl}{k.ljust(pkl,' ')} \x1b[38;2;40;40;40m({cl}{str(int(v[1])).rjust(pvl,' ')}.{str(v[1]).split('.')[1].ljust(2,'0')}%\x1b[38;2;40;40;40m, {cl}{str(v[0]).rjust(ptvl,' ')}\x1b[38;2;40;40;40m, {cl}{str(pll[k]).rjust(pvll,' ')}\x1b[38;2;40;40;40m) » {cl}"+"█"*int(bw)+f"{' ▌'[int((bw-int(bw))*2)]}{' '*(sbi.dwMaximumWindowSize.X-pkl-pvl-pvll-ptvl-int(bw)-24)}\x1b[38;2;52;52;52m║   ")
+					o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╚{'═'*(sbi.dwMaximumWindowSize.X-8)}╝   ")
+					o.append(f"\x1b[48;2;18;18;18m{' '*sbi.dwMaximumWindowSize.X}")
+					while (len(o)<sbi.srWindow.Bottom+1):
+						o.append(" "*sbi.dwMaximumWindowSize.X)
+			vs=min(vs,max(len(o)-sbi.srWindow.Bottom-1,0))
 			if (ud==True):
 				ud=False
-				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join((o0+o1)[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
+				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join(o[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
 				sys.__stdout__.flush()
 			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==7):
