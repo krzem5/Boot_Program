@@ -1424,31 +1424,6 @@ def _replace_arduino_include(dt):
 
 
 
-def _split_cmd(cmd):
-	o=[""]
-	i=0
-	while (i<len(cmd)):
-		if (cmd[i] in " \t\n\r\v\f"):
-			if (len(o[-1])>0):
-				o.append("")
-			i+=1
-			continue
-		elif (cmd[i] in "'\""):
-			if (len(o[-1])>0):
-				o.append("")
-			i+=1
-			while (cmd[i] not in "'\""):
-				o[-1]+=cmd[i]
-				i+=1
-		else:
-			o[-1]+=cmd[i]
-		i+=1
-	if (len(o[-1])==0):
-		o=o[:-1]
-	return o
-
-
-
 def _run_process(a):
 	si=ctypes.wintypes.STARTUPINFOW()
 	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
@@ -1671,7 +1646,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	if ("recipe.preproc.macros" not in list(pd.keys())):
 		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
-	_run_process(_join_arguments(*[e for e in _split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"],"-DARDUINO_LIB_DISCOVERY_PHASE"))
+	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"])).replace("-MMD","")+" -DARDUINO_LIB_DISCOVERY_PHASE")
 	os.remove(o_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
