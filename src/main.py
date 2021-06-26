@@ -5,7 +5,6 @@ import os
 import re
 import regex
 import requests
-import subprocess
 import sys
 import tarfile
 import time
@@ -96,10 +95,12 @@ VK_SHIFT=16
 
 
 
+CREATE_NEW_CONSOLE=0x10
 DICS_FLAG_GLOBAL=1
 DIGCF_PRESENT=2
 DIREG_DEV=1
 DTR_CONTROL_ENABLE=1
+DUPLICATE_SAME_ACCESS=2
 ERROR_IO_INCOMPLETE=0x3e4
 ERROR_IO_PENDING=0x3e5
 ERROR_OPERATION_ABORTED=0x3e3
@@ -123,6 +124,7 @@ ICON_BIG=1
 ICON_SMALL=0
 IDYES=6
 IMAGE_ICON=1
+INFINITE=4294967295
 INVALID_HANDLE_VALUE=0xffffffffffffffff
 KEY_READ=0x20019
 LLKHF_ALTDOWN=0x20
@@ -149,6 +151,9 @@ SHTDN_REASON_FLAG_PLANNED=0x80000000
 SHTDN_REASON_MAJOR_OTHER=0
 SHTDN_REASON_MINOR_OTHER=0
 SPDRP_HARDWAREID=1
+STARTF_USESTDHANDLES=0x100
+STD_INPUT_HANDLE=-10
+STD_OUTPUT_HANDLE=-11
 SW_SHOWMAXIMIZED=3
 SWP_SHOWWINDOW=0x40
 TOKEN_ADJUST_PRIVILEGES=0x20
@@ -189,7 +194,10 @@ ctypes.wintypes.MONITORINFO=type("MONITORINFO",(ctypes.Structure,),{"_fields_":[
 ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME=type("OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME",(ctypes.Structure,),{"_fields_":[("Offset",ctypes.wintypes.DWORD),("OffsetHigh",ctypes.wintypes.DWORD)]})
 ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME=type("OVERLAPPED_DUMMYUNIONNAME",(ctypes.Union,),{"_fields_":[("_0",ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME_DUMMYSTRUCTNAME),("Pointer",ctypes.wintypes.LPVOID)],"_anonymous_":["_0"]})
 ctypes.wintypes.OVERLAPPED=type("OVERLAPPED",(ctypes.Structure,),{"_fields_":[("Internal",ctypes.wintypes.ULONG_PTR),("InternalHigh",ctypes.wintypes.ULONG_PTR),("_0",ctypes.wintypes.OVERLAPPED_DUMMYUNIONNAME),("hEvent",ctypes.wintypes.HANDLE)],"_anonymous_":["_0"]})
+ctypes.wintypes.PROCESS_INFORMATION=type("PROCESS_INFORMATION",(ctypes.Structure,),{"_fields_":[("hProcess",ctypes.wintypes.HANDLE),("hThread",ctypes.wintypes.HANDLE),("dwProcessId",ctypes.wintypes.DWORD),("dwThreadId",ctypes.wintypes.DWORD)]})
+ctypes.wintypes.SECURITY_ATTRIBUTES=type("SECURITY_ATTRIBUTES",(ctypes.Structure,),{"_fields_":[("nLength",ctypes.wintypes.DWORD),("lpSecurityDescriptor",ctypes.wintypes.LPVOID),("bInheritHandle",ctypes.wintypes.BOOL)]})
 ctypes.wintypes.SP_DEVINFO_DATA=type("SP_DEVINFO_DATA",(ctypes.Structure,),{"_fields_":[("cbSize",ctypes.wintypes.DWORD),("ClassGuid",ctypes.wintypes.GUID),("DevInst",ctypes.wintypes.DWORD),("Reserved",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.STARTUPINFOW=type("STARTUPINFOW",(ctypes.Structure,),{"_fields_":[("cb",ctypes.wintypes.DWORD),("lpReserved",ctypes.wintypes.LPWSTR),("lpDesktop",ctypes.wintypes.LPWSTR),("lpTitle",ctypes.wintypes.LPWSTR),("dwX",ctypes.wintypes.DWORD),("dwY",ctypes.wintypes.DWORD),("dwXSize",ctypes.wintypes.DWORD),("dwYSize",ctypes.wintypes.DWORD),("dwXCountChars",ctypes.wintypes.DWORD),("dwYCountChars",ctypes.wintypes.DWORD),("dwFillAttribute",ctypes.wintypes.DWORD),("dwFlags",ctypes.wintypes.DWORD),("wShowWindow",ctypes.wintypes.WORD),("cbReserved2",ctypes.wintypes.WORD),("lpReserved2",ctypes.wintypes.LPBYTE),("hStdInput",ctypes.wintypes.HANDLE),("hStdOutput",ctypes.wintypes.HANDLE),("hStdError",ctypes.wintypes.HANDLE)]})
 ctypes.wintypes.TOKEN_PRIVILEGES=type("TOKEN_PRIVILEGES",(ctypes.Structure,),{"_fields_":[("PrivilegeCount",ctypes.wintypes.DWORD),("Privileges",ctypes.wintypes.LUID_AND_ATTRIBUTES*1)]})
 ctypes.wintypes.WNDCLASSEXW=type("WNDCLASSEXW",(ctypes.Structure,),{"_fields_":[("cbSize",ctypes.wintypes.UINT),("style",ctypes.wintypes.UINT),("lpfnWndProc",ctypes.wintypes.WNDPROC),("cbClsExtra",ctypes.c_int),("cbWndExtra",ctypes.c_int),("hInstance",ctypes.wintypes.HINSTANCE),("hIcon",ctypes.wintypes.HICON),("hCursor",ctypes.wintypes.HCURSOR),("hbrBackground",ctypes.wintypes.HBRUSH),("lpszMenuName",ctypes.wintypes.LPCWSTR),("lpszClassName",ctypes.wintypes.LPCWSTR),("hIconSm",ctypes.wintypes.HICON)]})
 ctypes.wintypes.LPCOMMTIMEOUTS=ctypes.POINTER(ctypes.wintypes.COMMTIMEOUTS)
@@ -197,7 +205,9 @@ ctypes.wintypes.LPCOMSTAT=ctypes.POINTER(ctypes.wintypes.COMSTAT)
 ctypes.wintypes.LPDCB=ctypes.POINTER(ctypes.wintypes.DCB)
 ctypes.wintypes.LPMONITORINFO=ctypes.POINTER(ctypes.wintypes.MONITORINFO)
 ctypes.wintypes.LPOVERLAPPED=ctypes.POINTER(ctypes.wintypes.OVERLAPPED)
-ctypes.wintypes.LPSECURITY_ATTRIBUTES=ctypes.c_void_p
+ctypes.wintypes.LPPROCESS_INFORMATION=ctypes.POINTER(ctypes.wintypes.PROCESS_INFORMATION)
+ctypes.wintypes.LPSECURITY_ATTRIBUTES=ctypes.POINTER(ctypes.wintypes.SECURITY_ATTRIBUTES)
+ctypes.wintypes.LPSTARTUPINFOW=ctypes.POINTER(ctypes.wintypes.STARTUPINFOW)
 ctypes.wintypes.OPT_PSMALL_RECT=ctypes.c_void_p
 ctypes.wintypes.PCHAR_INFO=ctypes.POINTER(ctypes.wintypes.CHAR_INFO)
 ctypes.wintypes.PCONSOLE_CURSOR_INFO=ctypes.POINTER(ctypes.wintypes.CONSOLE_CURSOR_INFO)
@@ -243,6 +253,14 @@ kernel32.CreateEventW.argtypes=(ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.win
 kernel32.CreateEventW.restype=ctypes.wintypes.HANDLE
 kernel32.CreateFileW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD,ctypes.wintypes.HANDLE)
 kernel32.CreateFileW.restype=ctypes.wintypes.HANDLE
+kernel32.CreatePipe.argtypes=(ctypes.wintypes.PHANDLE,ctypes.wintypes.PHANDLE,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.DWORD)
+kernel32.CreatePipe.restype=ctypes.wintypes.BOOL
+kernel32.CreateProcessW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPWSTR,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.LPSECURITY_ATTRIBUTES,ctypes.wintypes.BOOL,ctypes.wintypes.DWORD,ctypes.wintypes.LPVOID,ctypes.wintypes.LPCWSTR,ctypes.wintypes.LPSTARTUPINFOW,ctypes.wintypes.LPPROCESS_INFORMATION)
+kernel32.CreateProcessW.restype=ctypes.wintypes.BOOL
+kernel32.DuplicateHandle.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.HANDLE,ctypes.wintypes.HANDLE,ctypes.wintypes.PHANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.BOOL,ctypes.wintypes.DWORD)
+kernel32.DuplicateHandle.restype=ctypes.wintypes.BOOL
+kernel32.ExitProcess.artypes=(ctypes.wintypes.UINT,)
+kernel32.ExitProcess.restype=None
 kernel32.FillConsoleOutputAttribute.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.WORD,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
 kernel32.FillConsoleOutputAttribute.restype=ctypes.wintypes.BOOL
 kernel32.FillConsoleOutputCharacterA.argtypes=(ctypes.wintypes.HANDLE,ctypes.c_char,ctypes.wintypes.DWORD,ctypes.wintypes._COORD,ctypes.wintypes.LPDWORD)
@@ -257,6 +275,8 @@ kernel32.GetConsoleScreenBufferInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wint
 kernel32.GetConsoleScreenBufferInfo.restype=ctypes.wintypes.BOOL
 kernel32.GetConsoleWindow.argtypes=tuple()
 kernel32.GetConsoleWindow.restype=ctypes.wintypes.HWND
+kernel32.GetExitCodeProcess.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPDWORD)
+kernel32.GetExitCodeProcess.restype=ctypes.wintypes.BOOL
 kernel32.GetLastError.argtypes=tuple()
 kernel32.GetLastError.restype=ctypes.wintypes.DWORD
 kernel32.GetModuleHandleW.argtypes=(ctypes.wintypes.LPCWSTR,)
@@ -295,6 +315,8 @@ kernel32.SetFileAttributesW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DW
 kernel32.SetFileAttributesW.restype=ctypes.wintypes.BOOL
 kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
 kernel32.SetupComm.restype=ctypes.wintypes.BOOL
+kernel32.WaitForSingleObject.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
+kernel32.WaitForSingleObject.restype=ctypes.wintypes.DWORD
 kernel32.WriteFile.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.LPCVOID,ctypes.wintypes.DWORD,ctypes.wintypes.LPDWORD,ctypes.wintypes.LPOVERLAPPED)
 kernel32.WriteFile.restype=ctypes.wintypes.BOOL
 move_to_desktop.move_to_desktop.argtypes=(ctypes.wintypes.HWND,ctypes.wintypes.UINT)
@@ -716,12 +738,12 @@ def _github_api_request(m,**kw):
 	if ("X-RateLimit-Remaining" in r.headers.keys() and r.headers["X-RateLimit-Remaining"]=="0"):
 		print(r.headers)
 		input()
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	time.sleep(3600/GITHUB_API_QUOTA)
 	o=r.json()
 	if (type(o)==dict and "message" in o.keys() and o["message"]=="Server Error"):
 		print(o)
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	return o
 
 
@@ -1279,7 +1301,7 @@ def _install_arduino_package(b,force=False):
 						zf.extractall(__file_base_dir__+f"arduino/packages/arduino/tools/{b}/{dt['tag_name']}")
 				else:
 					_print(f"\x1b[38;2;200;40;20mUnknown File Extractor for File Extensions '{k['name'][len(k['name'].split('.')[0]):]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-					sys.exit(1)
+					kernel32.ExitProcess(1)
 				_print("Removing Archive\x1b[38;2;100;100;100m...")
 				os.remove(f"{TEMP_DIR}{k['name']}")
 		_print("Indexing Package\x1b[38;2;100;100;100m...")
@@ -1427,6 +1449,43 @@ def _split_cmd(cmd):
 
 
 
+def _run_process(a):
+	si=ctypes.wintypes.STARTUPINFOW()
+	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+	si.lpReserved=None
+	si.lpDesktop=None
+	si.lpTitle=None
+	si.dwFlags=0
+	si.cbReserved2=0
+	si.lpReserved2=None
+	pi=ctypes.wintypes.PROCESS_INFORMATION()
+	kernel32.CreateProcessW(None,a,None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CloseHandle(pi.hThread)
+	kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
+	ec=ctypes.wintypes.DWORD()
+	kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
+	kernel32.CloseHandle(pi.hProcess)
+	if (ec.value!=0):
+		kernel32.ExitProcess(ec)
+
+
+
+def _create_process(a,cwd=None):
+	si=ctypes.wintypes.STARTUPINFOW()
+	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+	si.lpReserved=None
+	si.lpDesktop=None
+	si.lpTitle=None
+	si.dwFlags=0
+	si.cbReserved2=0
+	si.lpReserved2=None
+	pi=ctypes.wintypes.PROCESS_INFORMATION()
+	kernel32.CreateProcessW(None,a,None,None,False,CREATE_NEW_CONSOLE,None,cwd,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CloseHandle(pi.hProcess)
+	kernel32.CloseHandle(pi.hThread)
+
+
+
 def _expand_arduino_cmd(d,s):
 	while (True):
 		ns=s+""
@@ -1441,10 +1500,7 @@ def _expand_arduino_cmd(d,s):
 def _run_arduino_recipe(bp,pfx,sfx):
 	for k in bp.keys():
 		if (k.startswith(pfx) and k.endswith(sfx) and len(bp[k])>0):
-			cmd=_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,bp[k])))
-			p=subprocess.run(cmd)
-			if (p.returncode!=0):
-				sys.exit(p.returncode)
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,bp[k])))
 
 
 
@@ -1466,9 +1522,7 @@ def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 			c_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+("."+ARDUINO_CUSTOM_WARNING_LEVEL if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"" for e in inc_l]),"source_file":f,"object_file":o_fp+f[len(i_fp):]+".o"}
 			if (not os.path.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
 				os.makedirs(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))
-			p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]))))
-			if (p.returncode!=0):
-				sys.exit(p.returncode)
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]])))
 			o.append(o_fp+f[len(i_fp):]+".o")
 	return o
 
@@ -1480,10 +1534,10 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	o_fp=os.path.abspath(o_fp).replace("\\","/").rstrip("/")+"/"
 	if (not os.path.exists(s_fp)):
 		_print(f"\x1b[38;2;200;40;20mSketch '{s_fp}'\x1b[38;2;200;40;20m doesn't Exist.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	if (not os.path.isdir(s_fp)):
 		_print("\x1b[38;2;200;40;20mSketch Path must Be a Directory.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	_print(f"Compiling Sketch '{s_fp}' to Directory '{o_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp)):
 		os.mkdir(o_fp)
@@ -1491,11 +1545,11 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	_print("Searching For Main File\x1b[38;2;100;100;100m...")
 	if (os.path.exists(m_fp)==False or os.path.isdir(m_fp)==True):
 		_print("\x1b[38;2;200;40;20mSketch doesn't Contain a Main Program")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		_print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}'\x1b[38;2;200;40;20m isn't Installed.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(h_fp+"boards.txt","r") as hb_f:
@@ -1508,7 +1562,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			h_pm[k.split(".")[0]][".".join(k.split("=")[0].split(".")[1:])]=k[len(k.split("=")[0])+1:]
 	if (fqbn[2] not in list(h_pm.keys())):
 		_print(f"\x1b[38;2;200;40;20mInvalid FQBN '{':'.join(fqbn)}'\x1b[38;2;200;40;20m.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	_print(f"Reading '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
 	with open(h_fp+"platform.txt","r") as hp_f:
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
@@ -1617,9 +1671,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	if ("recipe.preproc.macros" not in list(pd.keys())):
 		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
-	p=subprocess.run([e for e in _split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"]+["-DARDUINO_LIB_DISCOVERY_PHASE"])
-	if (p.returncode!=0):
-		sys.exit(p.returncode)
+	_run_process(_join_arguments(*[e for e in _split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"]))) if e!="-MMD"],"-DARDUINO_LIB_DISCOVERY_PHASE"))
 	os.remove(o_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
@@ -1642,9 +1694,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			if (pr==False):
 				_print("Archiving Core Files\x1b[38;2;100;100;100m...")
 			pr=True
-			p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"archive_file":"core.a","archive_file_path":o_fp+"core/core.a","object_file":c_of},bp["recipe.ar.pattern"]))))
-			if (p.returncode!=0):
-				sys.exit(p.returncode)
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"archive_file":"core.a","archive_file_path":o_fp+"core/core.a","object_file":c_of},bp["recipe.ar.pattern"])))
 			os.remove(c_of)
 			os.remove(c_of[:-2]+".d")
 	else:
@@ -1655,9 +1705,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.linking.prelink",".pattern")
 	_print("Linking Files\x1b[38;2;100;100;100m...")
-	p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"]))))
-	if (p.returncode!=0):
-		sys.exit(p.returncode)
+	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"])))
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
 	_run_arduino_recipe(bp,"recipe.hooks.linking.postlink",".pattern")
 	_print("Running Recipe 'recipe.hooks.objcopy.preobjcopy'\x1b[38;2;100;100;100m...")
@@ -1671,20 +1719,63 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
-		p=subprocess.run(_split_cmd(_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"])),stdout=subprocess.PIPE)
-		if (p.returncode!=0):
-			sys.exit(p.returncode)
-		o=str(p.stdout,"utf-8")
+		in_h=kernel32.GetStdHandle(STD_INPUT_HANDLE)
+		out_r_h=ctypes.wintypes.HANDLE()
+		out_w_h=ctypes.wintypes.HANDLE()
+		sa=ctypes.wintypes.SECURITY_ATTRIBUTES()
+		sa.nLength=ctypes.sizeof(ctypes.wintypes.SECURITY_ATTRIBUTES())
+		sa.lpSecurityDescriptor=None
+		sa.bInheritHandle=True
+		kernel32.CreatePipe(ctypes.byref(out_r_h),ctypes.byref(out_w_h),ctypes.byref(sa),0)
+		tmp_h=ctypes.wintypes.HANDLE()
+		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),in_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
+		in_h=tmp_h
+		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
+		out_w_h=tmp_h
+		err_h=ctypes.wintypes.HANDLE()
+		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(err_h),0,True,DUPLICATE_SAME_ACCESS)
+		si=ctypes.wintypes.STARTUPINFOW()
+		si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+		si.lpReserved=None
+		si.lpDesktop=None
+		si.lpTitle=None
+		si.dwFlags=STARTF_USESTDHANDLES
+		si.cbReserved2=0
+		si.lpReserved2=None
+		si.hStdInput=in_h
+		si.hStdOutput=out_w_h
+		si.hStdError=err_h
+		pi=ctypes.wintypes.PROCESS_INFORMATION()
+		kernel32.CreateProcessW(None,_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"]),None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
+		kernel32.CloseHandle(pi.hThread)
+		kernel32.CloseHandle(in_h)
+		kernel32.CloseHandle(out_w_h)
+		kernel32.CloseHandle(err_h)
+		kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
+		o=""
+		bf=ctypes.create_string_buffer(FILE_READ_CHUNK_SIZE)
+		bf_l=ctypes.wintypes.DWORD()
+		while (True):
+			kernel32.ReadFile(out_r_h,bf,FILE_READ_CHUNK_SIZE,ctypes.byref(bf_l),None)
+			o+=str(bf.raw[:bf_l.value],"utf-8")
+			if (bf_l.value!=FILE_READ_CHUNK_SIZE):
+				break
+		ec=ctypes.wintypes.DWORD()
+		kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
+		kernel32.CloseHandle(pi.hProcess)
+		kernel32.CloseHandle(out_r_h)
+		if (ec.value!=0):
+			kernel32.ExitProcess(ec)
 		for k in re.findall(bp["recipe.size.regex"],o,re.M):
 			sz[0]+=int(k)
 		for k in re.findall(bp["recipe.size.regex.data"],o,re.M):
 			sz[1]+=int(k)
 		if (sz[0]>int(bp["upload.maximum_size"])):
 			print(f"\x1b[38;2;200;40;20mSketch Uses {sz[0]} bytes out of {int(bp['upload.maximum_size'])} bytes of storage space.")
-			sys.exit(1)
+			kernel32.ExitProcess(1)
 		if (bp["upload.maximum_data_size"]!="" and sz[1]>int(bp["upload.maximum_data_size"])):
 			print(f"\x1b[38;2;200;40;20mSketch Uses {sz[0]} bytes out of {int(bp['upload.maximum_size'])} bytes of Dynamic Memory.")
-			sys.exit(1)
+			kernel32.ExitProcess(1)
 		_print(f"Sketch uses {sz[0]} bytes ({sz[0]*100//int(bp['upload.maximum_size'])}%) of program storage space. Maximum is {bp['upload.maximum_size']} bytes.")
 		if (bp["upload.maximum_data_size"]!=""):
 			_print(f"Global variables use {sz[1]} bytes ({sz[1]*100//int(bp['upload.maximum_data_size'])}%) of dynamic memory, leaving {int(bp['upload.maximum_data_size'])-sz[1]} bytes for local variables. Maximum is {bp['upload.maximum_data_size']} bytes.")
@@ -1705,11 +1796,11 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 	_print("Searching For Build Directory\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp)):
 		_print("\x1b[38;2;200;40;20mSketch Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
 		print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}'\x1b[38;2;200;40;20m isn't Installed.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
 	with open(h_fp+"boards.txt","r") as hb_f:
@@ -1722,7 +1813,7 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 			h_pm[k.split(".")[0]][".".join(k.split("=")[0].split(".")[1:])]=k[len(k.split("=")[0])+1:]
 	if (fqbn[2] not in list(h_pm.keys())):
 		_print(f"\x1b[38;2;200;40;20mInvalid FQBN '{':'.join(fqbn)}'\x1b[38;2;200;40;20m.")
-		sys.exit(1)
+		kernel32.ExitProcess(1)
 	h_pm=h_pm[fqbn[2]]
 	_print(f"Reading File '{h_fp}platform.txt'\x1b[38;2;100;100;100m...")
 	with open(h_fp+"platform.txt","r") as hp_f:
@@ -1752,21 +1843,15 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 						b=usb_b
 			if (b is None):
 				_print("\x1b[38;2;200;40;20mNo Boards Found.\x1b[0m Stopping Upload\x1b[38;2;100;100;100m...")
-				sys.exit(1)
+				kernel32.ExitProcess(1)
 			up.update({"serial.port":b["location"],"serial.port.file":b["location"]})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
-		p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["upload.pattern"]))))
-		if (p.returncode!=0):
-			sys.exit(p.returncode)
+		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["upload.pattern"])))
 	else:
 		_print("Erasing Board\x1b[38;2;100;100;100m...")
-		p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["erase.pattern"]))))
-		if (p.returncode!=0):
-			sys.exit(p.returncode)
+		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["erase.pattern"])))
 		_print("Burning Bootloader to Board\x1b[38;2;100;100;100m...")
-		p=subprocess.run(_split_cmd(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["bootloader.pattern"]))))
-		if (p.returncode!=0):
-			sys.exit(p.returncode)
+		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["bootloader.pattern"])))
 	_print("Upload Finished")
 
 
@@ -1775,7 +1860,7 @@ def _open_project_file(d,e,*f):
 	ok=False
 	for fn in f:
 		if (os.path.isfile(fn)):
-			subprocess.run([EDITOR_FILE_PATH,fn])
+			_run_process(_join_arguments(EDITOR_FILE_PATH,fn))
 			ok=True
 	if (ok):
 		return
@@ -1783,7 +1868,7 @@ def _open_project_file(d,e,*f):
 		r=r.replace("\\","/").rstrip("/")+"/"
 		for f in fl:
 			if (f.endswith(e)):
-				subprocess.run([EDITOR_FILE_PATH,r+f])
+				_run_process(_join_arguments(EDITOR_FILE_PATH,r+f))
 				return
 
 
@@ -1793,7 +1878,7 @@ def _create_project(t,nm,op):
 		t=t.lower()
 		if (t not in VALID_PROGRAM_TYPES):
 			print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'\x1b[38;2;200;40;20m.")
-			sys.exit(1)
+			kernel32.ExitProcess(1)
 		nm=nm.replace("_"," ").lower().title().replace(" ","_")
 		p=PROJECT_DIR+f"{t.title()}-{nm}/"
 		cr=False
@@ -1824,7 +1909,7 @@ def _create_project(t,nm,op):
 			if (f[0]=="."):
 				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (op==True):
-		subprocess.run([EDITOR_FILE_PATH,"--add",p])
+		_run_process(_join_arguments(EDITOR_FILE_PATH,"--add",p))
 		if (t=="arduino"):
 			_open_project_file(p,"ino",p+"src/main.ino")
 		elif (t=="assembly"):
@@ -2241,6 +2326,29 @@ class _Serial_UI:
 
 
 
+def _join_arguments(*al):
+	o=""
+	for a in al:
+		if (len(o)>0):
+			o+=" "
+		if (" " in a or "\t" in a or len(a)==0):
+			o+="\""
+		i=0
+		for c in a:
+			if (c=="\\"):
+				i+=1
+			elif (c=="\""):
+				o+="\\"*i*2+"\\\""
+				i=0
+			else:
+				o+="\\"*i+c
+				i=0
+		if (" " in a or "\t" in a or len(a)==0):
+			o+="\""
+	return o
+
+
+
 def _u_mcs(fp):
 	fp=os.path.abspath(fp).replace("\\","/").rstrip("/")+"/"
 	_print(f"Starting Minecraft Server in Folder '{fp}'\x1b[38;2;100;100;100m...")
@@ -2324,7 +2432,7 @@ def _u_mcs(fp):
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Skipping Update Check\x1b[38;2;100;100;100m...")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	subprocess.Popen([CMD_FILE_PATH,"/c",__executable__,__file__,"7",fp],creationflags=subprocess.CREATE_NEW_CONSOLE)
+	_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"7",fp))
 
 
 
@@ -2380,7 +2488,7 @@ def _check_close(t):
 
 
 
-kernel32.SetConsoleMode(kernel32.GetStdHandle(-11),ctypes.wintypes.DWORD(7))
+kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_OUTPUT_HANDLE),ctypes.wintypes.DWORD(7))
 kernel32.SetConsoleTitleW("")
 hwnd=kernel32.GetConsoleWindow()
 user32.SendMessageW(hwnd,WM_SETICON,ICON_SMALL,user32.LoadImageW(0,__file_base_dir__+CUSTOM_ICON_FILE_PATH,IMAGE_ICON,16,16,LR_LOADFROMFILE))
@@ -2389,9 +2497,9 @@ if (len(GITHUB_TOKEN)!=40):
 	_print("\x1b[38;2;200;40;20mInvalid Github Token.\x1b[0m Project Push will Fail\x1b[38;2;100;100;100m...")
 if (len(sys.argv)==1):
 	if (sys.executable.replace("\\","/")!=__headless_executable__):
-		subprocess.Popen([__headless_executable__,__file__],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_create_process(_join_arguments(__headless_executable__,__file__))
 	else:
-		ho=kernel32.GetStdHandle(-11)
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
 		fc=ctypes.wintypes.CHAR_INFO()
@@ -2402,22 +2510,22 @@ if (len(sys.argv)==1):
 		kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 		kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 		move_to_desktop.switch_to_desktop(0)
-		subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_create_process(_join_arguments(__executable__,__file__,"7"))
 		for k in os.listdir(PROJECT_DIR):
 			_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-		subprocess.Popen([CMD_FILE_PATH,"/c",__executable__,__file__,"4"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"4"))
 		_hotkey_handler._hk={}
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 		_hotkey_handler._hk[0x23]=lambda:_check_close(1)
 		_hotkey_handler._hk[0x24]=lambda:_check_close(0)
-		_hotkey_handler._hk[0x31]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[0x32]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[0x33]=lambda:subprocess.Popen([__headless_executable__,__file__,"8","2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[0x49]=lambda:subprocess.Popen([__executable__,__file__,"7"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[0x51]=lambda:subprocess.Popen([__executable__,__file__,"1"],creationflags=subprocess.CREATE_NEW_CONSOLE)
-		_hotkey_handler._hk[0x52]=lambda:subprocess.Popen([__headless_executable__,__file__,"0"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+		_hotkey_handler._hk[0x31]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","0"))
+		_hotkey_handler._hk[0x32]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","1"))
+		_hotkey_handler._hk[0x33]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","2"))
+		_hotkey_handler._hk[0x49]=lambda:_create_process(_join_arguments(__executable__,__file__,"7"))
+		_hotkey_handler._hk[0x51]=lambda:_create_process(_join_arguments(__executable__,__file__,"1"))
+		_hotkey_handler._hk[0x52]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"0"))
 		_hotkey_handler._hk[0x57]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 		msg=ctypes.wintypes.MSG()
 		while (True):
@@ -2475,8 +2583,8 @@ else:
 		user32.UnregisterClassW("screen_blocker_window_class",mh)
 	elif (v==1):
 		user32.SetFocus(hwnd)
-		ho=kernel32.GetStdHandle(-11)
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_INPUT_HANDLE),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
@@ -2504,28 +2612,28 @@ else:
 					u=True
 				elif (k==b"\r" or k==b"\n"):
 					if (bf=="blender"):
-						subprocess.Popen(BLENDER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(BLENDER_FILE_PATH)
 						break
 					elif (bf=="chrome"):
-						subprocess.Popen(CHROME_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(CHROME_FILE_PATH)
 						break
 					elif (bf=="gimp"):
-						subprocess.Popen(GIMP_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(GIMP_FILE_PATH)
 						break
 					elif (bf=="minecraft"):
-						subprocess.Popen(MINECRAFT_LAUNCHER_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(MINECRAFT_LAUNCHER_FILE_PATH)
 						break
 					elif (bf=="open"):
-						subprocess.Popen([__executable__,__file__,"2"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(_join_arguments(__executable__,__file__,"2"))
 						break
 					elif (bf=="serial"):
-						subprocess.Popen([__executable__,__file__,"3"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(_join_arguments(__executable__,__file__,"3"))
 						break
 					elif (bf=="stats"):
-						subprocess.Popen([__executable__,__file__,"6"],creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(_join_arguments(__executable__,__file__,"6"))
 						break
 					elif (bf=="sublime"):
-						subprocess.Popen(EDITOR_FILE_PATH,creationflags=subprocess.CREATE_NEW_CONSOLE)
+						_create_process(EDITOR_FILE_PATH)
 						break
 					elif (bf=="" or bf=="exit"):
 						break
@@ -2543,8 +2651,8 @@ else:
 			time.sleep(1/CONSOLE_APP_FRAME_RATE)
 	elif (v==2):
 		user32.SetFocus(hwnd)
-		ho=kernel32.GetStdHandle(-11)
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_INPUT_HANDLE),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
@@ -2656,8 +2764,8 @@ else:
 	elif (v==3):
 		user32.SetFocus(hwnd)
 		_init_arduino_cache()
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
-		ho=kernel32.GetStdHandle(-11)
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_INPUT_HANDLE),ctypes.wintypes.DWORD(0x80))
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
@@ -2697,11 +2805,11 @@ else:
 		_init_arduino_cache()
 		if (len(sys.argv)<3):
 			_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-			sys.exit(1)
+			kernel32.ExitProcess(1)
 		elif (sys.argv[2]=="list"):
 			if (len(sys.argv)>3):
 				_print("\x1b[38;2;200;40;20mToo many Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-				sys.exit(1)
+				kernel32.ExitProcess(1)
 			bl=_list_arduino_boards()
 			mx_l=[max([(4,4,4,8)[i]]+[len(b[k]) for b in bl])+2 for i,k in enumerate(("name","fqbn","arch","location"))]
 			o=f"┌{'─'*mx_l[0]}┬{'─'*mx_l[1]}┬{'─'*mx_l[2]}┬{'─'*mx_l[3]}┐\n│{'Name'.center(mx_l[0])}│{'FQBN'.center(mx_l[1])}│{'Arch'.center(mx_l[2])}│{'Location'.center(mx_l[3])}│\n├{'─'*mx_l[0]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[1]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[2]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[3]}┤"
@@ -2711,7 +2819,7 @@ else:
 		elif (sys.argv[2]=="install"):
 			if (len(sys.argv)<4):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-				sys.exit(1)
+				kernel32.ExitProcess(1)
 			for k in sys.argv[3:]:
 				if (k=="--force"):
 					continue
@@ -2725,16 +2833,16 @@ else:
 		elif (sys.argv[2]=="compile"):
 			if (len(sys.argv)<6):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-				sys.exit(1)
+				kernel32.ExitProcess(1)
 			_compile_arduino_prog(sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6:])
 		elif (sys.argv[2]=="upload"):
 			if (len(sys.argv)<6):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-				sys.exit(1)
+				kernel32.ExitProcess(1)
 			_upload_to_arduino(sys.argv[3],sys.argv[4],sys.argv[5],(True if "--burn-bootloader" in sys.argv[6:] else False),(True if "--verify" in sys.argv[6:] else False),[e for e in sys.argv[6:] if e not in ["--burn-bootloader","--verify"]])
 		else:
 			_print(f"\x1b[38;2;200;40;20mUnknown Switch '{sys.argv[2]}'.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
-			sys.exit(1)
+			kernel32.ExitProcess(1)
 	elif (v==6):
 		user32.SetFocus(hwnd)
 		ll=None
@@ -2753,7 +2861,7 @@ else:
 				for k,v in ll.items():
 					if (len(k)>63):
 						input("\x1b[38;2;200;40;20mLanguage Name Length Overflow")
-						sys.exit(1)
+						kernel32.ExitProcess(1)
 					f.write(bytearray([len(k)|(v[2]<<6),len(v[0]),v[1][0],v[1][1],v[1][2]])+bytes(k,"utf-8"))
 					for e in v[0]:
 						f.write(bytearray([len(e)])+bytes(e,"utf-8"))
@@ -2820,7 +2928,7 @@ else:
 							for i,v in enumerate(e[1]):
 								if (len(v[0])>32767):
 									input("\x1b[38;2;200;40;20mLanguage File Pattern Length Overflow")
-									sys.exit(1)
+									kernel32.ExitProcess(1)
 								f.write(bytearray([len(v[0])&0xff,(len(v[0])>>8)|(0 if v[1] else 128)])+bytes(v[0],"utf-8"))
 								e[1][i]=(regex.compile(v[0],regex.M|regex.V1),v[1])
 		else:
@@ -2862,7 +2970,7 @@ else:
 					t=requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{e['sha']}?recursive=1").json()
 					if (t["truncated"]==True):
 						input("\x1b[38;2;200;40;20mSamples Tree Truncated")
-						sys.exit(1)
+						kernel32.ExitProcess(1)
 					for k in t["tree"]:
 						if (k["type"]!="blob"):
 							continue
@@ -2923,7 +3031,7 @@ else:
 						t[str(f.read(ln),"utf-8")]=v
 					db["tokens"][k]=t
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		ho=kernel32.GetStdHandle(-11)
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
 		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
@@ -2934,7 +3042,7 @@ else:
 		ln_f=False
 		o=[]
 		vs=0
-		kernel32.SetConsoleMode(kernel32.GetStdHandle(-10),ctypes.wintypes.DWORD(0x80))
+		kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_INPUT_HANDLE),ctypes.wintypes.DWORD(0x80))
 		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
 		kernel32.SetConsoleScreenBufferSize(ho,ctypes.wintypes._COORD(sbi.srWindow.Right+1,sbi.srWindow.Bottom+1))
 		kernel32.SetConsoleWindowInfo(ho,True,ctypes.byref(sbi.srWindow))
@@ -3041,6 +3149,6 @@ else:
 		if (len(sys.argv)==2):
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			subprocess.Popen([MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"],cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
+			_create_process(_join_arguments(MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"),cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
 	elif (v==8):
 		move_to_desktop.switch_to_desktop(int(sys.argv[2]))
