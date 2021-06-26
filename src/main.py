@@ -80,13 +80,13 @@ REPO_STATS_SHEBANG_REGEX=re.compile(r"#!\s*?([^ \t\v\n\r]*?)(?:$|[ \t]+(.*?)$|[ 
 REPO_STATS_TAG_ATTR_REGEX=re.compile(r"""([\w\$\.]+)(?:\s*=?(?:[\w\$\.]+(?:\s|$)|\"(?:\\\"|.)*?\"))?""",re.M|re.S)
 REPO_STATS_TAG_REGEX=re.compile(r"<\s*\??\s*([\w\$\.]+)(.*?)\??\s*>")
 REPO_STATS_XML_REGEX=re.compile(r"<\?xml version=")
-ROOT_FILE_PATH=os.path.abspath(__file_base_dir__+"../K").replace("\\","/").rstrip("/")+"/"
+ROOT_FILE_PATH=os.path.abspath(__file_base_dir__+"../k").replace("\\","/").rstrip("/")+"/"
 SERIAL_BAUD=9600
 SERIAL_TIMEOUT=5000
 SERIAL_VALID_DEVICE_NAME_REGEX=re.compile(r"vif_([0-9a-f]{4})\+pid_([0-9a-f]{4})")
 SERIAL_VALID_DEVICE_NAME_USB_REGEX=re.compile(r"vif_([0-9a-f]{4})&pid_([0-9a-f]{4})")
 SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
-TEMP_DIR=os.path.abspath((os.getenv("TEMP") if os.getenv("TEMP") else os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
+TEMP_DIR=os.path.abspath(os.getenv("TEMP",os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
 UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
 VK_ALT=18
@@ -2605,7 +2605,7 @@ else:
 						_create_process(_join_arguments(__executable__,__file__,"3"))
 						break
 					elif (bf=="stats"):
-						_create_process(_join_arguments(__executable__,__file__,"6"))
+						_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"6"))
 						break
 					elif (bf=="sublime"):
 						_create_process(EDITOR_FILE_PATH)
