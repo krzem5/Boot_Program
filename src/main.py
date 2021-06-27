@@ -23,7 +23,7 @@ if (not os.path.exists(__file_base_dir__+"data")):
 
 
 ARDUINO_CACHE={}
-ARDUINO_COMMAND_FORMAT_REGEX=re.compile(r"\{.+?\}")
+ARDUINO_COMMAND_FORMAT_REGEX=re.compile(r"\{(.+?)\}")
 ARDUINO_CPP_INCLUDE_FILE_REGEX=re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]",re.M)
 ARDUINO_CUSTOM_WARNING_LEVEL=""
 ARDUINO_DATA_LINE_SEPARATOR_REGEX=re.compile(r"\r(\n|$)")
@@ -388,26 +388,24 @@ user32.UnregisterClassW.restype=ctypes.wintypes.BOOL
 
 
 def _print(*a,df=False):
-	def _r_color_f(m):
-		if (m.group(0)[0]=="'"):
-			return f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
-		elif (m.group(0)[0] in "-0123456789" and (m.end(0)==1 or m.group(0)[1:].isnumeric())):
-			return f"\x1b[38;2;48;109;206m{m.group(0)}\x1b[0m"
-		elif (m.group(0)[0] in "-0123456789" and m.group(0)[-1]=="%"):
-			return f"\x1b[38;2;245;103;245m{m.group(0)}\x1b[0m"
-		else:
-			return f"\x1b[38;2;227;204;59m{m.group(0)}\x1b[0m"
 	a=" ".join([str(e) for e in a])
-	if (df==False):
+	if (df is False):
 		i=0
 		while (i<len(a)):
 			m=REMOVE_COLOR_FORMATTING_REGEX.match(a[i:])
-			if (m!=None):
+			if (m is not None):
 				i+=len(m.group(0))
 			if (a[i] in "'-" or i==0 or a[i-1] not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):
 				m=PRINT_ADD_COLOR_REGEX.match(a[i:])
-				if (m!=None):
-					o=_r_color_f(m)
+				if (m is not None):
+					if (m.group(0)[0]=="'"):
+						o=f"\x1b[38;2;91;216;38m{m.group(0)}\x1b[0m"
+					elif (m.group(0)[0] in "-0123456789" and (m.end(0)==1 or m.group(0)[1:].isnumeric())):
+						o=f"\x1b[38;2;48;109;206m{m.group(0)}\x1b[0m"
+					elif (m.group(0)[0] in "-0123456789" and m.group(0)[-1]=="%"):
+						o=f"\x1b[38;2;245;103;245m{m.group(0)}\x1b[0m"
+					else:
+						o=f"\x1b[38;2;227;204;59m{m.group(0)}\x1b[0m"
 					a=a[:i]+o+a[i+len(m[0]):]
 					i+=len(o)-1
 			i+=1
@@ -681,7 +679,7 @@ def _match_gitignore_path(gdt,fp):
 	fnm=fp.lower().replace("\\","/").lower().split("/")
 	ig=False
 	for p in gdt:
-		if ((ig==False or p[0]==True)):
+		if ((ig is False or p[0] is True)):
 			if (len(fnm)<len(p[1])):
 				continue
 			if (len(p[1][0].pattern)==2):
@@ -690,7 +688,7 @@ def _match_gitignore_path(gdt,fp):
 					if (r.match(sfnm) is None):
 						ok=False
 						break
-				if (ok==False):
+				if (ok is False):
 					continue
 			else:
 				ok=False
@@ -701,12 +699,12 @@ def _match_gitignore_path(gdt,fp):
 					else:
 						ok=True
 						break
-				if (ok==False):
+				if (ok is False):
 					continue
-			if (p[0]==True):
+			if (p[0] is True):
 				return False
 			ig=True
-	if (ig==True):
+	if (ig is True):
 		return True
 	return False
 
@@ -727,9 +725,9 @@ def _is_binary(fp):
 	except UnicodeDecodeError:
 		enc_u=False
 	if ((r1>0.3 and r2<0.05) or (r1>0.8 and r2>0.8)):
-		return (False if enc_u==True else True)
+		return (False if enc_u is True else True)
 	else:
-		return (True if enc_u==False and (b"\x00" in dt or b"\xff" in dt) else False)
+		return (True if enc_u is False and (b"\x00" in dt or b"\xff" in dt) else False)
 
 
 
@@ -823,13 +821,13 @@ def _push_single_project(p,b_nm):
 		r=r.replace("\\","/").rstrip("/")+"/"
 		for f in fl:
 			fp=r[len(p):]+f
-			if (_match_gitignore_path(gdt,fp)==True):
+			if (_match_gitignore_path(gdt,fp) is True):
 				cnt[2]+=1
 				_print(f"\x1b[38;2;190;0;220m! {b_nm}/{fp}\x1b[0m",df=True)
 				continue
 			f_sz=os.stat(r+f).st_size
 			if (fp in list(r_t.keys())):
-				if (_is_binary(r+f)==False):
+				if (_is_binary(r+f) is False):
 					try:
 						with open(r+f,"r",encoding="cp1252") as rf:
 							h=SHA1_START_VALUE.copy()
@@ -886,14 +884,14 @@ def _push_single_project(p,b_nm):
 			b_sha=False
 			if (os.stat(r+f).st_size<=GITHUB_MAX_FILE_SIZE):
 				b64=True
-				if (_is_binary(r+f)==False):
+				if (_is_binary(r+f) is False):
 					try:
 						with open(r+f,"r",encoding="utf-8") as rbf:
 							dt=rbf.read().replace("\r\n","\n")
 						b64=False
 					except UnicodeDecodeError:
 						pass
-				if (b64==True):
+				if (b64 is True):
 					if (len(dt)*4//3>GITHUB_MAX_FILE_SIZE):
 						b_sha=False
 					else:
@@ -915,26 +913,26 @@ def _push_single_project(p,b_nm):
 								dt="Github Server Error"
 							else:
 								dt=b["sha"]
-			bl.append([fp,({"path":fp,"mode":"100644","type":"blob","content":dt} if b_sha==False else {"path":fp,"mode":"100644","type":"blob","sha":dt})])
+			bl.append([fp,({"path":fp,"mode":"100644","type":"blob","content":dt} if b_sha is False else {"path":fp,"mode":"100644","type":"blob","sha":dt})])
 	for fp in r_t.keys():
 		rm=True
 		for e in bl:
-			if (e[0]!=None and e[0]==fp):
+			if (e[0] is not None and e[0]==fp):
 				rm=False
 				break
-		if (rm==True):
+		if (rm is True):
 			if (fp!="_"):
 				_print(f"\x1b[38;2;210;40;40m- {b_nm}/{fp}\x1b[0m",df=True)
 				cnt[3]+=1
 			bl.append([None,{"path":fp,"mode":"100644","type":"blob","sha":None}])
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
-	if (any([(True if b[1]!=None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
+	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1]!=None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		_github_api_request("patch",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
-	if (cr==True):
+	if (cr is True):
 		_print(f"\x1b[38;2;100;100;100mDeleting Temporary File...",df=True)
 		_github_api_request("delete",url=f"https://api.github.com/repos/{GITHUB_USERNAME}/{nm}/contents/_",data=f"{{\"message\":\"{msg}\",\"sha\":\"{GITHUB_EMPTY_FILE_HASH}\"}}")
 		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
@@ -955,23 +953,23 @@ def _push_all_github_projects(f=False):
 		wf.write(str(tm)+"\n")
 		wf.flush()
 		for p in sorted(os.listdir(PROJECT_DIR)):
-			if (f==False and p in b_dt[1:]):
+			if (f is False and p in b_dt[1:]):
 				sc+=1
 				wf.write(p+"\n")
 				wf.flush()
 				continue
 			uc+=1
-			if (_push_single_project(PROJECT_DIR+p,p)==False):
+			if (_push_single_project(PROJECT_DIR+p,p) is False):
 				return
 			wf.write(p+"\n")
 			wf.flush()
-		if (f==False and "Boot_Program" in b_dt[1:]):
+		if (f is False and "Boot_Program" in b_dt[1:]):
 			sc+=1
 			wf.write("Boot_Program\n")
 			wf.flush()
 		else:
 			uc+=1
-			if (_push_single_project(__file_base_dir__,"Boot_Program")==False):
+			if (_push_single_project(__file_base_dir__,"Boot_Program") is False):
 				return
 			wf.write("Boot_Program\n")
 			wf.flush()
@@ -987,9 +985,9 @@ def _tokenize_file(dt,el=None):
 	t=min(REPO_STATS_MAX_READ,len(dt))
 	while (i<t):
 		sl=(True if i==0 or dt[i-1] in "\r\n" else False)
-		if (sl==True):
+		if (sl is True):
 			m=REPO_STATS_SHEBANG_REGEX.match(dt[i:])
-			if (m!=None):
+			if (m is not None):
 				i+=m.end(0)
 				if (m.group(1).split("/")[-1]=="env"):
 					o+="~~SHEBANG"+m.group(2)
@@ -997,21 +995,21 @@ def _tokenize_file(dt,el=None):
 					o+="~~SHEBANG"+m.group(1).split("/")[-1]
 				continue
 		m=REPO_STATS_IGNORE_REGEX.match(dt[i:])
-		if (m!=None):
+		if (m is not None):
 			ig+=m.end(0)
 			if (ig/t>0.25):
 				return []
 			i+=m.end(0)
 			continue
 		m=REPO_STATS_TAG_REGEX.match(dt[i:])
-		if (m!=None):
+		if (m is not None):
 			i+=m.end(0)
 			o.append("<"+m.group(1)+">")
 			if (len(m.group(2))>0):
 				o+=REPO_STATS_TAG_ATTR_REGEX.findall(m.group(2).strip())
 			continue
 		m=REPO_STATS_COMMON_REGEX.match(dt[i:])
-		if (m!=None):
+		if (m is not None):
 			i+=m.end(0)
 			if (m.end(0)<=REPO_STATS_MAX_TOKEN_LEN):
 				o.append(m.group(0))
@@ -1022,7 +1020,7 @@ def _tokenize_file(dt,el=None):
 
 
 def _project_stats_detect_file(r,f,ll,hdt,db):
-	if (os.stat(r+f).st_size==0 or _is_binary(r+f)==True):
+	if (os.stat(r+f).st_size==0 or _is_binary(r+f) is True):
 		return None
 	o=list(ll.keys())
 	c=[]
@@ -1048,7 +1046,7 @@ def _project_stats_detect_file(r,f,ll,hdt,db):
 			dt=rf.read().decode("utf-8",errors="replace")
 	except PermissionError:
 		return None
-	if (REPO_STATS_XML_REGEX.search("\n".join(dt.split("\n")[:2]))!=None):
+	if (REPO_STATS_XML_REGEX.search("\n".join(dt.split("\n")[:2])) is not None):
 		return "XML"
 	c.clear()
 	for k in hdt:
@@ -1059,10 +1057,10 @@ def _project_stats_detect_file(r,f,ll,hdt,db):
 					break
 				ok=True
 				for p in e[1]:
-					if ((p[0].match(dt)!=None)!=p[1]):
+					if ((p[0].match(dt) is not None)!=p[1]):
 						ok=False
 						break
-				if (ok==False):
+				if (ok is False):
 					continue
 				c.append(e[0])
 				break
@@ -1122,7 +1120,7 @@ def _project_stats(p_fp,ll,hdt,db,el):
 			continue
 		if ("/build" not in r.lower()):
 			for f in fl:
-				if (_match_gitignore_path(gdt,r[len(p_fp):]+f)==True):
+				if (_match_gitignore_path(gdt,r[len(p_fp):]+f) is True):
 					continue
 				_print(f"\x1b[38;2;100;100;100mDetecting File \x1b[38;2;65;118;46m'{r+f}'\x1b[38;2;100;100;100m...",df=True)
 				l=_project_stats_detect_file(r,f,ll,hdt,db)
@@ -1136,16 +1134,6 @@ def _project_stats(p_fp,ll,hdt,db,el):
 					for k in fo.read().replace(b"\r\n",b"\n").split(b"\n"):
 						if (len(k.strip())>0):
 							el[l][1]+=1
-
-
-
-def _read_project_stats(fp,ll,hdt,db,el):
-	if (fp is None):
-		for fp in os.listdir(PROJECT_DIR):
-			_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
-		_project_stats(__file_base_dir__,ll,hdt,db,el)
-	else:
-		_project_stats(fp,ll,hdt,db,el)
 
 
 
@@ -1194,14 +1182,14 @@ def _init_arduino_cache():
 		if (k=="index" or k in list(ARDUINO_CACHE.keys())):
 			continue
 		os.remove(__file_base_dir__+f"arduino/cache/{k}")
-	if (u==True):
+	if (u is True):
 		with open(__file_base_dir__+f"arduino/cache/index","w") as f:
 			f.write("\n".join([f"{e[0]}:{e[1]}" for e in ARDUINO_CACHE.items()]))
 
 
 
 def _list_arduino_boards(p=True):
-	if (p==True):
+	if (p is True):
 		_print("Listing Arduino Boards Attached to the System\x1b[38;2;100;100;100m...")
 	pg=(ctypes.wintypes.GUID*8)()
 	pg_l=ctypes.wintypes.DWORD()
@@ -1259,7 +1247,7 @@ def _install_arduino_package(b,force=False):
 				i_pkg=f.read().replace("\r\n","\n").split("\n")
 		_print(f"Querying 'https://api.github.com/repos/arduino/{b}/releases/latest' for Package Metadata\x1b[38;2;100;100;100m...")
 		dt=requests.get(f"https://api.github.com/repos/arduino/{b}/releases/latest").json()
-		if (force==False and f"arduino-{b}-{dt['tag_name']}" in i_pkg):
+		if (force is False and f"arduino-{b}-{dt['tag_name']}" in i_pkg):
 			_print(f"\x1b[38;2;200;40;20mPackage 'arduino:{b}:{dt['tag_name']}' already Installed.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 			return
 		_print(f"Searching for '{ARDUINO_OS_TYPE}' Release\x1b[38;2;100;100;100m...")
@@ -1309,7 +1297,7 @@ def _install_arduino_package(b,force=False):
 		with open(__file_base_dir__+f"arduino/packages/index","a") as f:
 			f.write(f"arduino-{b}-{dt['tag_name']}\n")
 		return
-	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver']!=None else '')}'...\nReading Package Index Cache\x1b[38;2;100;100;100m...")
+	_print(f"Searching For Package '{b['pkg']}:{b['arch']}{(':'+b['ver'] if b['ver'] is not None else '')}'...\nReading Package Index Cache\x1b[38;2;100;100;100m...")
 	dt=None
 	if (ARDUINO_CACHE.get("package_index.json",0)==0):
 		_print("\x1b[38;2;200;40;20mPackage Index Cache not Found.\x1b[0m Downloaing It\x1b[38;2;100;100;100m...")
@@ -1327,7 +1315,7 @@ def _install_arduino_package(b,force=False):
 	o=[]
 	while (len(dl)>0):
 		d,dl=dl[0],dl[1:]
-		_print(f"Searching For Package '{d['pkg']}:{(d['name'] if 'name' in list(d.keys()) else d['arch'])}{(':'+d['ver'] if d['ver']!=None else '')}'\x1b[38;2;100;100;100m...")
+		_print(f"Searching For Package '{d['pkg']}:{(d['name'] if 'name' in list(d.keys()) else d['arch'])}{(':'+d['ver'] if d['ver'] is not None else '')}'\x1b[38;2;100;100;100m...")
 		l=[]
 		for k in p[d["pkg"]]["platforms"]:
 			if (("arch" in list(d.keys()) and k["architecture"]==d["arch"]) or ("arch" not in list(d.keys()) and k["name"]==d["name"])):
@@ -1336,7 +1324,7 @@ def _install_arduino_package(b,force=False):
 			if (("name" in list(d.keys()) and k["name"]==d["name"])):
 				l.append((k["version"],k,True))
 		e=(sorted(l,key=lambda e:e[0],reverse=True)[0] if d["ver"] is None else [e for e in l if e[0]==d["ver"]][0])
-		if (e[2]==False):
+		if (e[2] is False):
 			o.append((d["pkg"],(d["arch"] if "arch" in list(d.keys()) else d["name"]),e[1]["version"],e[1]["url"],e[1]["archiveFileName"],"hardware",int(e[1]["size"])))
 			if (len(e[1]["toolsDependencies"])>0):
 				_print(f"Found Dependencies: ('{(chr(39)+', '+chr(39)).join([k['packager']+':'+k['name']+':'+k['version'] for k in e[1]['toolsDependencies']])}')")
@@ -1356,7 +1344,7 @@ def _install_arduino_package(b,force=False):
 		with open(__file_base_dir__+f"arduino/packages/index","w"):
 			pass
 	for k in o:
-		if (force==False and f"{k[0]}-{k[1]}-{k[2]}" in i_pkg):
+		if (force is False and f"{k[0]}-{k[1]}-{k[2]}" in i_pkg):
 			_print(f"\x1b[38;2;200;40;20mPackage '{k[0]}:{k[1]}:{k[2]}' already Installed.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
 			continue
 		if (not os.path.exists(__file_base_dir__+f"arduino/packages/{k[0]}")):
@@ -1462,26 +1450,8 @@ def _create_process(a):
 
 
 
-def _expand_arduino_cmd(d,s):
-	while (True):
-		ns=s+""
-		for k,v in d.items():
-			ns=ns.replace("{"+k+"}",v)
-		if (ns==s):
-			return s
-		s=ns
-
-
-
-def _run_arduino_recipe(bp,pfx,sfx):
-	for k,v in bp.items():
-		if (k.startswith(pfx) and k.endswith(sfx) and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
-
-
-
 def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
-	l=[[],[],[]]
+	l=([],[],[])
 	for r,_,fl in os.walk(i_fp):
 		for f in fl:
 			if (f.lower().endswith(".s")):
@@ -1490,7 +1460,7 @@ def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 				l[1].append(os.path.join(r,f))
 			elif (f.lower().endswith(".cpp")):
 				l[2].append(os.path.join(r,f))
-		if (rc==False):
+		if (rc is False):
 			break
 	o=[]
 	for i in range(0,3):
@@ -1498,7 +1468,10 @@ def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 			c_bp={**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+("."+ARDUINO_CUSTOM_WARNING_LEVEL if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"" for e in inc_l]),"source_file":f,"object_file":o_fp+f[len(i_fp):]+".o"}
 			if (not os.path.exists(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))):
 				os.makedirs(o_fp+"/".join(f[len(i_fp):].split("/")[:-1]))
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(c_bp,c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]])))
+			cmd=c_bp[("recipe.S.o.pattern","recipe.c.o.pattern","recipe.cpp.o.pattern")[i]]
+			while ("{" in cmd):
+				cmd=ARDUINO_COMMAND_FORMAT_REGEX.sub(lambda m:(c_bp[m.group(1)] if m.group(1) in c_bp else ""),cmd)
+			_run_process(cmd)
 			o.append(o_fp+f[len(i_fp):]+".o")
 	return o
 
@@ -1509,18 +1482,32 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	s_fp=os.path.abspath(s_fp).replace("\\","/").rstrip("/")+"/"
 	o_fp=os.path.abspath(o_fp).replace("\\","/").rstrip("/")+"/"
 	if (not os.path.exists(s_fp)):
-		_print(f"\x1b[38;2;200;40;20mSketch '{s_fp}'\x1b[38;2;200;40;20m doesn't Exist.")
+		_print(f"\x1b[38;2;200;40;20mProgram '{s_fp}'\x1b[38;2;200;40;20m doesn't Exist.")
 		kernel32.ExitProcess(1)
 	if (not os.path.isdir(s_fp)):
-		_print("\x1b[38;2;200;40;20mSketch Path must Be a Directory.")
+		_print("\x1b[38;2;200;40;20mProgram Path must Be a Directory.")
 		kernel32.ExitProcess(1)
-	_print(f"Compiling Sketch '{s_fp}' to Directory '{o_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
+	_print(f"Compiling Program '{s_fp}' to Directory '{o_fp}' with Architecture '{':'.join(fqbn)}'\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp)):
 		os.mkdir(o_fp)
+	else:
+		dl=[]
+		for r,ndl,fl in os.walk(o_fp):
+			r=r.replace("\\","/").strip("/")+"/"
+			if ("/core/" in r):
+				continue
+			for d in ndl:
+				if (d!="core"):
+					dl.insert(0,r+d)
+			for f in fl:
+				if (f!="last-build.dt"):
+					os.remove(r+f)
+		for k in dl:
+			os.rmdir(k)
 	m_fp=s_fp+"main.ino"
 	_print("Searching For Main File\x1b[38;2;100;100;100m...")
-	if (os.path.exists(m_fp)==False or os.path.isdir(m_fp)==True):
-		_print("\x1b[38;2;200;40;20mSketch doesn't Contain a Main Program")
+	if (os.path.exists(m_fp) is False or os.path.isdir(m_fp) is True):
+		_print("\x1b[38;2;200;40;20mProgram doesn't Contain a Main Program")
 		kernel32.ExitProcess(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
@@ -1543,9 +1530,9 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	with open(h_fp+"platform.txt","r") as hp_f:
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Creating Build Properties\x1b[38;2;100;100;100m...")
-	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",o_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper()}
+	bp={"software":"ARDUINO",**p_pm,**h_pm[fqbn[2]],"build.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",o_fp),"build.project_name":m_fp.split("/")[-1],"build.arch":fqbn[1].upper(),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a"}
 	bp.update({"build.core.path":h_fp+"cores/"+bp["build.core"],"build.system.path":h_fp+"system","runtime.platform.path":ARDUINO_DIRECTORY_PATH_REGEX.sub(r"",h_fp),"runtime.hardware.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/")),"runtime.ide.version":"10607","runtime.ide.path":__file_base_dir__+"","build.fqbn":":".join(fqbn),"ide_version":"ide_version","runtime.os":ARDUINO_OS_TYPE,"build.variant.path":("" if bp["build.variant"]=="" else h_fp+"variants/"+bp["build.variant"]),"build.source.path":ARDUINO_DIRECTORY_PATH_REGEX.sub("",s_fp),"extra.time.utc":str(int(time.time())),"extra.time.local":str(int(time.time())),"extra.time.zone":"0","extra.time.dst":"0"})
-	if (ARDUINO_OPTIMIZE_FOR_DEBUG==True):
+	if (ARDUINO_OPTIMIZE_FOR_DEBUG is True):
 		if ("compiler.optimization_flags.debug" in list(bp.keys())):
 			bp["compiler.optimization_flags"]=bp["compiler.optimization_flags.debug"]
 	else:
@@ -1558,6 +1545,14 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 				for v in os.listdir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/"):
 					bp[f"runtime.tools.{t}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
 				bp[f"runtime.tools.{t}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/{pkg}/tools/{t}/{v}/")
+	_print("Expanding Build Properties\x1b[38;2;100;100;100m...")
+	for k,v in bp.items():
+		while (True):
+			l=len(v)
+			v=ARDUINO_COMMAND_FORMAT_REGEX.sub(lambda m:(bp[m.group(1)] if m.group(1) in bp else m.group(0)),v)
+			if (len(v)==l):
+				break
+		bp[k]=v
 	_print("Comparing Old Build Properties\x1b[38;2;100;100;100m...")
 	dt=b",".join([bytes(f"'{k}'='{v}'","utf-8") for k,v in bp.items() if not k.startswith("extra.time")])
 	h=SHA1_START_VALUE.copy()
@@ -1568,8 +1563,8 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		h=_sha1_chunk(h,dt[i:i+64])
 		i+=64
 	dt_h=f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"
-	if (os.path.exists(o_fp+"build-properties.sha1")):
-		with open(o_fp+"build-properties.sha1","r") as f:
+	if (os.path.exists(o_fp+"last-build.dt")):
+		with open(o_fp+"last-build.dt","r") as f:
 			sha1=f.read()
 		if (sha1[:40]!=dt_h):
 			_print("\x1b[38;2;200;40;20mHash not Matching.\x1b[0m Rebuilding Everything\x1b[38;2;100;100;100m...")
@@ -1583,29 +1578,29 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			for k in dl:
 				os.rmdir(k)
 	_print("Writing New Hash\x1b[38;2;100;100;100m...")
-	with open(o_fp+"build-properties.sha1","w") as f:
+	with open(o_fp+"last-build.dt","w") as f:
 		f.write(dt_h)
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.prebuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	l_off=0
 	nh_inc=False
-	_print("Bundling Sketch Files\x1b[38;2;100;100;100m...")
+	_print("Bundling Program Files\x1b[38;2;100;100;100m...")
 	with open(o_fp+m_fp.split("/")[-1]+".cpp","wb") as bf:
 		src=b""
 		for r,_,fl in os.walk(s_fp):
 			for fp in fl:
 				if (fp.split(".")[-1].lower()=="ino"):
-					_print(f"Found Main Sketch File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
+					_print(f"Found Main Program File '{os.path.join(r,fp)}'\x1b[38;2;100;100;100m...")
 					with open(os.path.join(r,fp),"rb") as f:
 						dt=f.read().replace(b"\r\n",b"\n")
-						if (nh_inc==False):
+						if (nh_inc is False):
 							for k in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(dt,"utf-8").lower()):
 								if (k=="arduino.h"):
 									nh_inc=True
 									break
-							if (nh_inc==False):
+							if (nh_inc is False):
 								bf.write(b"#include <arduino.h>\n")
 								l_off+=1
 								nh_inc=True
@@ -1625,7 +1620,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 				l.append(k.split("/")[-1][:-2]+".s")
 			for d in dl:
 				if (os.path.exists(os.path.join(d[0],k))):
-					_print(f"Found Included Sketch File '{os.path.join(d[0],k)}'\x1b[38;2;100;100;100m...")
+					_print(f"Found Included Program File '{os.path.join(d[0],k)}'\x1b[38;2;100;100;100m...")
 					with open(o_fp+"/"+os.path.join(d[0],k)[len(d[1]):].replace("\\","/").replace("/","$"),"wb") as wf,open(os.path.join(d[0],k),"rb") as rf:
 						dt=rf.read().replace(b"\r\n",b"\n")
 						for e in ARDUINO_CPP_INCLUDE_FILE_REGEX.findall(str(src,"utf-8").lower()):
@@ -1645,75 +1640,75 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	if (bp["build.variant.path"]!=""):
 		inc_l.append(bp["build.variant.path"])
 	_print("Generating Preprocessor Properties\x1b[38;2;100;100;100m...")
-	pd={**bp,"source_file":o_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":o_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
-	if ("recipe.preproc.macros" not in list(pd.keys())):
-		pd["recipe.preproc.macros"]=pd["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}")
+	pd={"recipe.preproc.macros":bp["recipe.cpp.o.pattern"].replace("{compiler.cpp.flags}","{compiler.cpp.flags} {preproc.macros.flags}").replace("{object_file}","{preprocessed_file_path}"),**bp,"source_file":o_fp+m_fp.split("/")[-1]+".cpp","preprocessed_file_path":o_fp+m_fp.split("/")[-1].split(".")[0]+".cpp","includes":" ".join([f"\"-I{re.sub('('+chr(92)+r'|/)$','',e)}\"".replace("\\","/") for e in inc_l])}
+	cmd=pd["recipe.preproc.macros"]
+	while ("{" in cmd):
+		cmd=ARDUINO_COMMAND_FORMAT_REGEX.sub(lambda m:(pd[m.group(1)] if m.group(1) in pd else ""),cmd)
 	_print("Running Preprocessor\x1b[38;2;100;100;100m...")
-	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"])).replace("-MMD","")+" -DARDUINO_LIB_DISCOVERY_PHASE")
+	_run_process(cmd.replace("-MMD","")+" -DARDUINO_LIB_DISCOVERY_PHASE")
 	os.remove(o_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.sketch.prebuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Compiling Files\x1b[38;2;100;100;100m...")
 	s_of=_compile_arduino_files(bp,o_fp,o_fp,inc_l,False)+(_compile_arduino_files(bp,o_fp+"src",o_fp+"src",inc_l,True) if os.path.exists(o_fp+"src") else [])
 	_print("Running Recipe 'recipe.hooks.sketch.postbuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.sketch.postbuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.hooks.core.prebuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.core.prebuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	c_inc_l=[bp["build.core.path"]]+([bp["build.variant.path"]] if bp["build.variant.path"]!="" else [])
 	_print("Buliding Core\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp+"core")):
 		_print("\x1b[38;2;200;40;20mPrebuild Core not Found.\x1b[0m Rebuilding\x1b[38;2;100;100;100m...")
 		os.mkdir(o_fp+"core")
+		os.mkdir(o_fp+"core/build")
 		_print("Compiling Core Variant Files\x1b[38;2;100;100;100m...")
 		v_of=(_compile_arduino_files(bp,bp["build.variant.path"],o_fp+"core",c_inc_l,True) if bp["build.variant.path"]!="" else [])
 		_print("Compiling Core Files\x1b[38;2;100;100;100m...")
 		pr=False
-		for c_of in _compile_arduino_files(bp,bp["build.core.path"],o_fp+"core",c_inc_l,True):
-			if (pr==False):
+		for c_of in _compile_arduino_files(bp,bp["build.core.path"],o_fp+"core/build",c_inc_l,True):
+			if (pr is False):
 				_print("Archiving Core Files\x1b[38;2;100;100;100m...")
 			pr=True
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"archive_file":"core.a","archive_file_path":o_fp+"core/core.a","object_file":c_of},bp["recipe.ar.pattern"])))
-			os.remove(c_of)
-			os.remove(c_of[:-2]+".d")
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",bp["recipe.ar.pattern"].replace("{object_file}",c_of)))
 	else:
 		_print("Collecting Core Variant Files\x1b[38;2;100;100;100m...")
 		v_of=[e for e in os.listdir(o_fp+"core/") if e.endswith(".o")]
 	_print("Running Recipe 'recipe.hooks.core.postbuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.core.postbuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.linking.prelink") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Linking Files\x1b[38;2;100;100;100m...")
-	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"])))
+	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",bp["recipe.c.combine.pattern"].replace("{compiler.warning_flags}",bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")).replace("{object_files}"," ".join([f"\"{e}\"" for e in s_of+v_of]))))
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.linking.postlink") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.hooks.objcopy.preobjcopy'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.objcopy.preobjcopy") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.objcopy'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.objcopy") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.hooks.objcopy.postobjcopy'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.objcopy.postobjcopy") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	_print("Running Recipe 'recipe.hooks.postbuild'\x1b[38;2;100;100;100m...")
 	for k,v in bp.items():
 		if (k.startswith("recipe.hooks.postbuild") and k.endswith(".pattern") and len(v)>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+			_run_process(v)
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
@@ -1744,7 +1739,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		si.hStdOutput=out_w_h
 		si.hStdError=err_h
 		pi=ctypes.wintypes.PROCESS_INFORMATION()
-		kernel32.CreateProcessW(None,_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else "")},bp["recipe.size.pattern"]),None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
+		kernel32.CreateProcessW(None,ARDUINO_COMMAND_FORMAT_REGEX.sub("",bp["recipe.size.pattern"].replace("{compiler.warning_flags}",bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""))),None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
 		kernel32.CloseHandle(pi.hThread)
 		kernel32.CloseHandle(in_h)
 		kernel32.CloseHandle(out_w_h)
@@ -1768,20 +1763,17 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 			sz[0]+=int(k)
 		for k in re.findall(bp["recipe.size.regex.data"],o,re.M):
 			sz[1]+=int(k)
+		_print(f"Code: {sz[0]} / {bp['upload.maximum_size']} bytes ({sz[0]*100//int(bp['upload.maximum_size'])}%)")
+		if (bp["upload.maximum_data_size"]!=""):
+			_print(f"Global Variables: {sz[1]} / {bp['upload.maximum_data_size']} bytes ({sz[1]*100//int(bp['upload.maximum_data_size'])}%)")
+		else:
+			_print(f"Global Variables: {sz[1]} bytes")
 		if (sz[0]>int(bp["upload.maximum_size"])):
-			print(f"\x1b[38;2;200;40;20mSketch Uses {sz[0]} bytes out of {int(bp['upload.maximum_size'])} bytes of storage space.")
+			_print(f"\x1b[38;2;200;40;20mCode Too Big",df=True)
 			kernel32.ExitProcess(1)
 		if (bp["upload.maximum_data_size"]!="" and sz[1]>int(bp["upload.maximum_data_size"])):
-			print(f"\x1b[38;2;200;40;20mSketch Uses {sz[0]} bytes out of {int(bp['upload.maximum_size'])} bytes of Dynamic Memory.")
+			_print(f"\x1b[38;2;200;40;20mProgram Uses Too Much Dynamic Memory",df=True)
 			kernel32.ExitProcess(1)
-		_print(f"Sketch uses {sz[0]} bytes ({sz[0]*100//int(bp['upload.maximum_size'])}%) of program storage space. Maximum is {bp['upload.maximum_size']} bytes.")
-		if (bp["upload.maximum_data_size"]!=""):
-			_print(f"Global variables use {sz[1]} bytes ({sz[1]*100//int(bp['upload.maximum_data_size'])}%) of dynamic memory, leaving {int(bp['upload.maximum_data_size'])-sz[1]} bytes for local variables. Maximum is {bp['upload.maximum_data_size']} bytes.")
-		else:
-			_print(f"Global variables use {sz[1]} bytes of dynamic memory.")
-	for k in os.listdir(o_fp):
-		if (k not in ["core",m_fp[len(s_fp):]+".hex","build-properties.sha1"]):
-			os.remove(o_fp+k)
 	return sz
 
 
@@ -1793,11 +1785,11 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 		o_fp+="/"
 	_print("Searching For Build Directory\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp)):
-		_print("\x1b[38;2;200;40;20mSketch Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
+		_print("\x1b[38;2;200;40;20mProgram Build Directory Not Found.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
 		kernel32.ExitProcess(1)
 	_print("Loading Packages\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/")):
-		print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}'\x1b[38;2;200;40;20m isn't Installed.")
+		_print(f"\x1b[38;2;200;40;20mPackage '{fqbn[0]}:{fqbn[1]}' isn't Installed.",df=True)
 		kernel32.ExitProcess(1)
 	h_fp=os.path.abspath(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"+sorted(os.listdir(__file_base_dir__+f"arduino/packages/{fqbn[0]}/hardware/{fqbn[1]}/"),reverse=True)[0])+"/"
 	_print(f"Reading File '{h_fp}boards.txt'\x1b[38;2;100;100;100m...")
@@ -1818,21 +1810,33 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 		p_pm={k.split("=")[0]:k[len(k.split("=")[0])+1:] for k in hp_f.read().replace("\r\n","\n").split("\n") if len(k.strip())>0 and k.strip()[0]!="#"}
 	_print(f"Generating Upload Properties\x1b[38;2;100;100;100m...")
 	up={**p_pm,**h_pm,"serial.port":p,"serial.port.file":p,"runtime.platform.path":h_fp}
-	up.update({k[len(h_pm[("bootloader.tool" if bb==True else "upload.tool")])+7:]:v for k,v in up.items() if k.startswith(f"tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.")})
+	for k,v in list(up.items()):
+		if (k.startswith(f"tools.{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}.")):
+			up[k[len(h_pm[("bootloader.tool" if bb is True else "upload.tool")])+7:]]=v
+	if (bb is False):
+		up["build.path"]=o_fp
+		for e in os.listdir(o_fp):
+			if (e[-4:]==".hex"):
+				up["build.project_name"]=e.split(".")[0]
+				break
 	for k in "upload,program,erase,bootloader".split(","):
 		up[f"{k}.verbose"]=up.get(f"{k}.params.quiet","")
 	for k in ("upload","program"):
-		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if vu==False else '')}verify","")
+		up[f"{k}.verify"]=up.get(f"{k}.params.{('no' if vu is False else '')}verify","")
 	_print(f"Loading Tools\x1b[38;2;100;100;100m...")
-	for v in os.listdir(__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/"):
-		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/")
-	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}.path"]=__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}/{v}/{h_pm[('bootloader.tool' if bb==True else 'upload.tool')]}"
-	if (bb==False):
-		up.update({"build.path":o_fp,"build.project_name":[e.split(".")[0] for e in os.listdir(o_fp) if e[-4:]==".hex"][0]})
+	for v in os.listdir(__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}/"):
+		up[f"runtime.tools.{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}-{v}.path"]=_get_inner_dir(__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}/{v}/")
+	up[f"runtime.tools.{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}.path"]=__file_base_dir__+f"arduino/packages/arduino/tools/{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}/{v}/{h_pm[('bootloader.tool' if bb is True else 'upload.tool')]}"
+	_print("Expanding Upload Properties\x1b[38;2;100;100;100m...")
+	for k,v in up.items():
+		while ("{" in v):
+			v=ARDUINO_COMMAND_FORMAT_REGEX.sub(lambda m:(up[m.group(1)] if m.group(1) in up else ""),v)
+		up[k]=v
+	if (bb is False):
 		_print("Setting Board in Bootloader Mode\x1b[38;2;100;100;100m...")
-		if (bool(up.get("upload.use_1200bps_touch","False"))==True):
+		if (bool(up.get("upload.use_1200bps_touch","False")) is True):
 			_print("\x1b[38;2;200;40;20m1200Bps Touch not Implemented Yet.\x1b[0m Skipping\x1b[38;2;100;100;100m...")
-		if (bool(up.get("upload.wait_for_upload_port","False"))==True):
+		if (bool(up.get("upload.wait_for_upload_port","False")) is True):
 			_print("Searching For Avaible Boards\x1b[38;2;100;100;100m...")
 			b=None
 			for usb_b in _list_arduino_boards():
@@ -1844,12 +1848,12 @@ def _upload_to_arduino(o_fp,p,fqbn,bb,vu,inc_l):
 				kernel32.ExitProcess(1)
 			up.update({"serial.port":b["location"],"serial.port.file":b["location"]})
 		_print(f"Uploading Program to Board on Port '{p}'\x1b[38;2;100;100;100m...")
-		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["upload.pattern"])))
+		_run_process(up["upload.pattern"])
 	else:
 		_print("Erasing Board\x1b[38;2;100;100;100m...")
-		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["erase.pattern"])))
+		_run_process(up["erase.pattern"])
 		_print("Burning Bootloader to Board\x1b[38;2;100;100;100m...")
-		_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(up,up["bootloader.pattern"])))
+		_run_process(up["bootloader.pattern"])
 	_print("Upload Finished")
 
 
@@ -1858,7 +1862,7 @@ def _open_project_file(d,e,*f):
 	ok=False
 	for fn in f:
 		if (os.path.isfile(fn)):
-			_run_process(_join_arguments(EDITOR_FILE_PATH,fn))
+			_run_process(f"\"{EDITOR_FILE_PATH}\" \"{fn}\"")
 			ok=True
 	if (ok):
 		return
@@ -1866,7 +1870,7 @@ def _open_project_file(d,e,*f):
 		r=r.replace("\\","/").rstrip("/")+"/"
 		for f in fl:
 			if (f.endswith(e)):
-				_run_process(_join_arguments(EDITOR_FILE_PATH,r+f))
+				_run_process(f"\"{EDITOR_FILE_PATH}\" \"{r+f}\"")
 				return
 
 
@@ -1875,7 +1879,7 @@ def _create_project(t,nm,op):
 	if (nm is not None):
 		t=t.lower()
 		if (t not in VALID_PROGRAM_TYPES):
-			print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'\x1b[38;2;200;40;20m.")
+			_print(f"\x1b[38;2;200;40;20mUnknown Project Type '{t}'.",df=True)
 			kernel32.ExitProcess(1)
 		nm=nm.replace("_"," ").lower().title().replace(" ","_")
 		p=PROJECT_DIR+f"{t.title()}-{nm}/"
@@ -1893,7 +1897,7 @@ def _create_project(t,nm,op):
 	for r,dl,fl in os.walk(b_fp):
 		r=r.replace("\\","/").rstrip("/")+"/"
 		pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
-		if (cr==False and r!=b_fp):
+		if (cr is False and r!=b_fp):
 			break
 		for d in dl:
 			d=d.replace("$$$NAME$$$",nm.lower())
@@ -1906,8 +1910,8 @@ def _create_project(t,nm,op):
 					wf.write(rf.read().replace(b"$$$YEAR$$$",bytes(str(int(time.time()//31556926+1970)),"utf-8")).replace(b"$$$PRETTY_TITLE$$$",bytes(f"{t.title()} - {nm.replace('_',' ').title()}","utf-8")).replace(b"$$$NAME$$$",bytes(nm.lower(),"utf-8")).replace(b"$$$UPPERCASE_NAME$$$",bytes(nm.upper(),"utf-8")).replace(b"$$$TITLE_NAME$$$",bytes(nm.replace("_"," ").title(),"utf-8")))
 			if (f[0]=="."):
 				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
-	if (op==True):
-		_run_process(_join_arguments(EDITOR_FILE_PATH,"--add",p))
+	if (op is True):
+		_run_process(f"\"{EDITOR_FILE_PATH}\" --add \"{p}\"")
 		if (t=="arduino"):
 			_open_project_file(p,"ino",p+"src/main.ino")
 		elif (t=="assembly"):
@@ -1961,7 +1965,7 @@ class _Serial_UI:
 		while (True):
 			self._o=[f"\x1b[0m\x1b[48;2;24;24;24m{' '*(self._sz[0]-1)}",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╔{'═'*(self._sz[0]-9)}╗   ",*(f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ║{' '*(self._sz[0]-9)}\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m║   ",)*(self._sz[1]-5),f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m   ╚{'═'*(self._sz[0]-9)}╝   ",f"\x1b[0m\x1b[48;2;24;24;24m\x1b[38;2;92;92;92m{' '*(self._sz[0]-1)}"]
 			ud=False
-			if (msvcrt.kbhit()==True):
+			if (msvcrt.kbhit()==1):
 				k=msvcrt.getch()
 				if (k==b"\x03"):
 					if (self._m==0):
@@ -2165,15 +2169,15 @@ class _Serial_UI:
 						self._extend(0,ARDUINO_DATA_LINE_SEPARATOR_REGEX.sub(r"\1",str(bf.raw[:bf_l.value],"utf-8")).replace("\t","    "))
 						n_dt=True
 						ud=True
-				if (self._a_s==True and n_dt==True):
+				if (self._a_s is True and n_dt is True):
 					self._dt=self._dt[-1000:]
 					self._off[0]=max(0,sum([len(e[1])-(1 if None in e[1] else 0) for e in self._dt])-(self._sz[1]-9))
 					ud=True
-				if (inp_ch==False and self._b_tm<time.time()):
+				if (inp_ch is False and self._b_tm<time.time()):
 					self._b=not self._b
 					self._b_tm=time.time()+0.65
 					ud=True
-				elif (inp_ch==True):
+				elif (inp_ch is True):
 					self._b=True
 					self._b_tm=time.time()+0.65
 					ud=True
@@ -2183,13 +2187,13 @@ class _Serial_UI:
 					self._nm_d=not self._nm_d
 					self._nm_d_tm=time.time()+2
 					ud=True
-				if (self._nm_d==True):
+				if (self._nm_d is True):
 					self._set(4,2,self._p["name"].center(self._sz[0]-9).replace(self._p["name"],f"\x1b[38;2;89;189;240m{self._p['name']}"))
 				else:
 					self._set(4,2,self._p["fqbn"].center(self._sz[0]-9).replace(self._p["fqbn"],f"\x1b[38;2;255;199;255m{self._p['fqbn']}"))
 				self._set(5,2,f"\x1b[38;2;154;255;95m{self._p['location']}")
 				self._set(self._sz[0]-13,2,f"\x1b[38;2;{('255;85;95','115;35;60')[self._t]}mTXT \x1b[38;2;{('255;85;95','115;35;60')[1-self._t]}mPLT")
-				self._set(4,self._sz[1]-4,"\x1b[38;2;207;207;207m"+"".join([(e if i!=self._off[1] else f"\x1b[{('2' if self._b==False else '')}4m{e}\x1b[24m") for i,e in enumerate(list(self._inp_bf+" "))]))
+				self._set(4,self._sz[1]-4,"\x1b[38;2;207;207;207m"+"".join([(e if i!=self._off[1] else f"\x1b[{('2' if self._b is False else '')}4m{e}\x1b[24m") for i,e in enumerate(list(self._inp_bf+" "))]))
 				if (self._t==0):
 					self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
 					self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
@@ -2199,7 +2203,7 @@ class _Serial_UI:
 							if (e is not None):
 								l.append(((True if i==0 else False),k[0],e))
 					for i,k in enumerate(l[self._off[0]:self._off[0]+self._sz[1]-9]):
-						if (i==0 or k[0]==True):
+						if (i==0 or k[0] is True):
 							self._set(4,i+4,("\x1b[38;2;255;135;5m","\x1b[38;2;180;230;60m")[k[1]]+f"{'»«'[k[1]]} {k[2]}")
 						else:
 							self._set(6,i+4,("\x1b[38;2;255;135;5m","\x1b[38;2;180;230;60m")[k[1]]+k[2])
@@ -2255,7 +2259,7 @@ class _Serial_UI:
 						self._set(3,3,f"╠{'═'*(self._sz[0]-9)}╣")
 						self._set(3,self._sz[1]-5,f"╠{'═'*(self._sz[0]-9)}╣")
 						self._set(4,self._sz[1]//2,"\x1b[38;2;115;80;55m"+"[No Data]".center(self._sz[0]-9))
-			if (ud==True):
+			if (ud is True):
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join(self._o)+"\x1b[0m")
 				sys.__stdout__.flush()
 
@@ -2266,7 +2270,7 @@ class _Serial_UI:
 		j=0
 		while (i<len(self._o[y])):
 			m=REMOVE_COLOR_FORMATTING_REGEX.match(self._o[y][i:])
-			if (m!=None):
+			if (m is not None):
 				i+=len(m.group(0))
 				continue
 			if (j==x):
@@ -2275,7 +2279,7 @@ class _Serial_UI:
 				em=""
 				while (l<len(self._o[y])):
 					m=REMOVE_COLOR_FORMATTING_REGEX.match(self._o[y][k:])
-					if (m!=None):
+					if (m is not None):
 						em+=m.group(0)
 						k+=len(m.group(0))
 						continue
@@ -2298,7 +2302,7 @@ class _Serial_UI:
 			v=v[:-1]
 		if ("\n" in v):
 			for j,k in enumerate(v.split("\n")):
-				self._extend(i,k+("\n" if j<len(v.split("\n"))-1 or e==True else ""))
+				self._extend(i,k+("\n" if j<len(v.split("\n"))-1 or e is True else ""))
 			return
 		l=[j for j,e in enumerate(self._dt) if e[0]==i]
 		if (len(l)==0 or self._dt[l[-1]][1][-1] is None):
@@ -2317,33 +2321,10 @@ class _Serial_UI:
 			j+=1
 			k=nk
 			self._dt[i][1].append("")
-		if (e==True):
+		if (e is True):
 			self._dt[i][1].append(None)
 		if (len(self._dt)>128):
 			self._dt=self._dt[-128:]
-
-
-
-def _join_arguments(*al):
-	o=""
-	for a in al:
-		if (len(o)>0):
-			o+=" "
-		if (" " in a or "\t" in a or len(a)==0):
-			o+="\""
-		i=0
-		for c in a:
-			if (c=="\\"):
-				i+=1
-			elif (c=="\""):
-				o+="\\"*i*2+"\\\""
-				i=0
-			else:
-				o+="\\"*i+c
-				i=0
-		if (" " in a or "\t" in a or len(a)==0):
-			o+="\""
-	return o
 
 
 
@@ -2398,7 +2379,7 @@ def _u_mcs(fp):
 						_print(f"File Hash: {h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}, New Hash: {json['downloads']['server']['sha1']}")
 						if (f"{h[0]:08x}{h[1]:08x}{h[2]:08x}{h[3]:08x}{h[4]:08x}"!=json["downloads"]["server"]["sha1"]):
 							dw=True
-					if (dw==True):
+					if (dw is True):
 						if (not os.path.exists(fp+"backup")):
 							os.mkdir(fp+"backup")
 						nm="backup/world-backup_"+json["id"]
@@ -2417,7 +2398,7 @@ def _u_mcs(fp):
 									except PermissionError:
 										_print(f"Skipping File '{r+f}', Permission Error\x1b[38;2;100;100;100m...")
 						dw=True
-				if (dw==True):
+				if (dw is True):
 					_print(f"Downloading Server For {json['id']} ('{json['downloads']['server']['url']}')\x1b[38;2;100;100;100m...")
 					r=requests.get(json["downloads"]["server"]["url"],stream=True).raw
 					with open(fp+"server.jar","wb") as f:
@@ -2430,7 +2411,7 @@ def _u_mcs(fp):
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Skipping Update Check\x1b[38;2;100;100;100m...")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"7",fp))
+	_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 7 \"{fp}\"")
 
 
 
@@ -2495,7 +2476,7 @@ if (len(GITHUB_TOKEN)!=40):
 	_print("\x1b[38;2;200;40;20mInvalid Github Token.\x1b[0m Project Push will Fail\x1b[38;2;100;100;100m...")
 if (len(sys.argv)==1):
 	if (sys.executable.replace("\\","/")!=__headless_executable__):
-		_create_process(_join_arguments(__headless_executable__,__file__))
+		_create_process(f"\"{__headless_executable__}\" \"{__file__}\"")
 	else:
 		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
@@ -2508,22 +2489,22 @@ if (len(sys.argv)==1):
 		kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
 		kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 		move_to_desktop.switch_to_desktop(0)
-		_create_process(_join_arguments(__executable__,__file__,"7"))
+		_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
 		for k in os.listdir(PROJECT_DIR):
 			_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-		_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"4"))
+		_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 4")
 		_hotkey_handler._hk={}
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 		_hotkey_handler._hk[0x23]=lambda:_check_close(1)
 		_hotkey_handler._hk[0x24]=lambda:_check_close(0)
-		_hotkey_handler._hk[0x31]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","0"))
-		_hotkey_handler._hk[0x32]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","1"))
-		_hotkey_handler._hk[0x33]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"8","2"))
-		_hotkey_handler._hk[0x49]=lambda:_create_process(_join_arguments(__executable__,__file__,"7"))
-		_hotkey_handler._hk[0x51]=lambda:_create_process(_join_arguments(__executable__,__file__,"1"))
-		_hotkey_handler._hk[0x52]=lambda:_create_process(_join_arguments(__headless_executable__,__file__,"0"))
+		_hotkey_handler._hk[0x31]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 0")
+		_hotkey_handler._hk[0x32]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 1")
+		_hotkey_handler._hk[0x33]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 2")
+		_hotkey_handler._hk[0x49]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
+		_hotkey_handler._hk[0x51]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 1")
+		_hotkey_handler._hk[0x52]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 0")
 		_hotkey_handler._hk[0x57]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 		msg=ctypes.wintypes.MSG()
 		while (True):
@@ -2599,7 +2580,7 @@ else:
 		u=True
 		ll=0
 		while (True):
-			if (msvcrt.kbhit()==True):
+			if (msvcrt.kbhit()==1):
 				k=msvcrt.getch()
 				if (k==b"\xe0"):
 					msvcrt.getch()
@@ -2622,13 +2603,13 @@ else:
 						_create_process(MINECRAFT_LAUNCHER_FILE_PATH)
 						break
 					elif (bf=="open"):
-						_create_process(_join_arguments(__executable__,__file__,"2"))
+						_create_process(f"\"{__executable__}\" \"{__file__}\" 2")
 						break
 					elif (bf=="serial"):
-						_create_process(_join_arguments(__executable__,__file__,"3"))
+						_create_process(f"\"{__executable__}\" \"{__file__}\" 3")
 						break
 					elif (bf=="stats"):
-						_create_process(_join_arguments(CMD_FILE_PATH,"/c",__executable__,__file__,"6"))
+						_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 6")
 						break
 					elif (bf=="sublime"):
 						_create_process(EDITOR_FILE_PATH)
@@ -2640,7 +2621,7 @@ else:
 				elif (ord(k)>31 and ord(k)<127):
 					bf+=str(k,"utf-8")
 					u=True
-			if (u==True):
+			if (u is True):
 				u=False
 				ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",bf).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))+2
 				sys.__stdout__.write(f"\x1b[0;0H> {bf+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
@@ -2679,11 +2660,11 @@ else:
 		bfi=0
 		cr=False
 		while (True):
-			if (msvcrt.kbhit()==True):
+			if (msvcrt.kbhit()==1):
 				k=msvcrt.getch()
 				if (k==b"\xe0"):
 					msvcrt.getch()
-				if (cr==True):
+				if (cr is True):
 					if (k in b"yY"):
 						_create_project(bf[0],bf[1],True)
 						break
@@ -2730,13 +2711,13 @@ else:
 								_create_project(bf[0],bf[1],True)
 								e=True
 								break
-						if (e==True):
+						if (e is True):
 							break
 						cr=True
 						u=True
 				elif (k==b"\x03"):
 					break
-			if (u==True):
+			if (u is True):
 				pr=["",""]
 				if (len(bf[0])>0):
 					for k in tl:
@@ -2752,7 +2733,7 @@ else:
 							break
 				elif (len(bf[0])>0 and bf[0].lower() in l):
 					pr[1]=l[bf[0].lower()][0]
-				o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr==True else "")
+				o=f"\x1b[38;2;98;145;22mProject\x1b[38;2;59;59;59m: \x1b[38;2;255;255;255m{bf[0]}\x1b[38;2;139;139;139m{pr[0]}\x1b[38;2;59;59;59m-\x1b[38;2;255;255;255m{bf[1]}\x1b[38;2;139;139;139m{pr[1]}"+(f"\n\x1b[38;2;50;155;204mCreate Project?" if cr is True else "")
 				ln=len(REMOVE_COLOR_FORMATTING_REGEX.sub("",o).replace("\n"," "*(sbi.dwMaximumWindowSize.X+1)))
 				sys.__stdout__.write(f"\x1b[0;0H{o+(' '*(ll-ln) if ll>ln else '')}\x1b[0m")
 				sys.__stdout__.flush()
@@ -2813,7 +2794,8 @@ else:
 			o=f"┌{'─'*mx_l[0]}┬{'─'*mx_l[1]}┬{'─'*mx_l[2]}┬{'─'*mx_l[3]}┐\n│{'Name'.center(mx_l[0])}│{'FQBN'.center(mx_l[1])}│{'Arch'.center(mx_l[2])}│{'Location'.center(mx_l[3])}│\n├{'─'*mx_l[0]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[1]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[2]}{('┴' if len(bl)==0 else '┼')}{'─'*mx_l[3]}┤"
 			for k in bl:
 				o+=f"\n│{k['name'].center(mx_l[0])}│{k['fqbn'].center(mx_l[1])}│{k['arch'].center(mx_l[2])}│{k['location'].center(mx_l[3])}│"
-			print(o+f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘")
+			sys.__stdout__.write(o+f"\n└{'─'*mx_l[0]}┴{'─'*mx_l[1]}┴{'─'*mx_l[2]}┴{'─'*mx_l[3]}┘")
+			sys.__stdout__.flush()
 		elif (sys.argv[2]=="install"):
 			if (len(sys.argv)<4):
 				_print("\x1b[38;2;200;40;20mNot enought Arguments.\x1b[0m Quitting\x1b[38;2;100;100;100m...")
@@ -2966,7 +2948,7 @@ else:
 			for e in requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{t}").json()["tree"]:
 				if (e["path"]=="samples"):
 					t=requests.get(f"https://api.github.com/repos/github/linguist/git/trees/{e['sha']}?recursive=1").json()
-					if (t["truncated"]==True):
+					if (t["truncated"] is True):
 						input("\x1b[38;2;200;40;20mSamples Tree Truncated")
 						kernel32.ExitProcess(1)
 					for k in t["tree"]:
@@ -2975,7 +2957,7 @@ else:
 						nm=k["path"].split("/")[0]
 						if (nm not in l_id_m):
 							continue
-						print(f"Downloading: {k['path']}")
+						_print(f"Downloading: {k['path']}",df=True)
 						tl=_tokenize_file(requests.get(k["url"],headers={"Authorization":f"token {GITHUB_TOKEN}","Accept":GITHUB_HEADERS,"User-Agent":"Language Stats API"}).content.decode("utf-8",errors="replace"))
 						if (len(tl)==0):
 							continue
@@ -3034,7 +3016,12 @@ else:
 		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		el={}
-		_read_project_stats((None if len(sys.argv)==2 else sys.argv[2].replace("\\","/").rstrip("/")+"/"),ll,hdt,db,el)
+		if (len(sys.argv)==2):
+			for fp in os.listdir(PROJECT_DIR):
+				_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
+			_project_stats(__file_base_dir__,ll,hdt,db,el)
+		else:
+			_project_stats(sys.argv[2].replace("\\","/").rstrip("/")+"/",ll,hdt,db,el)
 		ud=False
 		f=True
 		ln_f=False
@@ -3052,7 +3039,7 @@ else:
 		ci.bVisible=0
 		kernel32.SetConsoleCursorInfo(ho,ctypes.byref(ci))
 		while (True):
-			if (msvcrt.kbhit()==True):
+			if (msvcrt.kbhit()==1):
 				c=(msvcrt.getch(),None)
 				if (c[0]==b"\xe0"):
 					c=(c[0],msvcrt.getch())
@@ -3076,7 +3063,7 @@ else:
 				pt=0
 				pkl=0
 				for k,v in list(el.items()):
-					if (f==True and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("programming") and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("markup")):
+					if (f is True and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("programming") and ll[k][2]!=REPO_STATS_LANGUAGE_TYPE.index("markup")):
 						continue
 					pl[k]=v[0]
 					pll[k]=v[1]
@@ -3113,14 +3100,10 @@ else:
 						ln-=np
 						if (ln<0):
 							o[2]=o[2][:si]+o[2][si-ln:]
-						if (ln<-1):
-							print(ln)
-							while (True):
-								pass
 						o[2]+="\x1b[48;2;18;18;18m"+("▌" if np!=0 else "")+" "*ln
 					o[2]+="\x1b[48;2;18;18;18m \x1b[38;2;52;52;52m║   "
 					o.append(f"\x1b[48;2;18;18;18m\x1b[38;2;52;52;52m   ╠{'═'*(sbi.dwMaximumWindowSize.X-8)}╣   ")
-					if (ln_f==False):
+					if (ln_f is False):
 						bs=int((sbi.dwMaximumWindowSize.X-pkl-pvl-ptvl-22)*pt/mv)*2/pt
 						for k,v in pl.items():
 							bw=round(v[0]*bs)/2
@@ -3137,7 +3120,7 @@ else:
 					while (len(o)<sbi.srWindow.Bottom+1):
 						o.append(" "*sbi.dwMaximumWindowSize.X)
 			vs=min(vs,max(len(o)-sbi.srWindow.Bottom-1,0))
-			if (ud==True):
+			if (ud is True):
 				ud=False
 				sys.__stdout__.write("\x1b[0;0H\x1b[2J"+"\n".join(o[vs:vs+sbi.srWindow.Bottom+1])+"\x1b[0m")
 				sys.__stdout__.flush()
@@ -3156,7 +3139,7 @@ else:
 			si.cbReserved2=0
 			si.lpReserved2=None
 			pi=ctypes.wintypes.PROCESS_INFORMATION()
-			kernel32.CreateProcessW(None,_join_arguments(MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"),None,None,False,0,None,sys.argv[2].replace("\\","/").rstrip("/")+"/",ctypes.byref(si),ctypes.byref(pi))
+			kernel32.CreateProcessW(None,f"\"{MINECRAFT_JAVA_RUNTIME_FILE_PATH}\" -Xms{MINECRAFT_JAVA_RUNTIME_MEMORY} -Xmx{MINECRAFT_JAVA_RUNTIME_MEMORY} -jar \"{sys.argv[2].replace(chr(92),'/').rstrip('/')+'/server.jar'}\" --nogui",None,None,False,0,None,sys.argv[2].replace("\\","/").rstrip("/")+"/",ctypes.byref(si),ctypes.byref(pi))
 			kernel32.CloseHandle(pi.hProcess)
 			kernel32.CloseHandle(pi.hThread)
 	elif (v==8):
