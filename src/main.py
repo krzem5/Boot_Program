@@ -96,6 +96,7 @@ VK_SHIFT=16
 
 
 CREATE_NEW_CONSOLE=0x10
+CREATE_NEW_PROCESS_GROUP=0x200
 DICS_FLAG_GLOBAL=1
 DIGCF_PRESENT=2
 DIREG_DEV=1
@@ -1445,7 +1446,7 @@ def _run_process(a):
 
 
 
-def _create_process(a,cwd=None):
+def _create_process(a):
 	si=ctypes.wintypes.STARTUPINFOW()
 	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
 	si.lpReserved=None
@@ -1455,7 +1456,7 @@ def _create_process(a,cwd=None):
 	si.cbReserved2=0
 	si.lpReserved2=None
 	pi=ctypes.wintypes.PROCESS_INFORMATION()
-	kernel32.CreateProcessW(None,a,None,None,False,CREATE_NEW_CONSOLE,None,cwd,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CreateProcessW(None,a,None,None,False,CREATE_NEW_CONSOLE|CREATE_NEW_PROCESS_GROUP,None,None,ctypes.byref(si),ctypes.byref(pi))
 	kernel32.CloseHandle(pi.hProcess)
 	kernel32.CloseHandle(pi.hThread)
 
@@ -1473,9 +1474,9 @@ def _expand_arduino_cmd(d,s):
 
 
 def _run_arduino_recipe(bp,pfx,sfx):
-	for k in bp.keys():
-		if (k.startswith(pfx) and k.endswith(sfx) and len(bp[k])>0):
-			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,bp[k])))
+	for k,v in bp.items():
+		if (k.startswith(pfx) and k.endswith(sfx) and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 
 
 
@@ -1585,7 +1586,9 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	with open(o_fp+"build-properties.sha1","w") as f:
 		f.write(dt_h)
 	_print("Running Recipe 'recipe.hooks.prebuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.prebuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.prebuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	l_off=0
 	nh_inc=False
 	_print("Bundling Sketch Files\x1b[38;2;100;100;100m...")
@@ -1649,13 +1652,19 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(pd,pd["recipe.preproc.macros"])).replace("-MMD","")+" -DARDUINO_LIB_DISCOVERY_PHASE")
 	os.remove(o_fp+m_fp.split("/")[-1]+".cpp")
 	_print("Running Recipe 'recipe.hooks.sketch.prebuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.sketch.prebuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.sketch.prebuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Compiling Files\x1b[38;2;100;100;100m...")
 	s_of=_compile_arduino_files(bp,o_fp,o_fp,inc_l,False)+(_compile_arduino_files(bp,o_fp+"src",o_fp+"src",inc_l,True) if os.path.exists(o_fp+"src") else [])
 	_print("Running Recipe 'recipe.hooks.sketch.postbuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.sketch.postbuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.sketch.postbuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Running Recipe 'recipe.hooks.core.prebuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.core.prebuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.core.prebuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	c_inc_l=[bp["build.core.path"]]+([bp["build.variant.path"]] if bp["build.variant.path"]!="" else [])
 	_print("Buliding Core\x1b[38;2;100;100;100m...")
 	if (not os.path.exists(o_fp+"core")):
@@ -1676,21 +1685,35 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 		_print("Collecting Core Variant Files\x1b[38;2;100;100;100m...")
 		v_of=[e for e in os.listdir(o_fp+"core/") if e.endswith(".o")]
 	_print("Running Recipe 'recipe.hooks.core.postbuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.core.postbuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.core.postbuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Running Recipe 'recipe.hooks.linking.prelink'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.linking.prelink",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.linking.prelink") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Linking Files\x1b[38;2;100;100;100m...")
 	_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd({**bp,"compiler.warning_flags":bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""),"archive_file":"core/core.a","archive_file_path":o_fp+"core/core.a","object_files":" ".join([f"\"{e}\"" for e in s_of+v_of])},bp["recipe.c.combine.pattern"])))
 	_print("Running Recipe 'recipe.hooks.linking.postlink'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.linking.postlink",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.linking.postlink") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Running Recipe 'recipe.hooks.objcopy.preobjcopy'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.objcopy.preobjcopy",".pattern")
-	_print("Running Recipe 'recipe.objcopy.'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.objcopy.",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.objcopy.preobjcopy") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
+	_print("Running Recipe 'recipe.objcopy'\x1b[38;2;100;100;100m...")
+	for k,v in bp.items():
+		if (k.startswith("recipe.objcopy") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Running Recipe 'recipe.hooks.objcopy.postobjcopy'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.objcopy.postobjcopy",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.objcopy.postobjcopy") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	_print("Running Recipe 'recipe.hooks.postbuild'\x1b[38;2;100;100;100m...")
-	_run_arduino_recipe(bp,"recipe.hooks.postbuild",".pattern")
+	for k,v in bp.items():
+		if (k.startswith("recipe.hooks.postbuild") and k.endswith(".pattern") and len(v)>0):
+			_run_process(ARDUINO_COMMAND_FORMAT_REGEX.sub("",_expand_arduino_cmd(bp,v)))
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
@@ -3124,6 +3147,17 @@ else:
 		if (len(sys.argv)==2):
 			_u_mcs(__file_base_dir__+"mc_server")
 		else:
-			_create_process(_join_arguments(MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"),cwd=sys.argv[2].replace("\\","/").rstrip("/")+"/")
+			si=ctypes.wintypes.STARTUPINFOW()
+			si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+			si.lpReserved=None
+			si.lpDesktop=None
+			si.lpTitle=None
+			si.dwFlags=0
+			si.cbReserved2=0
+			si.lpReserved2=None
+			pi=ctypes.wintypes.PROCESS_INFORMATION()
+			kernel32.CreateProcessW(None,_join_arguments(MINECRAFT_JAVA_RUNTIME_FILE_PATH,"-Xms"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-Xmx"+MINECRAFT_JAVA_RUNTIME_MEMORY,"-jar",sys.argv[2].replace("\\","/").rstrip("/")+"/server.jar","--nogui"),None,None,False,0,None,sys.argv[2].replace("\\","/").rstrip("/")+"/",ctypes.byref(si),ctypes.byref(pi))
+			kernel32.CloseHandle(pi.hProcess)
+			kernel32.CloseHandle(pi.hThread)
 	elif (v==8):
 		move_to_desktop.switch_to_desktop(int(sys.argv[2]))
