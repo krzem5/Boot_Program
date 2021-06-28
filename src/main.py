@@ -2411,7 +2411,7 @@ def _u_mcs(fp):
 	except requests.exceptions.ConnectionError:
 		_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Skipping Update Check\x1b[38;2;100;100;100m...")
 	_print("Starting Server\x1b[38;2;100;100;100m...")
-	_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 7 \"{fp}\"")
+	_create_process(f"\"{CMD_FILE_PATH}\" /c \"^\"{__executable__}^\" ^\"{__file__}^\" 7 ^\"{fp}^\"\"")
 
 
 
@@ -2492,7 +2492,7 @@ if (len(sys.argv)==1):
 		_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
 		for k in os.listdir(PROJECT_DIR):
 			_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-		_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 4")
+		_create_process(f"\"{CMD_FILE_PATH}\" /c \"^\"{__executable__}^\" ^\"{__file__}^\" 4\"")
 		_hotkey_handler._hk={}
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
@@ -2609,7 +2609,7 @@ else:
 						_create_process(f"\"{__executable__}\" \"{__file__}\" 3")
 						break
 					elif (bf=="stats"):
-						_create_process(f"\"{CMD_FILE_PATH}\" /c \"{__executable__}\" \"{__file__}\" 6")
+						_create_process(f"\"{CMD_FILE_PATH}\" /c \"^\"{__executable__}^\" ^\"{__file__}^\" 6\"")
 						break
 					elif (bf=="sublime"):
 						_create_process(EDITOR_FILE_PATH)
