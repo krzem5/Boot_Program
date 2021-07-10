@@ -89,8 +89,8 @@ SHA1_START_VALUE=[0x67452301,0xefcdab89,0x98badcfe,0x10325476,0xc3d2e1f0]
 TEMP_DIR=os.path.abspath(os.getenv("TEMP",os.getenv("TMP"))).replace("\\","/").rstrip("/")+"/"
 UTC_OFFSET=7200
 VALID_PROGRAM_TYPES=["arduino","assembly","c","cpp","css","java","javascript","php","processing","python"]
-VK_ALT=18
-VK_CTRL=17
+VK_CONTROL=17
+VK_MENU=18
 VK_SHIFT=16
 
 
@@ -188,7 +188,7 @@ ctypes.wintypes.CONSOLE_CURSOR_INFO=type("CONSOLE_CURSOR_INFO",(ctypes.Structure
 ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO=type("CONSOLE_SCREEN_BUFFER_INFO",(ctypes.Structure,),{"_fields_":[("dwSize",ctypes.wintypes._COORD),("dwCursorPosition",ctypes.wintypes._COORD),("wAttributes",ctypes.wintypes.WORD),("srWindow",ctypes.wintypes.SMALL_RECT),("dwMaximumWindowSize",ctypes.wintypes._COORD)]})
 ctypes.wintypes.DCB=type("DCB",(ctypes.Structure,),{"_fields_":[("DCBlength",ctypes.wintypes.DWORD),("BaudRate",ctypes.wintypes.DWORD),("fBinary",ctypes.wintypes.DWORD,1),("fParity",ctypes.wintypes.DWORD,1),("fOutxCtsFlow",ctypes.wintypes.DWORD,1),("fOutxDsrFlow",ctypes.wintypes.DWORD,1),("fDtrControl",ctypes.wintypes.DWORD,2),("fDsrSensitivity",ctypes.wintypes.DWORD,1),("fTXContinueOnXoff",ctypes.wintypes.DWORD,1),("fOutX",ctypes.wintypes.DWORD,1),("fInX",ctypes.wintypes.DWORD,1),("fErrorChar",ctypes.wintypes.DWORD,1),("fNull",ctypes.wintypes.DWORD,1),("fRtsControl",ctypes.wintypes.DWORD,2),("fAbortOnError",ctypes.wintypes.DWORD,1),("fDummy2",ctypes.wintypes.DWORD,17),("wReserved",ctypes.wintypes.WORD),("XonLim",ctypes.wintypes.WORD),("XoffLim",ctypes.wintypes.WORD),("ByteSize",ctypes.wintypes.BYTE),("Parity",ctypes.wintypes.BYTE),("StopBits",ctypes.wintypes.BYTE),("XonChar",ctypes.c_char),("XoffChar",ctypes.c_char),("ErrorChar",ctypes.c_char),("EofChar",ctypes.c_char),("EvtChar",ctypes.c_char),("wReserved1",ctypes.wintypes.WORD)]})
 ctypes.wintypes.GUID=type("GUID",(ctypes.Structure,),{"_fields_":[("Data1",ctypes.wintypes.DWORD),("Data2",ctypes.wintypes.WORD),("Data3",ctypes.wintypes.WORD),("Data4",ctypes.wintypes.BYTE*8)]})
-ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vk_code",ctypes.wintypes.DWORD),("scan_code",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
+ctypes.wintypes.KBDLLHOOKSTRUCT=type("KBDLLHOOKSTRUCT",(ctypes.Structure,),{"_fields_":[("vkCode",ctypes.wintypes.DWORD),("scanCode",ctypes.wintypes.DWORD),("flags",ctypes.wintypes.DWORD),("time",ctypes.c_int),("dwExtraInfo",ctypes.wintypes.ULONG_PTR)]})
 ctypes.wintypes.LUID=type("LUID_",(ctypes.Structure,),{"_fields_":[("LowPart",ctypes.wintypes.DWORD),("HighPart",ctypes.wintypes.LONG)]})
 ctypes.wintypes.LUID_AND_ATTRIBUTES=type("LUID_AND_ATTRIBUTES",(ctypes.Structure,),{"_fields_":[("Luid",ctypes.wintypes.LUID),("Attributes",ctypes.wintypes.DWORD)]})
 ctypes.wintypes.MONITORINFO=type("MONITORINFO",(ctypes.Structure,),{"_fields_":[("cbSize",ctypes.wintypes.DWORD),("rcMonitor",ctypes.wintypes.RECT),("rcWork",ctypes.wintypes.RECT),("dwFlags",ctypes.wintypes.DWORD)]})
@@ -676,7 +676,7 @@ def _create_gitignore_pattern(p):
 
 
 def _match_gitignore_path(gdt,fp):
-	fnm=fp.lower().replace("\\","/").lower().split("/")
+	fnm=fp.lower().replace("\\","/").split("/")
 	ig=False
 	for p in gdt:
 		if ((ig is False or p[0] is True)):
@@ -2418,14 +2418,14 @@ def _u_mcs(fp):
 def _hotkey_handler(c,wp,lp):
 	try:
 		dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-		if (dt.vk_code!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))!=LLKHF_INJECTED|LLKHF_ALTDOWN and (dt.flags&LLKHF_UP)==0):
-			if (dt.vk_code==0xa5 and _hotkey_handler._ig_alt):
+		if (dt.vkCode!=VK_PACKET and (dt.flags&(LLKHF_INJECTED|LLKHF_ALTDOWN))==0 and (dt.flags&LLKHF_UP)==0):
+			if (dt.vkCode==0xa5 and _hotkey_handler._ig_alt):
 				_hotkey_handler._ig_alt=False
 			else:
-				vk=dt.vk_code
-				if (dt.scan_code==0x21d and vk==0xa2):
+				vk=dt.vkCode
+				if (dt.scanCode==0x21d and vk==0xa2):
 					_hotkey_handler._ig_alt=True
-				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CTRL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_ALT)!=0):
+				if (wp in (WM_KEYDOWN,WM_SYSKEYDOWN) and vk in _hotkey_handler._hk and user32.GetAsyncKeyState(VK_CONTROL)!=0 and user32.GetAsyncKeyState(VK_SHIFT)!=0 and user32.GetAsyncKeyState(VK_MENU)!=0):
 						_hotkey_handler._hk[vk]()
 	except Exception:
 		user32.PostMessageW(None,HOTKEY_HANDLER_END_MESSAGE,0,0)
@@ -2435,7 +2435,7 @@ def _hotkey_handler(c,wp,lp):
 
 def _screen_blocker_keyboard_handler(c,wp,lp):
 	dt=ctypes.cast(lp,ctypes.POINTER(ctypes.wintypes.KBDLLHOOKSTRUCT)).contents
-	if (dt.vk_code==0x1b):
+	if (dt.vkCode==0x1b):
 		user32.PostMessageW(None,HOTKEY_HANDLER_END_MESSAGE,0,0)
 	else:
 		return -1
@@ -2478,16 +2478,6 @@ if (len(sys.argv)==1):
 	if (sys.executable.replace("\\","/")!=__headless_executable__):
 		_create_process(f"\"{__headless_executable__}\" \"{__file__}\"")
 	else:
-		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-		csbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
-		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(csbi))
-		fc=ctypes.wintypes.CHAR_INFO()
-		fc.Char.UnicodeChar=" "
-		fc.Attributes=csbi.wAttributes
-		csbi.dwCursorPosition.X=0
-		csbi.dwCursorPosition.Y=0
-		kernel32.ScrollConsoleScreenBufferW(ho,ctypes.byref(ctypes.wintypes.SMALL_RECT(0,0,csbi.dwSize.X,csbi.dwSize.Y)),0,ctypes.wintypes._COORD(0,-csbi.dwSize.Y),ctypes.byref(fc))
-		kernel32.SetConsoleCursorPosition(ho,csbi.dwCursorPosition)
 		move_to_desktop.switch_to_desktop(0)
 		_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
 		for k in os.listdir(PROJECT_DIR):
@@ -2496,7 +2486,7 @@ if (len(sys.argv)==1):
 		_hotkey_handler._hk={}
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
-		user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
+		hk=user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
 		_hotkey_handler._hk[0x23]=lambda:_check_close(1)
 		_hotkey_handler._hk[0x24]=lambda:_check_close(0)
 		_hotkey_handler._hk[0x31]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 0")
@@ -2516,7 +2506,7 @@ if (len(sys.argv)==1):
 					break
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
-		user32.UnhookWindowsHookEx(kb_cb)
+		user32.UnhookWindowsHookEx(hk)
 else:
 	v=int(sys.argv[1])
 	if (v==0):
@@ -2534,7 +2524,7 @@ else:
 		wc.lpszMenuName=None
 		wc.lpszClassName="screen_blocker_window_class"
 		wc.hIconSm=None
-		user32.RegisterClassExW(ctypes.byref(wc)),kernel32.GetLastError()
+		user32.RegisterClassExW(ctypes.byref(wc))
 		shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
 		hwnd=user32.CreateWindowExW(WS_EX_TOPMOST,"screen_blocker_window_class","Screen Blocker",WS_VISIBLE,0,0,100,100,None,None,mh,None)
 		user32.SetFocus(hwnd)
@@ -2545,7 +2535,7 @@ else:
 		user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),ctypes.byref(mi))
 		user32.SetWindowPos(hwnd,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_SHOWWINDOW)
 		c_func=ctypes.wintypes.LowLevelKeyboardProc(_screen_blocker_keyboard_handler)
-		user32.SetWindowsHookExW(WH_KEYBOARD_LL,c_func,mh,ctypes.wintypes.DWORD(0))
+		hk=user32.SetWindowsHookExW(WH_KEYBOARD_LL,c_func,mh,ctypes.wintypes.DWORD(0))
 		user32.ShowCursor(0)
 		msg=ctypes.wintypes.MSG()
 		while (True):
@@ -2558,7 +2548,7 @@ else:
 				user32.TranslateMessage(ctypes.byref(msg))
 				user32.DispatchMessageW(ctypes.byref(msg))
 		user32.DestroyWindow(hwnd)
-		user32.UnhookWindowsHookEx(c_func)
+		user32.UnhookWindowsHookEx(hk)
 		user32.UnregisterClassW("screen_blocker_window_class",mh)
 	elif (v==1):
 		user32.SetFocus(hwnd)
