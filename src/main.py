@@ -1,5 +1,6 @@
 import ctypes
 import ctypes.wintypes
+import math
 import msvcrt
 import os
 import re
@@ -717,7 +718,7 @@ def _is_binary(fp):
 		return False
 	r1=len(dt.translate(None,b"\b\t\n\f\r !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))/len(dt)
 	r2=len(dt.translate(None,bytes(range(127,256))))/len(dt)
-	if (r1>0.90 and r2>0.9):
+	if (r1>0.9 and r2>0.9):
 		return True
 	enc_u=True
 	try:
@@ -791,7 +792,6 @@ def _push_single_project(p,b_nm):
 					if ("**/" in ln):
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	_print(f"\x1b[38;2;100;100;100mFetching Tree Data...",df=True)
 	msg=time.strftime("Push Update %d/%m/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
 	br=gr_dt[nm]
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{nm}/{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
@@ -1019,7 +1019,7 @@ def _tokenize_file(dt,el=None):
 
 
 
-def _project_stats_detect_file(r,f,ll,hdt,db):
+def _project_stats_detect_file(r,f,ll,hdt,db,zt):
 	if (os.stat(r+f).st_size==0 or _is_binary(r+f) is True):
 		return None
 	o=list(ll.keys())
@@ -1085,9 +1085,9 @@ def _project_stats_detect_file(r,f,ll,hdt,db):
 	for l in o:
 		if (l not in db["languages"]):
 			continue
-		lp=db["languages"][l]/db["languages_total"]
+		lp=math.log(db["languages"][l]/db["languages_total"])
 		for k,v in tc.items():
-			lp*=(db["tokens"][l][k]/db["language_tokens"][l] if k in db["tokens"][l] else 1/db["languages_total"])**v
+			lp+=v*(math.log(db["tokens"][l][k]/db["language_tokens"][l]) if k in db["tokens"][l] else zt)
 		if (op is None or lp>mx):
 			mx=lp
 			op=l
@@ -1095,7 +1095,7 @@ def _project_stats_detect_file(r,f,ll,hdt,db):
 
 
 
-def _project_stats(p_fp,ll,hdt,db,el):
+def _project_stats(p_fp,ll,hdt,db,el,zt):
 	gdt=[]
 	with open(p_fp+".gitignore","r") as f:
 		for ln in f.read().replace("\r\n","\n").split("\n"):
@@ -1123,7 +1123,7 @@ def _project_stats(p_fp,ll,hdt,db,el):
 				if (_match_gitignore_path(gdt,r[len(p_fp):]+f) is True):
 					continue
 				_print(f"\x1b[38;2;100;100;100mDetecting File \x1b[38;2;65;118;46m'{r+f}'\x1b[38;2;100;100;100m...",df=True)
-				l=_project_stats_detect_file(r,f,ll,hdt,db)
+				l=_project_stats_detect_file(r,f,ll,hdt,db,zt)
 				if (l is None):
 					continue
 				if (l not in el):
@@ -3006,12 +3006,13 @@ else:
 		kernel32.FillConsoleOutputCharacterA(ho,ctypes.c_char(b" "),sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		kernel32.FillConsoleOutputAttribute(ho,7,sbi.dwSize.X*sbi.dwSize.Y,ctypes.wintypes._COORD(0,0),ctypes.byref(ctypes.wintypes.DWORD()))
 		el={}
+		zt=math.log(1/db["languages_total"])
 		if (len(sys.argv)==2):
 			for fp in os.listdir(PROJECT_DIR):
-				_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el)
-			_project_stats(__file_base_dir__,ll,hdt,db,el)
+				_project_stats(PROJECT_DIR+fp+"/",ll,hdt,db,el,zt)
+			_project_stats(__file_base_dir__,ll,hdt,db,el,zt)
 		else:
-			_project_stats(sys.argv[2].replace("\\","/").rstrip("/")+"/",ll,hdt,db,el)
+			_project_stats(sys.argv[2].replace("\\","/").rstrip("/")+"/",ll,hdt,db,el,zt)
 		ud=False
 		f=True
 		ln_f=False
