@@ -1,6 +1,8 @@
 queries:
   - include: "*"
+  - exclude: cpp/complex-condition
   - exclude: cpp/long-switch
+  - exclude: cpp/loop-variable-changed
   - exclude: cpp/poorly-documented-function
   - exclude: cpp/short-global-name
   - exclude: cpp/stack-address-escape
