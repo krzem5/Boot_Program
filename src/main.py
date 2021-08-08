@@ -44,13 +44,14 @@ CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
 FILE_READ_CHUNK_SIZE=16384
 GITHUB_API_QUOTA=5000
-GITHUB_PROJECT_BRANCH_LIST_FILE_PATH="data/github-branches.dt"
 GITHUB_DEFAULT_BRANCH_NAME="main"
 GITHUB_EMAIL="krzem5.dev@gmail.com"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
 GITHUB_MAX_FILE_SIZE=52428800
+GITHUB_NAME="Krzem"
+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH="data/github-branches.dt"
 GITHUB_PUSHED_PROJECT_LIST_FILE_PATH="data/github.dt"
 with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
@@ -946,10 +947,9 @@ def _push_single_project(p,b_nm):
 	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
 		tr_sha=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"]
-		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
+		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
 		import subprocess
-		sig=subprocess.Popen(["gpg","--status-fd=2","-bsau",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
-		sig=sig[sig.index(b"-----BEGIN PGP SIGNATURE-----"):]
+		sig=subprocess.Popen(["gpg","--status-fd=2","-bsau",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(bf)[0]
 		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"signature":sig}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
