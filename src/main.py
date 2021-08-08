@@ -950,6 +950,7 @@ def _push_single_project(p,b_nm):
 		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
 		import subprocess
 		sig=subprocess.Popen(["gpg","--status-fd=2","-bsau",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(bf)[0]
+		print(bf,sig)
 		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"signature":sig}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
