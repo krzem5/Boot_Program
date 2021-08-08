@@ -649,59 +649,8 @@ def _create_process(a):
 
 
 def _create_process_pipe(a,bf):
-	in_r_h=ctypes.wintypes.HANDLE()
-	in_w_h=ctypes.wintypes.HANDLE()
-	out_r_h=ctypes.wintypes.HANDLE()
-	out_w_h=ctypes.wintypes.HANDLE()
-	err_h=ctypes.wintypes.HANDLE()
-	sa=ctypes.wintypes.SECURITY_ATTRIBUTES()
-	sa.nLength=ctypes.sizeof(ctypes.wintypes.SECURITY_ATTRIBUTES())
-	sa.lpSecurityDescriptor=None
-	sa.bInheritHandle=True
-	kernel32.CreatePipe(ctypes.byref(in_r_h),ctypes.byref(in_w_h),ctypes.byref(sa),0)
-	kernel32.CreatePipe(ctypes.byref(out_r_h),ctypes.byref(out_w_h),ctypes.byref(sa),0)
-	kernel32.SetHandleInformation(in_r_h,HANDLE_FLAG_INHERIT,0)
-	kernel32.SetHandleInformation(out_w_h,HANDLE_FLAG_INHERIT,0)
-	tmp_h=ctypes.wintypes.HANDLE()
-	kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
-	out_w_h=tmp_h
-	kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),kernel32.GetStdHandle(-12),kernel32.GetCurrentProcess(),ctypes.byref(err_h),0,True,DUPLICATE_SAME_ACCESS)
-	tmp=ctypes.wintypes.DWORD()
-	kernel32.WriteFile(in_w_h,bf,len(bf),ctypes.byref(tmp),None)
-	si=ctypes.wintypes.STARTUPINFOW()
-	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
-	si.lpReserved=None
-	si.lpDesktop=None
-	si.lpTitle=None
-	si.dwFlags=STARTF_USESTDHANDLES
-	si.cbReserved2=0
-	si.lpReserved2=None
-	si.hStdInput=in_r_h
-	si.hStdOutput=out_w_h
-	si.hStdError=err_h
-	pi=ctypes.wintypes.PROCESS_INFORMATION()
-	kernel32.CreateProcessW(None,a,None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
-	kernel32.CloseHandle(pi.hThread)
-	kernel32.CloseHandle(in_r_h)
-	kernel32.CloseHandle(out_w_h)
-	kernel32.CloseHandle(err_h)
-	o=b""
-	bf=ctypes.create_string_buffer(FILE_READ_CHUNK_SIZE)
-	bf_l=ctypes.wintypes.DWORD()
-	while (True):
-		kernel32.ReadFile(out_r_h,bf,FILE_READ_CHUNK_SIZE,ctypes.byref(bf_l),None)
-		o+=bf.raw[:bf_l.value]
-		if (bf_l.value!=FILE_READ_CHUNK_SIZE):
-			break
-	ec=ctypes.wintypes.DWORD()
-	kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
-	kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
-	kernel32.CloseHandle(in_w_h)
-	kernel32.CloseHandle(out_r_h)
-	kernel32.CloseHandle(pi.hProcess)
-	if (ec.value!=0):
-		kernel32.ExitProcess(ec)
-	return o
+	import subprocess
+	return subprocess.Popen(__import__("shlex").split(a),stdin=subprocess.PIPE,stdout=subprocess.PIPE).communicate(bf)[0]
 
 
 
