@@ -946,13 +946,10 @@ def _push_single_project(p,b_nm):
 	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
 		tr_sha=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"]
-		# tr_sha=bt_sha
 		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
 		import subprocess
-		sig=subprocess.Popen(["gpg","--clear-sign","--digest-algo","SHA1","--armor","--local-user",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
+		sig=subprocess.Popen(["gpg","--status-fd=2","-bsau",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
 		sig=sig[sig.index(b"-----BEGIN PGP SIGNATURE-----"):]
-		# print(bf,sig,_encode_json({"msg":sig}))
-		# input();quit()
 		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"signature":sig}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
