@@ -661,6 +661,7 @@ def _create_process_pipe(a,bf):
 	kernel32.CreatePipe(ctypes.byref(in_r_h),ctypes.byref(in_w_h),ctypes.byref(sa),0)
 	kernel32.CreatePipe(ctypes.byref(out_r_h),ctypes.byref(out_w_h),ctypes.byref(sa),0)
 	kernel32.SetHandleInformation(in_r_h,HANDLE_FLAG_INHERIT,0)
+	kernel32.SetHandleInformation(out_w_h,HANDLE_FLAG_INHERIT,0)
 	tmp_h=ctypes.wintypes.HANDLE()
 	kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
 	out_w_h=tmp_h
