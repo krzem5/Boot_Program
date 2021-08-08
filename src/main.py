@@ -125,6 +125,7 @@ GENERIC_READ=0x80000000
 GENERIC_WRITE=0x40000000
 GWL_EXSTYLE=-20
 GWL_STYLE=-16
+HANDLE_FLAG_INHERIT=1
 HWND_TOP=0
 ICON_BIG=1
 ICON_SMALL=0
@@ -319,6 +320,8 @@ kernel32.SetConsoleWindowInfo.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.B
 kernel32.SetConsoleWindowInfo.restype=ctypes.wintypes.BOOL
 kernel32.SetFileAttributesW.argtypes=(ctypes.wintypes.LPCWSTR,ctypes.wintypes.DWORD)
 kernel32.SetFileAttributesW.restype=ctypes.wintypes.BOOL
+kernel32.SetHandleInformation.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
+kernel32.SetHandleInformation.restype=ctypes.wintypes.BOOL
 kernel32.SetupComm.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD,ctypes.wintypes.DWORD)
 kernel32.SetupComm.restype=ctypes.wintypes.BOOL
 kernel32.WaitForSingleObject.argtypes=(ctypes.wintypes.HANDLE,ctypes.wintypes.DWORD)
@@ -605,6 +608,99 @@ def _decode_json(e):
 			o*=pow(10,pw*pw_s)
 	o*=s
 	return (o,i-1)
+
+
+
+def _run_process(a):
+	si=ctypes.wintypes.STARTUPINFOW()
+	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+	si.lpReserved=None
+	si.lpDesktop=None
+	si.lpTitle=None
+	si.dwFlags=0
+	si.cbReserved2=0
+	si.lpReserved2=None
+	pi=ctypes.wintypes.PROCESS_INFORMATION()
+	kernel32.CreateProcessW(None,a,None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CloseHandle(pi.hThread)
+	kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
+	ec=ctypes.wintypes.DWORD()
+	kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
+	kernel32.CloseHandle(pi.hProcess)
+	if (ec.value!=0):
+		kernel32.ExitProcess(ec)
+
+
+
+def _create_process(a):
+	si=ctypes.wintypes.STARTUPINFOW()
+	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+	si.lpReserved=None
+	si.lpDesktop=None
+	si.lpTitle=None
+	si.dwFlags=0
+	si.cbReserved2=0
+	si.lpReserved2=None
+	pi=ctypes.wintypes.PROCESS_INFORMATION()
+	kernel32.CreateProcessW(None,a,None,None,False,CREATE_NEW_CONSOLE|CREATE_NEW_PROCESS_GROUP,None,None,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CloseHandle(pi.hProcess)
+	kernel32.CloseHandle(pi.hThread)
+
+
+
+def _create_process_pipe(a,bf):
+	in_r_h=ctypes.wintypes.HANDLE()
+	in_w_h=ctypes.wintypes.HANDLE()
+	out_r_h=ctypes.wintypes.HANDLE()
+	out_w_h=ctypes.wintypes.HANDLE()
+	err_h=ctypes.wintypes.HANDLE()
+	sa=ctypes.wintypes.SECURITY_ATTRIBUTES()
+	sa.nLength=ctypes.sizeof(ctypes.wintypes.SECURITY_ATTRIBUTES())
+	sa.lpSecurityDescriptor=None
+	sa.bInheritHandle=True
+	kernel32.CreatePipe(ctypes.byref(in_r_h),ctypes.byref(in_w_h),ctypes.byref(sa),0)
+	kernel32.CreatePipe(ctypes.byref(out_r_h),ctypes.byref(out_w_h),ctypes.byref(sa),0)
+	kernel32.SetHandleInformation(in_r_h,HANDLE_FLAG_INHERIT,0)
+	tmp_h=ctypes.wintypes.HANDLE()
+	kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
+	out_w_h=tmp_h
+	kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),kernel32.GetStdHandle(-12),kernel32.GetCurrentProcess(),ctypes.byref(err_h),0,True,DUPLICATE_SAME_ACCESS)
+	tmp=ctypes.wintypes.DWORD()
+	kernel32.WriteFile(in_w_h,bf,len(bf),ctypes.byref(tmp),None)
+	si=ctypes.wintypes.STARTUPINFOW()
+	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
+	si.lpReserved=None
+	si.lpDesktop=None
+	si.lpTitle=None
+	si.dwFlags=STARTF_USESTDHANDLES
+	si.cbReserved2=0
+	si.lpReserved2=None
+	si.hStdInput=in_r_h
+	si.hStdOutput=out_w_h
+	si.hStdError=err_h
+	pi=ctypes.wintypes.PROCESS_INFORMATION()
+	kernel32.CreateProcessW(None,a,None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
+	kernel32.CloseHandle(pi.hThread)
+	kernel32.CloseHandle(in_r_h)
+	kernel32.CloseHandle(out_w_h)
+	kernel32.CloseHandle(err_h)
+	o=b""
+	bf=ctypes.create_string_buffer(FILE_READ_CHUNK_SIZE)
+	bf_l=ctypes.wintypes.DWORD()
+	while (True):
+		kernel32.ReadFile(out_r_h,bf,FILE_READ_CHUNK_SIZE,ctypes.byref(bf_l),None)
+		o+=bf.raw[:bf_l.value]
+		if (bf_l.value!=FILE_READ_CHUNK_SIZE):
+			break
+	ec=ctypes.wintypes.DWORD()
+	kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
+	kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
+	kernel32.CloseHandle(in_w_h)
+	kernel32.CloseHandle(out_r_h)
+	kernel32.CloseHandle(pi.hProcess)
+	if (ec.value!=0):
+		kernel32.ExitProcess(ec)
+	return o
 
 
 
@@ -947,14 +1043,8 @@ def _push_single_project(p,b_nm):
 	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
 		tr_sha=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"]
-		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm-UTC_OFFSET} {('-' if UTC_OFFSET<0 else '+')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm-UTC_OFFSET} {('-' if UTC_OFFSET<0 else '+')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
-		import subprocess
-		sig=subprocess.Popen(["gpg","--status-fd=2","-bsau",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(bf)[0]
-		print(bf,sig)
 		tm_s=time.strftime(f"%Y-%m-%dT%H:%M:%S{('-' if UTC_OFFSET<0 else '+')}{abs(UTC_OFFSET)//3600:-02d}:{abs(UTC_OFFSET//60)%60:02d}",time.gmtime(c_tm))
-		c_dt=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"author":{"name":GITHUB_NAME,"email":GITHUB_EMAIL,"date":tm_s},"committer":{"name":GITHUB_NAME,"email":GITHUB_EMAIL,"date":tm_s},"signature":sig}))
-		print(c_dt)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":c_dt["sha"],"force":True}))
+		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"author":{"name":GITHUB_NAME,"email":GITHUB_EMAIL,"date":tm_s},"committer":{"name":GITHUB_NAME,"email":GITHUB_EMAIL,"date":tm_s},"signature":_create_process_pipe(f"gpg --status-fd=2 -bsau {GPG_LOCAL_KEY_ID} --pinentry-mode=loopback --passphrase {GPG_PASSPHRASE}",bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm-UTC_OFFSET} {('-' if UTC_OFFSET<0 else '+')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_NAME} <{GITHUB_EMAIL}> {c_tm-UTC_OFFSET} {('-' if UTC_OFFSET<0 else '+')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8"))}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
@@ -1439,43 +1529,6 @@ def _replace_arduino_include(dt):
 
 
 
-def _run_process(a):
-	si=ctypes.wintypes.STARTUPINFOW()
-	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
-	si.lpReserved=None
-	si.lpDesktop=None
-	si.lpTitle=None
-	si.dwFlags=0
-	si.cbReserved2=0
-	si.lpReserved2=None
-	pi=ctypes.wintypes.PROCESS_INFORMATION()
-	kernel32.CreateProcessW(None,a,None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
-	kernel32.CloseHandle(pi.hThread)
-	kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
-	ec=ctypes.wintypes.DWORD()
-	kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
-	kernel32.CloseHandle(pi.hProcess)
-	if (ec.value!=0):
-		kernel32.ExitProcess(ec)
-
-
-
-def _create_process(a):
-	si=ctypes.wintypes.STARTUPINFOW()
-	si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
-	si.lpReserved=None
-	si.lpDesktop=None
-	si.lpTitle=None
-	si.dwFlags=0
-	si.cbReserved2=0
-	si.lpReserved2=None
-	pi=ctypes.wintypes.PROCESS_INFORMATION()
-	kernel32.CreateProcessW(None,a,None,None,False,CREATE_NEW_CONSOLE|CREATE_NEW_PROCESS_GROUP,None,None,ctypes.byref(si),ctypes.byref(pi))
-	kernel32.CloseHandle(pi.hProcess)
-	kernel32.CloseHandle(pi.hThread)
-
-
-
 def _compile_arduino_files(bp,i_fp,o_fp,inc_l,rc):
 	l=([],[],[])
 	for r,_,fl in os.walk(i_fp):
@@ -1738,53 +1791,7 @@ def _compile_arduino_prog(s_fp,o_fp,fqbn,inc_l):
 	sz=[0,0]
 	if (bp["upload.maximum_size"]!=""):
 		_print("Processing Statistics\x1b[38;2;100;100;100m...")
-		in_h=kernel32.GetStdHandle(STD_INPUT_HANDLE)
-		out_r_h=ctypes.wintypes.HANDLE()
-		out_w_h=ctypes.wintypes.HANDLE()
-		sa=ctypes.wintypes.SECURITY_ATTRIBUTES()
-		sa.nLength=ctypes.sizeof(ctypes.wintypes.SECURITY_ATTRIBUTES())
-		sa.lpSecurityDescriptor=None
-		sa.bInheritHandle=True
-		kernel32.CreatePipe(ctypes.byref(out_r_h),ctypes.byref(out_w_h),ctypes.byref(sa),0)
-		tmp_h=ctypes.wintypes.HANDLE()
-		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),in_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
-		in_h=tmp_h
-		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(tmp_h),0,True,DUPLICATE_SAME_ACCESS)
-		out_w_h=tmp_h
-		err_h=ctypes.wintypes.HANDLE()
-		kernel32.DuplicateHandle(kernel32.GetCurrentProcess(),out_w_h,kernel32.GetCurrentProcess(),ctypes.byref(err_h),0,True,DUPLICATE_SAME_ACCESS)
-		si=ctypes.wintypes.STARTUPINFOW()
-		si.cb=ctypes.sizeof(ctypes.wintypes.STARTUPINFOW)
-		si.lpReserved=None
-		si.lpDesktop=None
-		si.lpTitle=None
-		si.dwFlags=STARTF_USESTDHANDLES
-		si.cbReserved2=0
-		si.lpReserved2=None
-		si.hStdInput=in_h
-		si.hStdOutput=out_w_h
-		si.hStdError=err_h
-		pi=ctypes.wintypes.PROCESS_INFORMATION()
-		kernel32.CreateProcessW(None,ARDUINO_COMMAND_FORMAT_REGEX.sub("",bp["recipe.size.pattern"].replace("{compiler.warning_flags}",bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""))),None,None,True,0,None,None,ctypes.byref(si),ctypes.byref(pi))
-		kernel32.CloseHandle(pi.hThread)
-		kernel32.CloseHandle(in_h)
-		kernel32.CloseHandle(out_w_h)
-		kernel32.CloseHandle(err_h)
-		kernel32.WaitForSingleObject(pi.hProcess,INFINITE)
-		o=""
-		bf=ctypes.create_string_buffer(FILE_READ_CHUNK_SIZE)
-		bf_l=ctypes.wintypes.DWORD()
-		while (True):
-			kernel32.ReadFile(out_r_h,bf,FILE_READ_CHUNK_SIZE,ctypes.byref(bf_l),None)
-			o+=str(bf.raw[:bf_l.value],"utf-8")
-			if (bf_l.value!=FILE_READ_CHUNK_SIZE):
-				break
-		ec=ctypes.wintypes.DWORD()
-		kernel32.GetExitCodeProcess(pi.hProcess,ctypes.byref(ec))
-		kernel32.CloseHandle(pi.hProcess)
-		kernel32.CloseHandle(out_r_h)
-		if (ec.value!=0):
-			kernel32.ExitProcess(ec)
+		o=str(_create_process_pipe(ARDUINO_COMMAND_FORMAT_REGEX.sub("",bp["recipe.size.pattern"].replace("{compiler.warning_flags}",bp.get("compiler.warning_flags","")+(f".{ARDUINO_CUSTOM_WARNING_LEVEL}" if ARDUINO_CUSTOM_WARNING_LEVEL!="" else ""))),b""),"utf-8")
 		for k in re.findall(bp["recipe.size.regex"],o,re.M):
 			sz[0]+=int(k)
 		for k in re.findall(bp["recipe.size.regex.data"],o,re.M):
