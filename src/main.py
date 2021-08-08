@@ -46,6 +46,7 @@ FILE_READ_CHUNK_SIZE=16384
 GITHUB_API_QUOTA=5000
 GITHUB_PROJECT_BRANCH_LIST_FILE_PATH="data/github-branches.dt"
 GITHUB_DEFAULT_BRANCH_NAME="main"
+GITHUB_EMAIL="krzem5.dev@gmail.com"
 GITHUB_EMPTY_FILE_HASH="e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GITHUB_HEADERS="application/vnd.github.v3+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
@@ -784,26 +785,28 @@ def _push_single_project(p,b_nm):
 		b_nm=nm
 	else:
 		br=gr_dt[nm]
-	_print(f"\x1b[38;2;100;100;100mParsing Gitignore File...",df=True)
-	with open(os.path.join(p,".gitignore"),"r") as f:
-		gdt=[]
-		for ln in f.read().replace("\r\n","\n").split("\n"):
-			if (ln.endswith("\n")):
-				ln=ln[:-1]
-			ln=ln.lstrip()
-			if (not ln.startswith("#")):
-				iv=False
-				if (ln.startswith("!")):
-					ln=ln[1:]
-					iv=True
-				while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
+	gdt=[]
+	if (os.path.exists(os.path.join(p,".gitignore"))):
+		_print(f"\x1b[38;2;100;100;100mParsing Gitignore File...",df=True)
+		with open(os.path.join(p,".gitignore"),"r") as f:
+			for ln in f.read().replace("\r\n","\n").split("\n"):
+				if (ln.endswith("\n")):
 					ln=ln[:-1]
-				ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
-				if (len(ln)>0):
-					if ("**/" in ln):
-						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
-					gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	msg=time.strftime("Push Update %d/%m/%Y, %H:%M:%S",time.gmtime(time.time()+UTC_OFFSET))
+				ln=ln.lstrip()
+				if (not ln.startswith("#")):
+					iv=False
+					if (ln.startswith("!")):
+						ln=ln[1:]
+						iv=True
+					while (ln.endswith(" ") and ln[-2:]!="\\ " and ln[-2:]!="/ "):
+						ln=ln[:-1]
+					ln=GITIGNORE_FILE_PATH_REGEX.sub(r"\1",ln)
+					if (len(ln)>0):
+						if ("**/" in ln):
+							gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
+						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
+	c_tm=time.time()
+	msg=time.strftime("Push Update %d/%m/%Y, %H:%M:%S",time.gmtime(c_tm+UTC_OFFSET))
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{a_nm}/{nm}:{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
 	try:
 		bt_sha=_github_api_request("get",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/ref/heads/{br}")["object"]["sha"]
@@ -940,7 +943,11 @@ def _push_single_project(p,b_nm):
 	_print(f"\x1b[38;2;40;210;190m{b_nm} => \x1b[38;2;70;210;70m+{cnt[0]}\x1b[38;2;40;210;190m, \x1b[38;2;230;210;40m?{cnt[1]}\x1b[38;2;40;210;190m, \x1b[38;2;190;0;220m!{cnt[2]}\x1b[38;2;40;210;190m, \x1b[38;2;210;40;40m-{cnt[3]}\x1b[0m",df=True)
 	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
-		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"],"parents":[bt_sha]}))["sha"],"force":True}))
+		tr_sha=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"]
+		# bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}")
+		# print(bf)
+		# input();quit()
+		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha]}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
@@ -1906,22 +1913,23 @@ def _create_project(t,nm,op):
 		t="python"
 		nm="Boot_Program"
 		cr=False
-	for r,dl,fl in os.walk(b_fp):
-		r=r.replace("\\","/").rstrip("/")+"/"
-		pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
-		if (cr is False and r!=b_fp):
-			break
-		for d in dl:
-			d=d.replace("$$$NAME$$$",nm.lower())
-			if (not os.path.exists(pr+d)):
-				os.mkdir(pr+d)
-		for f in fl:
-			pf=f.replace("$$$NAME$$$",nm.lower())
-			if (not os.path.exists(pr+pf)):
-				with open(pr+pf,"xb") as wf,open(r+f,"rb") as rf:
-					wf.write(rf.read().replace(b"$$$YEAR$$$",bytes(str(int(time.time()//31556926+1970)),"utf-8")).replace(b"$$$PRETTY_TITLE$$$",bytes(f"{t.title()} - {nm.replace('_',' ').title()}","utf-8")).replace(b"$$$NAME$$$",bytes(nm.lower(),"utf-8")).replace(b"$$$UPPERCASE_NAME$$$",bytes(nm.upper(),"utf-8")).replace(b"$$$TITLE_NAME$$$",bytes(nm.replace("_"," ").title(),"utf-8")))
-			if (f[0]=="."):
-				kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
+	if (not os.path.exists(p+".gitrepo")):
+		for r,dl,fl in os.walk(b_fp):
+			r=r.replace("\\","/").rstrip("/")+"/"
+			pr=p+r[len(b_fp):].replace("$$$NAME$$$",nm.lower())
+			if (cr is False and r!=b_fp):
+				break
+			for d in dl:
+				d=d.replace("$$$NAME$$$",nm.lower())
+				if (not os.path.exists(pr+d)):
+					os.mkdir(pr+d)
+			for f in fl:
+				pf=f.replace("$$$NAME$$$",nm.lower())
+				if (not os.path.exists(pr+pf)):
+					with open(pr+pf,"xb") as wf,open(r+f,"rb") as rf:
+						wf.write(rf.read().replace(b"$$$YEAR$$$",bytes(str(int(time.time()//31556926+1970)),"utf-8")).replace(b"$$$PRETTY_TITLE$$$",bytes(f"{t.title()} - {nm.replace('_',' ').title()}","utf-8")).replace(b"$$$NAME$$$",bytes(nm.lower(),"utf-8")).replace(b"$$$UPPERCASE_NAME$$$",bytes(nm.upper(),"utf-8")).replace(b"$$$TITLE_NAME$$$",bytes(nm.replace("_"," ").title(),"utf-8")))
+				if (f[0]=="."):
+					kernel32.SetFileAttributesW(pr+pf,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN)
 	if (op is True):
 		_run_process(f"\"{EDITOR_FILE_PATH}\" --add \"{p}\"")
 		if (t=="arduino"):
