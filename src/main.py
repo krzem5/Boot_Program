@@ -57,6 +57,8 @@ with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 GITHUB_USERNAME="Krzem5"
 GITIGNORE_FILE_PATH_REGEX=re.compile(r"[\\/]([!# ])")
 GITIGNORE_SPECIAL_SET_CHARCTERS_REGEX=re.compile(r"([&~|])")
+with open(__file_base_dir__+"data/gpg-secret.dt","r") as f:
+	GPG_LOCAL_KEY_ID,GPG_PASSPHRASE=list(map(str.strip,f.read().replace("\r\n","\n").split("\n")))[:2]
 HOTKEY_HANDLER_END_MESSAGE=0x401
 JSON_STRING_ESCAPE_CHAR_BYTES_REGEX=re.compile(br'([\\"]|[^\x20-\x7e])')
 JSON_STRING_ESCAPE_CHAR_REGEX=re.compile(r'([\\"]|[^\x20-\x7e])')
@@ -805,7 +807,7 @@ def _push_single_project(p,b_nm):
 						if ("**/" in ln):
 							gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.replace("**/","").split("/"))])
 						gdt.append([iv,tuple(_create_gitignore_pattern(e) for e in ln.split("/"))])
-	c_tm=time.time()
+	c_tm=int(time.time())
 	msg=time.strftime("Push Update %d/%m/%Y, %H:%M:%S",time.gmtime(c_tm+UTC_OFFSET))
 	_print(f"\x1b[38;2;100;100;100mCommiting to Branch \x1b[38;2;65;118;46m'{a_nm}/{nm}:{br}'\x1b[38;2;100;100;100m with Message \x1b[38;2;65;118;46m'{msg}'\x1b[38;2;100;100;100m...",df=True)
 	try:
@@ -944,10 +946,14 @@ def _push_single_project(p,b_nm):
 	if (any([(True if b[1] is not None else False) for b in bl]) and (cnt[0]>0 or cnt[3]>0)):
 		_print(f"\x1b[38;2;100;100;100mUploading Changes...",df=True)
 		tr_sha=_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/trees",data=_encode_json({"base_tree":bt_sha,"tree":[b[1] for b in bl if b[1] is not None]}))["sha"]
-		# bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}")
-		# print(bf)
+		# tr_sha=bt_sha
+		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
+		import subprocess
+		sig=subprocess.Popen(["gpg","--clear-sign","--digest-algo","SHA1","--armor","--local-user",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE,"--detach-sign"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
+		sig=sig[sig.index(b"-----BEGIN PGP SIGNATURE-----"):]
+		# print(bf,sig,_encode_json({"msg":sig}))
 		# input();quit()
-		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha]}))["sha"],"force":True}))
+		_github_api_request("patch",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/refs/heads/{br}",data=_encode_json({"sha":_github_api_request("post",url=f"https://api.github.com/repos/{a_nm}/{nm}/git/commits",data=_encode_json({"message":msg,"tree":tr_sha,"parents":[bt_sha],"signature":sig}))["sha"],"force":True}))
 		_print(f"\x1b[38;2;100;100;100mChanges Uploaded",df=True)
 	else:
 		_print(f"\x1b[38;2;100;100;100mNo Changes to Upload",df=True)
