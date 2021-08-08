@@ -949,7 +949,7 @@ def _push_single_project(p,b_nm):
 		# tr_sha=bt_sha
 		bf=bytes(f"tree {tr_sha}\nparent {bt_sha}\nauthor {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\ncommitter {GITHUB_USERNAME} <{GITHUB_EMAIL}> {c_tm} {('-' if UTC_OFFSET<0 else '')}{abs(UTC_OFFSET)//3600:-02d}{abs(UTC_OFFSET//60)%60:02d}\n\n{msg}","utf-8")
 		import subprocess
-		sig=subprocess.Popen(["gpg","--clear-sign","--digest-algo","SHA1","--armor","--local-user",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE,"--detach-sign"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
+		sig=subprocess.Popen(["gpg","--clear-sign","--digest-algo","SHA1","--armor","--local-user",GPG_LOCAL_KEY_ID,"--pinentry-mode=loopback","--passphrase",GPG_PASSPHRASE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT).communicate(bf)[0]
 		sig=sig[sig.index(b"-----BEGIN PGP SIGNATURE-----"):]
 		# print(bf,sig,_encode_json({"msg":sig}))
 		# input();quit()
