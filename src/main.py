@@ -650,7 +650,9 @@ def _create_process(a):
 
 def _create_process_pipe(a,bf):
 	import subprocess
-	return subprocess.Popen(__import__("shlex").split(a),stdin=subprocess.PIPE,stdout=subprocess.PIPE).communicate(bf)[0]
+	o=subprocess.Popen(__import__("shlex").split(a),stdin=subprocess.PIPE,stdout=subprocess.PIPE).communicate(bf)[0]
+	kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_OUTPUT_HANDLE),ctypes.wintypes.DWORD(7))
+	return o
 
 
 
