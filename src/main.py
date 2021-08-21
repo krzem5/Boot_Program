@@ -816,15 +816,6 @@ def _push_single_project(p,b_nm):
 	with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"r") as f:
 		gr_dt={k.strip().split(":")[0]:k.strip().split(":")[1] for k in f.read().strip().split("\n") if len(k)>0}
 	cr=False
-	if (nm not in gr_dt):
-		cr=True
-		gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
-		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
-		try:
-			_github_api_request("post",url="https://api.github.com/user/repos",data=_encode_json({"name":nm,"description":nm.replace("-"," - ")}))
-		except requests.exceptions.ConnectionError:
-			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
-			return False
 	a_nm=GITHUB_USERNAME
 	if (os.path.exists(os.path.join(p,".gitrepo"))):
 		_print(f"\x1b[38;2;100;100;100mParsing Gitrepo File...",df=True)
@@ -835,6 +826,15 @@ def _push_single_project(p,b_nm):
 		br=dt[1].strip()
 		b_nm=nm
 	else:
+		if (nm not in gr_dt):
+			cr=True
+			gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
+			_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
+			try:
+				_github_api_request("post",url="https://api.github.com/user/repos",data=_encode_json({"name":nm,"description":nm.replace("-"," - ")}))
+			except requests.exceptions.ConnectionError:
+				_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
+				return False
 		br=gr_dt[nm]
 	gdt=[]
 	if (os.path.exists(os.path.join(p,".gitignore"))):
