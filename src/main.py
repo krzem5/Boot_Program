@@ -2538,8 +2538,8 @@ else:
 		user32.UnregisterClassW("screen_blocker_window_class",mh)
 	elif (v==1):
 		user32.SetFocus(hwnd)
-		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		kernel32.SetConsoleMode(kernel32.GetStdHandle(STD_INPUT_HANDLE),ctypes.wintypes.DWORD(0x80))
+		ho=kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 		kernel32.SetConsoleMode(ho,ctypes.wintypes.DWORD(7))
 		sbi=ctypes.wintypes.CONSOLE_SCREEN_BUFFER_INFO()
 		kernel32.GetConsoleScreenBufferInfo(ho,ctypes.byref(sbi))
