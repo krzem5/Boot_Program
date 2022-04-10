@@ -2480,8 +2480,8 @@ if (len(sys.argv)==1):
 		_hotkey_handler._hk[0x33]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 2")
 		_hotkey_handler._hk[0x49]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
 		_hotkey_handler._hk[0x51]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 1")
-		_hotkey_handler._hk[0x52]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 0")
-		_hotkey_handler._hk[0x57]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
+		_hotkey_handler._hk[0x70]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 0")
+		_hotkey_handler._hk[0x71]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
 		msg=ctypes.wintypes.MSG()
 		while (True):
 			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
