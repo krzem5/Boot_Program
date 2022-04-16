@@ -36,13 +36,14 @@ ARDUINO_REPLACE_INCLUDE_REGEX=re.compile(br"""^\s*#\s*include\s*(<[^>]+>|"[^"]+"
 ARDUINO_SERIAL_PLOT_DATA_REGEX=re.compile(r"^(?:-?[0-9]+(?:\.[0-9]+)?(?:,|$))+(?<!,)$")
 BASE64_ALPHABET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 BLENDER_FILE_PATH="C:/Program Files/Blender Foundation/Blender/blender.exe"
-GIMP_FILE_PATH="C:/Program Files/GIMP 2/bin/gimp-2.10.exe"
 CHROME_FILE_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"
 CMD_FILE_PATH=os.path.abspath(os.getenv("ComSpec","cmd.exe"))
 CONSOLE_APP_FRAME_RATE=60
 CUSTOM_ICON_FILE_PATH="rsrc/icon.ico"
 EDITOR_FILE_PATH="C:/Program Files/Sublime Text 3/sublime_text.exe"
+EXECUTBALE_FILE_EXTENSIONS=[".sh",".cmd",".ps1",".bat"]
 FILE_READ_CHUNK_SIZE=16384
+GIMP_FILE_PATH="C:/Program Files/GIMP 2/bin/gimp-2.10.exe"
 GITHUB_API_QUOTA=5000
 GITHUB_DEFAULT_BRANCH_NAME="main"
 GITHUB_EMAIL="krzem5.dev@gmail.com"
@@ -979,7 +980,8 @@ def _push_single_project(p,b_nm):
 								dt="Github Server Error"
 							else:
 								dt=b["sha"]
-			bl.append([fp,({"path":fp,"mode":"100644","type":"blob","content":dt} if b_sha is False else {"path":fp,"mode":"100644","type":"blob","sha":dt})])
+			mode=("100755" if fp[fp.rindex("."):] in EXECUTBALE_FILE_EXTENSIONS else "100644")
+			bl.append([fp,({"path":fp,"mode":mode,"type":"blob","content":dt} if b_sha is False else {"path":fp,"mode":mode,"type":"blob","sha":dt})])
 	for fp in r_t.keys():
 		rm=True
 		for e in bl:
@@ -2437,7 +2439,7 @@ def _screen_blocker_wnd_proc(hwnd,msg,wp,lp):
 
 
 
-def _check_close(t):
+def _check_close():
 	if (user32.MessageBoxW(None,"Close?","Close",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2|MB_SYSTEMMODAL)==IDYES):
 		th=ctypes.wintypes.HANDLE()
 		tkp=ctypes.wintypes.TOKEN_PRIVILEGES()
@@ -2446,10 +2448,7 @@ def _check_close(t):
 		tkp.PrivilegeCount=1
 		tkp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED
 		advapi32.AdjustTokenPrivileges(th,False,ctypes.byref(tkp),0,None,None)
-		if (t==0):
-			user32.ExitWindowsEx(EWX_LOGOFF,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
-		else:
-			user32.ExitWindowsEx(EWX_FORCE|EWX_FORCEIFHUNG|EWX_POWEROFF|EWX_SHUTDOWN,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
+		user32.ExitWindowsEx(EWX_FORCE|EWX_FORCEIFHUNG|EWX_POWEROFF|EWX_SHUTDOWN,SHTDN_REASON_MAJOR_OTHER|SHTDN_REASON_MINOR_OTHER|SHTDN_REASON_FLAG_PLANNED)
 
 
 
@@ -2473,15 +2472,14 @@ if (len(sys.argv)==1):
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 		hk=user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-		_hotkey_handler._hk[0x23]=lambda:_check_close(1)
-		_hotkey_handler._hk[0x24]=lambda:_check_close(0)
-		_hotkey_handler._hk[0x31]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 0")
-		_hotkey_handler._hk[0x32]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 1")
-		_hotkey_handler._hk[0x33]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 2")
-		_hotkey_handler._hk[0x49]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
+		_hotkey_handler._hk[0x23]=lambda:_check_close()
 		_hotkey_handler._hk[0x51]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 1")
-		_hotkey_handler._hk[0x70]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 0")
-		_hotkey_handler._hk[0x71]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
+		_hotkey_handler._hk[0x70]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 0")
+		_hotkey_handler._hk[0x71]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 1")
+		_hotkey_handler._hk[0x72]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 2")
+		_hotkey_handler._hk[0x74]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 0")
+		_hotkey_handler._hk[0x75]=lambda:shell32.ShellExecuteW(None,"open",ROOT_FILE_PATH,None,None,SW_SHOWMAXIMIZED)
+		_hotkey_handler._hk[0x76]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
 		msg=ctypes.wintypes.MSG()
 		while (True):
 			e=user32.GetMessageW(ctypes.byref(msg),None,0,0)
