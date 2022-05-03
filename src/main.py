@@ -2472,7 +2472,7 @@ if (len(sys.argv)==1):
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
 		hk=user32.SetWindowsHookExW(WH_KEYBOARD_LL,kb_cb,kernel32.GetModuleHandleW(None),ctypes.wintypes.DWORD(0))
-		_hotkey_handler._hk[0x23]=lambda:_check_close()
+		_hotkey_handler._hk[0x23]=_check_close
 		_hotkey_handler._hk[0x51]=lambda:_create_process(f"\"{__executable__}\" \"{__file__}\" 1")
 		_hotkey_handler._hk[0x70]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 0")
 		_hotkey_handler._hk[0x71]=lambda:_create_process(f"\"{__headless_executable__}\" \"{__file__}\" 8 1")
