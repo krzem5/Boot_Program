@@ -52,7 +52,6 @@ GITHUB_HEADERS="application/vnd.github.v3+json"
 GITHUB_INVALID_NAME_CHARACTER_REGEX=re.compile(r"[^A-Za-z0-9_\.\-]")
 GITHUB_MAX_FILE_SIZE=52428800
 GITHUB_NAME="Krzem"
-GITHUB_PROJECT_BRANCH_LIST_FILE_PATH="data/github-branches.dt"
 GITHUB_PUSHED_PROJECT_LIST_FILE_PATH="data/github.dt"
 with open(__file_base_dir__+"data/github-secret.dt","r") as f:
 	GITHUB_TOKEN=f.read().strip()
@@ -814,29 +813,27 @@ def _get_project_tree(a_nm,r_nm,sha,p,o):
 def _push_single_project(p,b_nm):
 	b_nm=b_nm.split("-")[0].title()+("" if b_nm.count("-")==0 else "-"+b_nm.split("-")[1].replace("_"," ").title().replace(" ","_"))
 	nm=GITHUB_INVALID_NAME_CHARACTER_REGEX.sub(r"",b_nm)
-	with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"r") as f:
-		gr_dt={k.strip().split(":")[0]:k.strip().split(":")[1] for k in f.read().strip().split("\n") if len(k)>0}
 	cr=False
 	a_nm=GITHUB_USERNAME
-	if (os.path.exists(os.path.join(p,".gitdata/endpoint.dt"))):
-		_print(f"\x1b[38;2;100;100;100mParsing Gitrepo File...",df=True)
-		with open(os.path.join(p,".gitdata/endpoint.dt"),"r") as f:
-			dt=f.read().strip().split(":")
-		a_nm=dt[0].split("/")[0].strip()
-		nm=dt[0].split("/")[1].strip()
-		br=dt[1].strip()
-		b_nm=nm
-	else:
-		if (nm not in gr_dt):
-			cr=True
-			gr_dt[nm]=GITHUB_DEFAULT_BRANCH_NAME
-			_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
-			try:
-				_github_api_request("post",url="https://api.github.com/user/repos",data=_encode_json({"name":nm,"description":nm.replace("-"," - ")}))
-			except requests.exceptions.ConnectionError:
-				_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
-				return False
-		br=gr_dt[nm]
+	if (not os.path.exists(os.path.join(p,".gitdata/endpoint.dt"))):
+		cr=True
+		_print(f"\x1b[38;2;100;100;100mCreating Project \x1b[38;2;65;118;46m'{nm}'\x1b[38;2;100;100;100m...",df=True)
+		try:
+			_github_api_request("post",url="https://api.github.com/user/repos",data=_encode_json({"name":nm,"description":nm.replace("-"," - ")}))
+		except requests.exceptions.ConnectionError:
+			_print("\x1b[38;2;200;40;20mNo Internet Connection.\x1b[0m Quitting\x1b[38;2;100;100;100m...",df=True)
+			return False
+		if (not os.path.exists(os.path.join(p,".gitdata"))):
+			os.mkdir(os.path.join(p,".gitdata"))
+		with open(os.path.join(p,".gitdata/endpoint.dt"),"w") as f:
+			f.write(f"{GITHUB_USERNAME}/{nm}:{GITHUB_DEFAULT_BRANCH_NAME}\n")
+	_print(f"\x1b[38;2;100;100;100mParsing Gitrepo File...",df=True)
+	with open(os.path.join(p,".gitdata/endpoint.dt"),"r") as f:
+		dt=f.read().strip().split(":")
+	a_nm=dt[0].split("/")[0].strip()
+	nm=dt[0].split("/")[1].strip()
+	br=dt[1].strip()
+	b_nm=nm
 	gdt=[]
 	if (os.path.exists(os.path.join(p,".gitignore"))):
 		_print(f"\x1b[38;2;100;100;100mParsing Gitignore File...",df=True)
@@ -1005,8 +1002,6 @@ def _push_single_project(p,b_nm):
 	if (cr is True):
 		_print(f"\x1b[38;2;100;100;100mDeleting Temporary File...",df=True)
 		_github_api_request("delete",url=f"https://api.github.com/repos/{a_nm}/{nm}/contents/_",data=f"{{\"message\":\"{msg}\",\"sha\":\"{GITHUB_EMPTY_FILE_HASH}\"}}")
-		with open(__file_base_dir__+GITHUB_PROJECT_BRANCH_LIST_FILE_PATH,"w") as f:
-			f.write("\n".join([f"{k}:{v}" for k,v in gr_dt.items()]))
 	return True
 
 
@@ -2427,11 +2422,7 @@ if (len(sys.argv)==1):
 	if (sys.executable.replace("\\","/")!=__headless_executable__):
 		_create_process(f"\"{__headless_executable__}\" \"{__file__}\"")
 	else:
-		move_to_desktop.switch_to_desktop(0)
 		_create_process(f"\"{__executable__}\" \"{__file__}\" 7")
-		for k in os.listdir(PROJECT_DIR):
-			_create_project(k.split("-")[0],k[len(k.split("-")[0])+1:],False)
-		_create_process(f"\"{CMD_FILE_PATH}\" /c \"^\"{__executable__}^\" ^\"{__file__}^\" 4\"")
 		_hotkey_handler._hk={}
 		_hotkey_handler._ig_alt=False
 		kb_cb=ctypes.wintypes.LowLevelKeyboardProc(_hotkey_handler)
