@@ -1011,42 +1011,6 @@ def _push_single_project(p,b_nm):
 
 
 
-def _push_all_github_projects(f=False):
-	tm=int((time.time()//86400+4)//7)
-	uc=0
-	sc=0
-	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"r") as rf:
-		b_dt=rf.read().replace("\r\n","\n").split("\n")
-	with open(__file_base_dir__+GITHUB_PUSHED_PROJECT_LIST_FILE_PATH,"w") as wf:
-		if (len(b_dt[0])==0 or int(b_dt[0])<tm):
-			b_dt=[None]
-		wf.write(str(tm)+"\n")
-		wf.flush()
-		for p in sorted(os.listdir(PROJECT_DIR)):
-			if (f is False and p in b_dt[1:]):
-				sc+=1
-				wf.write(p+"\n")
-				wf.flush()
-				continue
-			uc+=1
-			if (_push_single_project(PROJECT_DIR+p,p) is False):
-				return
-			wf.write(p+"\n")
-			wf.flush()
-		if (f is False and "Boot_Program" in b_dt[1:]):
-			sc+=1
-			wf.write("Boot_Program\n")
-			wf.flush()
-		else:
-			uc+=1
-			if (_push_single_project(__file_base_dir__,"Boot_Program") is False):
-				return
-			wf.write("Boot_Program\n")
-			wf.flush()
-	_print(f"Finished Github Project Push Check, {uc} Projects Updated, {sc} Skipped.")
-
-
-
 def _tokenize_file(dt,el=None):
 	o=[]
 	i=0
@@ -2738,21 +2702,8 @@ else:
 		ui.loop()
 	elif (v==4):
 		user32.SetFocus(hwnd)
-		if (len(sys.argv)==2):
-			move_to_desktop.move_to_desktop(hwnd,2)
-			if (os.getenv("DISABLE_BULK_PROJECT_PUSH") is not None):
-				_print("\x1b[38;2;200;40;20mProject Push Diabled.")
-			else:
-				_push_all_github_projects()
-		else:
-			if (sys.argv[2]=="*"):
-				if (os.getenv("DISABLE_BULK_PROJECT_PUSH") is not None):
-					_print("\x1b[38;2;200;40;20mProject Push Diabled.")
-				else:
-					_push_all_github_projects(f=True)
-			else:
-				sys.argv[2]=sys.argv[2].replace("\\","/")
-				_push_single_project(sys.argv[2],(GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",sys.argv[2].lower().replace(PROJECT_DIR.lower(),"").split("/")[0]) if sys.argv[2].lower().startswith(PROJECT_DIR.lower()) else "Boot_Program"))
+		nm=sys.argv[2].replace("\\","/")
+		_push_single_project(nm,GITHUB_INVALID_NAME_CHARACTER_REGEX.sub("",nm.lower().replace(PROJECT_DIR.lower(),"").split("/")[0]))
 		input("\x1b[38;2;50;50;50m<ENTER>\x1b[0m")
 	elif (v==5):
 		_init_arduino_cache()
