@@ -818,9 +818,9 @@ def _push_single_project(p,b_nm):
 		gr_dt={k.strip().split(":")[0]:k.strip().split(":")[1] for k in f.read().strip().split("\n") if len(k)>0}
 	cr=False
 	a_nm=GITHUB_USERNAME
-	if (os.path.exists(os.path.join(p,".gitrepo"))):
+	if (os.path.exists(os.path.join(p,".gitdata/endpoint.dt"))):
 		_print(f"\x1b[38;2;100;100;100mParsing Gitrepo File...",df=True)
-		with open(os.path.join(p,".gitrepo"),"r") as f:
+		with open(os.path.join(p,".gitdata/endpoint.dt"),"r") as f:
 			dt=f.read().strip().split(":")
 		a_nm=dt[0].split("/")[0].strip()
 		nm=dt[0].split("/")[1].strip()
@@ -884,9 +884,9 @@ def _push_single_project(p,b_nm):
 	p=os.path.abspath(p).replace("\\","/").rstrip("/")+"/"
 	for r,_,fl in os.walk(p):
 		r=r.replace("\\","/").rstrip("/")+"/"
+		if (r.startswith(p+".gitdata")):
+			continue
 		for f in fl:
-			if (r==p and f==".gitrepo"):
-				continue
 			fp=r[len(p):]+f
 			if (_match_gitignore_path(gdt,fp) is True):
 				cnt[2]+=1
